@@ -6,6 +6,9 @@ import { formatarMoeda, formatarData, parsearDataBrasileira, parsearValorBrasile
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co'
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key'
 
+// Verificar se as credenciais estão configuradas
+const isSupabaseConfigured = SUPABASE_URL !== 'https://your-project.supabase.co' && SUPABASE_ANON_KEY !== 'your-anon-key'
+
 // Cliente Supabase
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
@@ -276,6 +279,12 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async getData(): Promise<SheetData[]> {
     try {
+      // Se o Supabase não estiver configurado, usar dados mock
+      if (!isSupabaseConfigured) {
+        console.log('🔄 Supabase não configurado, usando dados mock')
+        return mockData
+      }
+      
       console.log('🔍 Conectando com Supabase...')
       
       // Testar conexão primeiro
@@ -613,6 +622,20 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async testConnection(): Promise<{ success: boolean; message: string; data?: any }> {
     try {
+      // Se o Supabase não estiver configurado, retornar sucesso com dados mock
+      if (!isSupabaseConfigured) {
+        console.log('🔄 Supabase não configurado, usando modo offline')
+        return {
+          success: true,
+          message: 'Sistema funcionando em modo offline com dados de demonstração',
+          data: { 
+            mode: 'offline',
+            transactions: mockData.length,
+            categories: mockCategorias.length
+          }
+        }
+      }
+      
       console.log('🔍 Testando conexão com Supabase...')
       
       const { data, error } = await supabase
@@ -751,6 +774,12 @@ class SupabaseServiceImpl implements SupabaseService {
   // Métodos para Categorias
   async getCategorias(): Promise<Categoria[]> {
     try {
+      // Se o Supabase não estiver configurado, usar dados mock
+      if (!isSupabaseConfigured) {
+        console.log('🔄 Supabase não configurado, usando categorias mock')
+        return mockCategorias
+      }
+      
       console.log('🔍 Buscando categorias no Supabase...')
       
       const { data, error } = await supabase
@@ -860,6 +889,12 @@ class SupabaseServiceImpl implements SupabaseService {
   // Métodos para Subcategorias
   async getSubcategorias(): Promise<Subcategoria[]> {
     try {
+      // Se o Supabase não estiver configurado, usar dados mock
+      if (!isSupabaseConfigured) {
+        console.log('🔄 Supabase não configurado, usando subcategorias mock')
+        return mockSubcategorias
+      }
+      
       console.log('🔍 Buscando subcategorias no Supabase...')
       
       const { data, error } = await supabase
@@ -969,6 +1004,12 @@ class SupabaseServiceImpl implements SupabaseService {
   // Métodos para Investimentos
   async getInvestimentos(): Promise<Investimento[]> {
     try {
+      // Se o Supabase não estiver configurado, usar dados mock
+      if (!isSupabaseConfigured) {
+        console.log('🔄 Supabase não configurado, usando investimentos mock')
+        return mockInvestimentos
+      }
+      
       console.log('🔍 Buscando investimentos no Supabase...')
       
       const { data, error } = await supabase
@@ -1078,6 +1119,12 @@ class SupabaseServiceImpl implements SupabaseService {
   // Métodos para Contas Bancárias
   async getContas(): Promise<ContaBancaria[]> {
     try {
+      // Se o Supabase não estiver configurado, usar dados mock
+      if (!isSupabaseConfigured) {
+        console.log('🔄 Supabase não configurado, usando contas bancárias mock')
+        return mockContas
+      }
+      
       console.log('📊 Buscando contas bancárias no Supabase...')
       
       const { data, error } = await supabase
@@ -1187,6 +1234,12 @@ class SupabaseServiceImpl implements SupabaseService {
   // Métodos para Cartões de Crédito
   async getCartoes(): Promise<CartaoCredito[]> {
     try {
+      // Se o Supabase não estiver configurado, usar dados mock
+      if (!isSupabaseConfigured) {
+        console.log('🔄 Supabase não configurado, usando cartões de crédito mock')
+        return mockCartoes
+      }
+      
       console.log('💳 Buscando cartões de crédito no Supabase...')
       
       const { data, error } = await supabase
