@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Permissões da API Google Sheets</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .config-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Teste de Permissões da API Google Sheets</h1>
+        
+        <div class="config-section">
+            <h3>⚙️ Configuração</h3>
+            <label for="apiKey">API Key:</label>
+            <input type="text" id="apiKey" placeholder="Cole sua API key aqui" value="AIzaSyBL8UXVkErRmaKbNaLTqJnr05_qAL2aR5Q">
+            
+            <label for="spreadsheetId">ID da Planilha:</label>
+            <input type="text" id="spreadsheetId" placeholder="ID da planilha" value="18QjPfOiWnkdn-OgdySJ9uugX8nAor7wDbBsPkneVrSE">
+            
+            <label for="sheetName">Nome da Aba:</label>
+            <input type="text" id="sheetName" placeholder="Nome da aba" value="GERAL">
+        </div>
+
+        <div class="test-section">
+            <h3>📖 Teste 1: Leitura de Dados</h3>
+            <p>Testa se a API key consegue ler dados da planilha.</p>
+            <button onclick="testarLeitura()">Testar Leitura</button>
+            <div id="resultadoLeitura" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>✏️ Teste 2: Escrita de Dados</h3>
+            <p>Testa se a API key consegue adicionar dados na planilha.</p>
+            <button onclick="testarEscrita()">Testar Escrita</button>
+            <div id="resultadoEscrita" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔄 Teste 3: Atualização de Dados</h3>
+            <p>Testa se a API key consegue atualizar dados existentes na planilha.</p>
+            <button onclick="testarAtualizacao()">Testar Atualização</button>
+            <div id="resultadoAtualizacao" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 Teste Completo</h3>
+            <p>Executa todos os testes em sequência.</p>
+            <button onclick="testarTudo()">Executar Todos os Testes</button>
+            <div id="resultadoCompleto" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        function getConfig() {
+            return {
+                apiKey: document.getElementById('apiKey').value,
+                spreadsheetId: document.getElementById('spreadsheetId').value,
+                sheetName: document.getElementById('sheetName').value
+            };
+        }
+
+        function showResult(elementId, message, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${isSuccess ? 'success' : 'error'}`;
+            element.innerHTML = message;
+        }
+
+        async function testarLeitura() {
+            const config = getConfig();
+            const resultado = document.getElementById('resultadoLeitura');
+            resultado.style.display = 'block';
+            resultado.className = 'result info';
+            resultado.innerHTML = '🔄 Testando leitura...';
+
+            try {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${config.sheetName}!A:Z`;
+                const response = await axios.get(url, {
+                    params: { key: config.apiKey },
+                    timeout: 10000
+                });
+
+                const rows = response.data.values || [];
+                const message = `
+                    ✅ <strong>Leitura funcionou!</strong><br>
+                    📊 Linhas encontradas: ${rows.length}<br>
+                    📅 Última atualização: ${response.data.updated ? new Date(response.data.updated).toLocaleString('pt-BR') : 'N/A'}<br>
+                    🔗 URL: ${url}
+                `;
+                showResult('resultadoLeitura', message, true);
+
+            } catch (error) {
+                const message = `
+                    ❌ <strong>Erro na leitura:</strong><br>
+                    📝 Mensagem: ${error.message}<br>
+                    🔢 Código: ${error.response?.status || 'N/A'}<br>
+                    📋 Detalhes: ${JSON.stringify(error.response?.data || {}, null, 2)}
+                `;
+                showResult('resultadoLeitura', message, false);
+            }
+        }
+
+        async function testarEscrita() {
+            const config = getConfig();
+            const resultado = document.getElementById('resultadoEscrita');
+            resultado.style.display = 'block';
+            resultado.className = 'result info';
+            resultado.innerHTML = '🔄 Testando escrita...';
+
+            try {
+                const testData = [
+                    [
+                        new Date().toLocaleDateString('pt-BR'),
+                        'TESTE API',
+                        'Sistema',
+                        'D',
+                        '100.00',
+                        '1/1',
+                        '',
+                        new Date().toLocaleDateString('pt-BR')
+                    ]
+                ];
+
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${config.sheetName}!A:append?valueInputOption=USER_ENTERED`;
+                const response = await axios.post(url, {
+                    values: testData
+                }, {
+                    params: { key: config.apiKey },
+                    timeout: 10000
+                });
+
+                const message = `
+                    ✅ <strong>Escrita funcionou!</strong><br>
+                    📝 Dados adicionados: ${response.data.updates?.updatedRows || 0} linha(s)<br>
+                    📍 Range atualizado: ${response.data.updates?.updatedRange || 'N/A'}<br>
+                    🔗 URL: ${url}
+                `;
+                showResult('resultadoEscrita', message, true);
+
+            } catch (error) {
+                const message = `
+                    ❌ <strong>Erro na escrita:</strong><br>
+                    📝 Mensagem: ${error.message}<br>
+                    🔢 Código: ${error.response?.status || 'N/A'}<br>
+                    📋 Detalhes: ${JSON.stringify(error.response?.data || {}, null, 2)}<br>
+                    💡 <strong>Possível solução:</strong> Verifique se a planilha está compartilhada como "Editor" para qualquer pessoa com o link.
+                `;
+                showResult('resultadoEscrita', message, false);
+            }
+        }
+
+        async function testarAtualizacao() {
+            const config = getConfig();
+            const resultado = document.getElementById('resultadoAtualizacao');
+            resultado.style.display = 'block';
+            resultado.className = 'result info';
+            resultado.innerHTML = '🔄 Testando atualização...';
+
+            try {
+                // Primeiro, buscar dados existentes
+                const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${config.sheetName}!A:Z`;
+                const readResponse = await axios.get(readUrl, {
+                    params: { key: config.apiKey }
+                });
+
+                const rows = readResponse.data.values || [];
+                if (rows.length === 0) {
+                    showResult('resultadoAtualizacao', '⚠️ Nenhum dado encontrado para atualizar. Execute o teste de escrita primeiro.', false);
+                    return;
+                }
+
+                // Tentar atualizar a primeira linha
+                const updateData = [
+                    rows[0][0], // vencimento
+                    rows[0][1], // descricao
+                    rows[0][2], // empresa
+                    rows[0][3], // tipo
+                    rows[0][4], // valor
+                    rows[0][5], // parcela
+                    'TESTE ATUALIZADO', // situacao
+                    new Date().toLocaleDateString('pt-BR') // dataPagamento
+                ];
+
+                const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/${config.sheetName}!A1:H1?valueInputOption=USER_ENTERED`;
+                const updateResponse = await axios.put(updateUrl, {
+                    values: [updateData]
+                }, {
+                    params: { key: config.apiKey },
+                    timeout: 10000
+                });
+
+                const message = `
+                    ✅ <strong>Atualização funcionou!</strong><br>
+                    📝 Células atualizadas: ${updateResponse.data.updatedCells || 0}<br>
+                    📍 Range atualizado: ${updateResponse.data.updatedRange || 'N/A'}<br>
+                    🔗 URL: ${updateUrl}
+                `;
+                showResult('resultadoAtualizacao', message, true);
+
+            } catch (error) {
+                const message = `
+                    ❌ <strong>Erro na atualização:</strong><br>
+                    📝 Mensagem: ${error.message}<br>
+                    🔢 Código: ${error.response?.status || 'N/A'}<br>
+                    📋 Detalhes: ${JSON.stringify(error.response?.data || {}, null, 2)}
+                `;
+                showResult('resultadoAtualizacao', message, false);
+            }
+        }
+
+        async function testarTudo() {
+            const resultado = document.getElementById('resultadoCompleto');
+            resultado.style.display = 'block';
+            resultado.className = 'result info';
+            resultado.innerHTML = '🔄 Executando todos os testes...';
+
+            let resultados = [];
+
+            // Teste 1: Leitura
+            try {
+                await testarLeitura();
+                resultados.push('✅ Leitura: OK');
+            } catch (error) {
+                resultados.push('❌ Leitura: FALHOU');
+            }
+
+            // Aguardar um pouco
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Teste 2: Escrita
+            try {
+                await testarEscrita();
+                resultados.push('✅ Escrita: OK');
+            } catch (error) {
+                resultados.push('❌ Escrita: FALHOU');
+            }
+
+            // Aguardar um pouco
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Teste 3: Atualização
+            try {
+                await testarAtualizacao();
+                resultados.push('✅ Atualização: OK');
+            } catch (error) {
+                resultados.push('❌ Atualização: FALHOU');
+            }
+
+            const sucessos = resultados.filter(r => r.includes('✅')).length;
+            const total = resultados.length;
+
+            const message = `
+                <h4>📊 Resultado dos Testes:</h4>
+                ${resultados.join('<br>')}
+                <br><br>
+                <strong>🎯 Resumo: ${sucessos}/${total} testes passaram</strong>
+                ${sucessos === total ? 
+                    '<br>🎉 Sua API key tem todas as permissões necessárias!' : 
+                    '<br>⚠️ Alguns testes falharam. Verifique as configurações.'
+                }
+            `;
+
+            showResult('resultadoCompleto', message, sucessos === total);
+        }
+    </script>
+</body>
+</html> 

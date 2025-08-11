@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Simples - Google Apps Script</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Teste Simples - Google Apps Script</h1>
+        <p>Este teste verifica se o Google Apps Script está acessível.</p>
+        
+        <button onclick="testGet()">🔗 Testar GET (Conexão)</button>
+        <button onclick="testPost()">📝 Testar POST (Leitura)</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const scriptUrl = 'https://script.google.com/macros/s/AKfycby2thUW_aIfFLNSh2MSmbI669X7wbLg-LLJb3TMYNJnNjywYy1VeFNX_seGf3kFM-FeBg/exec';
+        const resultDiv = document.getElementById('result');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            console.log(logMessage);
+            
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = logMessage;
+            document.getElementById('result').appendChild(resultDiv);
+        }
+
+        function clearResults() {
+            resultDiv.innerHTML = '';
+        }
+
+        async function testGet() {
+            clearResults();
+            log('🔗 Testando conexão GET...', 'info');
+            
+            try {
+                log(`URL: ${scriptUrl}`, 'info');
+                
+                const response = await axios.get(scriptUrl, {
+                    timeout: 10000
+                });
+                
+                log('✅ GET bem-sucedido!', 'success');
+                log(`Status: ${response.status}`, 'success');
+                log(`Dados: ${JSON.stringify(response.data, null, 2)}`, 'success');
+                
+            } catch (error) {
+                log('❌ Erro no GET:', 'error');
+                log(`Tipo: ${error.name}`, 'error');
+                log(`Mensagem: ${error.message}`, 'error');
+                
+                if (error.response) {
+                    log(`Status HTTP: ${error.response.status}`, 'error');
+                    log(`Dados: ${JSON.stringify(error.response.data, null, 2)}`, 'error');
+                } else if (error.request) {
+                    log('Sem resposta do servidor', 'error');
+                }
+            }
+        }
+
+        async function testPost() {
+            clearResults();
+            log('📝 Testando POST...', 'info');
+            
+            try {
+                log(`URL: ${scriptUrl}`, 'info');
+                
+                const postData = {
+                    action: 'read',
+                    spreadsheetId: '18QjPfOiWnkdn-OgdySJ9uugX8nAor7wDbBsPkneVrSE',
+                    sheetName: 'GERAL'
+                };
+                
+                log(`Dados enviados: ${JSON.stringify(postData, null, 2)}`, 'info');
+                
+                const response = await axios.post(scriptUrl, postData, {
+                    timeout: 15000,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log('✅ POST bem-sucedido!', 'success');
+                log(`Status: ${response.status}`, 'success');
+                log(`Dados: ${JSON.stringify(response.data, null, 2)}`, 'success');
+                
+            } catch (error) {
+                log('❌ Erro no POST:', 'error');
+                log(`Tipo: ${error.name}`, 'error');
+                log(`Mensagem: ${error.message}`, 'error');
+                
+                if (error.response) {
+                    log(`Status HTTP: ${error.response.status}`, 'error');
+                    log(`Dados: ${JSON.stringify(error.response.data, null, 2)}`, 'error');
+                } else if (error.request) {
+                    log('Sem resposta do servidor', 'error');
+                }
+            }
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste da API Google Sheets</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="config.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Teste da API Google Sheets</h1>
+        
+        <div class="test-section info">
+            <h3>📋 Informações da Configuração</h3>
+            <p><strong>Spreadsheet ID:</strong> <span id="spreadsheet-id"></span></p>
+            <p><strong>API Key:</strong> <span id="api-key"></span></p>
+            <p><strong>Sheet Name:</strong> <span id="sheet-name"></span></p>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Testes de Conexão</h3>
+            <button onclick="testDirectConnection()">Teste 1: Conexão Direta</button>
+            <button onclick="testWithCorsProxy()">Teste 2: Com Proxy CORS</button>
+            <button onclick="testSpreadsheetInfo()">Teste 3: Informações da Planilha</button>
+            <button onclick="testAllProxies()">Teste 4: Todos os Proxies</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Exibe informações da configuração
+        document.getElementById('spreadsheet-id').textContent = CONFIG.SPREADSHEETS_ID;
+        document.getElementById('api-key').textContent = CONFIG.GOOGLE_SHEETS_API_KEY.substring(0, 10) + '...';
+        document.getElementById('sheet-name').textContent = CONFIG.SHEET_NAME;
+
+        function addResult(title, content, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-section ${type}`;
+            div.innerHTML = `
+                <h4>${title}</h4>
+                <pre>${content}</pre>
+            `;
+            resultsDiv.appendChild(div);
+        }
+
+        async function testDirectConnection() {
+            try {
+                addResult('🔄 Teste 1: Conexão Direta', 'Testando...', 'info');
+                
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEETS_ID}/values/${CONFIG.SHEET_NAME}!A:Z`;
+                const response = await axios.get(url, {
+                    params: {
+                        key: CONFIG.GOOGLE_SHEETS_API_KEY,
+                        majorDimension: 'ROWS'
+                    },
+                    timeout: 10000
+                });
+                
+                addResult('✅ Teste 1: Sucesso', 
+                    `Status: ${response.status}\nDados: ${JSON.stringify(response.data, null, 2)}`, 
+                    'success');
+            } catch (error) {
+                addResult('❌ Teste 1: Falha', 
+                    `Erro: ${error.message}\nStatus: ${error.response?.status}\nDados: ${JSON.stringify(error.response?.data, null, 2)}`, 
+                    'error');
+            }
+        }
+
+        async function testWithCorsProxy() {
+            try {
+                addResult('🔄 Teste 2: Com Proxy CORS', 'Testando...', 'info');
+                
+                const url = `${CONFIG.CORS_PROXY}https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEETS_ID}/values/${CONFIG.SHEET_NAME}!A:Z?key=${CONFIG.GOOGLE_SHEETS_API_KEY}&majorDimension=ROWS`;
+                const response = await axios.get(url, {
+                    timeout: 10000
+                });
+                
+                addResult('✅ Teste 2: Sucesso', 
+                    `Status: ${response.status}\nDados: ${JSON.stringify(response.data, null, 2)}`, 
+                    'success');
+            } catch (error) {
+                addResult('❌ Teste 2: Falha', 
+                    `Erro: ${error.message}\nStatus: ${error.response?.status}\nDados: ${JSON.stringify(error.response?.data, null, 2)}`, 
+                    'error');
+            }
+        }
+
+        async function testSpreadsheetInfo() {
+            try {
+                addResult('🔄 Teste 3: Informações da Planilha', 'Testando...', 'info');
+                
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEETS_ID}`;
+                const response = await axios.get(url, {
+                    params: {
+                        key: CONFIG.GOOGLE_SHEETS_API_KEY,
+                        includeGridData: false
+                    },
+                    timeout: 10000
+                });
+                
+                addResult('✅ Teste 3: Sucesso', 
+                    `Status: ${response.status}\nTítulo: ${response.data.properties.title}\nSheets: ${response.data.sheets.map(s => s.properties.title).join(', ')}`, 
+                    'success');
+            } catch (error) {
+                addResult('❌ Teste 3: Falha', 
+                    `Erro: ${error.message}\nStatus: ${error.response?.status}\nDados: ${JSON.stringify(error.response?.data, null, 2)}`, 
+                    'error');
+            }
+        }
+
+        async function testAllProxies() {
+            const proxies = [
+                'https://cors-anywhere.herokuapp.com/',
+                'https://api.allorigins.win/raw?url=',
+                'https://corsproxy.io/?',
+                'https://thingproxy.freeboard.io/fetch/'
+            ];
+
+            addResult('🔄 Teste 4: Todos os Proxies', 'Testando todos os proxies...', 'info');
+
+            for (let i = 0; i < proxies.length; i++) {
+                try {
+                    const proxy = proxies[i];
+                    const url = `${proxy}https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SPREADSHEETS_ID}/values/${CONFIG.SHEET_NAME}!A:Z?key=${CONFIG.GOOGLE_SHEETS_API_KEY}&majorDimension=ROWS`;
+                    
+                    const response = await axios.get(url, {
+                        timeout: 10000
+                    });
+                    
+                    addResult(`✅ Proxy ${i + 1}: ${proxy}`, 
+                        `Status: ${response.status}\nSucesso com proxy ${i + 1}`, 
+                        'success');
+                    break;
+                } catch (error) {
+                    addResult(`❌ Proxy ${i + 1}: ${proxies[i]}`, 
+                        `Erro: ${error.message}`, 
+                        'error');
+                }
+            }
+        }
+    </script>
+</body>
+</html> 

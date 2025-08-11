@@ -1,0 +1,2805 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Financeiro - Google Sheets</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="config.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f9fafb;
+            color: #374151;
+        }
+
+        .header {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1rem 0;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        .logo-icon {
+            width: 2rem;
+            height: 2rem;
+            background: #3b82f6;
+            border-radius: 0.5rem;
+            margin-right: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .nav {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-tab {
+            padding: 1rem 0;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-weight: 500;
+            color: #6b7280;
+            transition: all 0.2s;
+        }
+
+        .nav-tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+
+        .nav-tab:hover {
+            color: #374151;
+        }
+
+        .main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .stat-card.active {
+            border: 2px solid #3b82f6;
+            background: #f0f9ff;
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+        }
+
+        .stat-value {
+            font-size: 1.875rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            height: 400px; /* Altura fixa para proporção consistente */
+            position: relative;
+        }
+
+        .chart-container canvas {
+            max-height: 320px; /* Altura máxima para o canvas */
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .chart-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+
+        .data-table {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th {
+            background: #f9fafb;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-weight: 500;
+            color: #6b7280;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table tr:hover {
+            background: #f9fafb;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pago {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-pendente {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-vencido {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .valor-negativo {
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        .valor-positivo {
+            color: #059669;
+            font-weight: 600;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+
+        .spinner {
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid #e5e7eb;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #166534;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        /* Filtros de Período */
+        .period-filters {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .filter-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .filter-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background: white;
+            color: #374151;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .filter-btn:hover {
+            background: #f3f4f6;
+        }
+
+        .custom-period {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 0.375rem;
+        }
+
+        .date-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .date-input {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+
+        /* Paginação */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .pagination-info {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            color: #374151;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .page-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Indicadores de ordenação */
+        .sort-indicator {
+            font-size: 0.75rem;
+            margin-left: 0.25rem;
+            color: #6b7280;
+        }
+
+        .sort-indicator.active {
+            color: #3b82f6;
+            font-weight: bold;
+        }
+
+        /* Hover nos cabeçalhos da tabela */
+        .table th:hover {
+            background: #f3f4f6;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .date-inputs {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Estilos para as novas guias */
+        .fluxo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .fluxo-card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .projecao-item, .saldo-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .analises-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+
+        .relatorios-actions {
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .filtros-avancados {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .config-section {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .config-item {
+            margin-bottom: 1rem;
+        }
+
+        .config-item label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .config-item input, .config-item select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+        }
+
+        /* Estilos para modais */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 0.5rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .close {
+            color: #6b7280;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #374151;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+        }
+
+        /* Checkbox para seleção de transações */
+        .transaction-checkbox {
+            margin-right: 0.5rem;
+        }
+
+        .table th:first-child, .table td:first-child {
+            width: 40px;
+            text-align: center;
+        }
+
+        /* Estilos para a guia de cadastro */
+        .cadastro-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .text-success {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .form-help {
+            color: #6b7280;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            display: block;
+        }
+
+        .form-group input[readonly] {
+            background-color: #f9fafb;
+            color: #374151;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">📊</div>
+                Dashboard Financeiro
+            </div>
+            <div class="buttons">
+                <button class="btn btn-success" onclick="testConnection()">
+                    🧪 Testar Conexão
+                </button>
+                <button class="btn btn-primary" onclick="loadData()">
+                    🔄 Atualizar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-content">
+                            <div class="nav-tabs">
+                <div class="nav-tab active" onclick="showTab('dashboard')">📊 Dashboard Principal</div>
+                <div class="nav-tab" onclick="showTab('cadastro')">➕ Cadastro</div>
+                <div class="nav-tab" onclick="showTab('fluxo')">💰 Fluxo de Caixa</div>
+                <div class="nav-tab" onclick="showTab('analises')">📈 Análises Gráficas</div>
+                <div class="nav-tab" onclick="showTab('relatorios')">📋 Relatórios</div>
+                <div class="nav-tab" onclick="showTab('configuracoes')">⚙️ Configurações</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            Carregando dados...
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="success" class="success" style="display: none;"></div>
+
+        <!-- Dashboard Principal Tab -->
+        <div id="dashboard" class="tab-content">
+            <!-- Filtros de Período -->
+            <div class="period-filters">
+                <div class="filter-header">
+                    <h3 class="filter-title">Filtros de Período</h3>
+                    <div>
+                        <span id="filter-count" class="text-sm text-gray-500">0 registros</span>
+                        <button onclick="clearFilters()" class="btn btn-primary" style="margin-left: 1rem;">
+                            🗑️ Limpar Filtros
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="filter-buttons">
+                    <button class="filter-btn active" onclick="applyPeriodFilter('all')">📅 Todos os Períodos</button>
+                    <button class="filter-btn" onclick="applyPeriodFilter('current-month')">📅 Mês Atual</button>
+                    <button class="filter-btn" onclick="applyPeriodFilter('previous-month')">📅 Mês Anterior</button>
+                    <button class="filter-btn" onclick="applyPeriodFilter('current-year')">📅 Ano Atual</button>
+                </div>
+                
+                <div class="custom-period">
+                    <button class="filter-btn" onclick="toggleCustomPeriod()">🔍 Período Customizado</button>
+                    <div id="custom-period-inputs" style="display: none; margin-top: 1rem;">
+                        <div class="date-inputs">
+                            <input type="text" id="start-date" class="date-input" placeholder="Data Inicial (DD/MM/AAAA)">
+                            <input type="text" id="end-date" class="date-input" placeholder="Data Final (DD/MM/AAAA)">
+                            <button class="btn btn-primary" onclick="applyCustomPeriodFilter()">Aplicar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card" onclick="applyFilter('pago')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #10b981;">💰</div>
+                        <div>
+                            <div class="stat-value" id="total-pago">R$ 0</div>
+                            <div class="stat-label">Total Pago</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="applyFilter('pendente')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #f59e0b;">⏳</div>
+                        <div>
+                            <div class="stat-value" id="total-pendente">R$ 0</div>
+                            <div class="stat-label">Total Pendente</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="applyFilter('vencido')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #ef4444;">⚠️</div>
+                        <div>
+                            <div class="stat-value" id="total-vencido">R$ 0</div>
+                            <div class="stat-label">Total Vencido</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="applyFilter('pago-hoje')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #3b82f6;">📅</div>
+                        <div>
+                            <div class="stat-value" id="total-pago-hoje">R$ 0</div>
+                            <div class="stat-label">Pago Hoje</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="applyFilter('vencendo-hoje')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #f97316;">🚨</div>
+                        <div>
+                            <div class="stat-value" id="total-vencendo-hoje">R$ 0</div>
+                            <div class="stat-label">Vencendo Hoje</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cards de Receitas Detalhadas -->
+            <div class="stats-grid">
+                <div class="stat-card" onclick="applyFilter('a-receber-hoje')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #059669;">📅</div>
+                        <div>
+                            <div class="stat-value" id="a-receber-hoje">R$ 0</div>
+                            <div class="stat-label">A Receber Hoje</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="applyFilter('a-receber')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #f59e0b;">⏳</div>
+                        <div>
+                            <div class="stat-value" id="a-receber">R$ 0</div>
+                            <div class="stat-label">A Receber</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="applyFilter('total-a-receber')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #dc2626;">📋</div>
+                        <div>
+                            <div class="stat-value" id="total-a-receber">R$ 0</div>
+                            <div class="stat-label">Total a Receber</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="applyFilter('total-recebido')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #10b981;">✅</div>
+                        <div>
+                            <div class="stat-value" id="total-recebido">R$ 0</div>
+                            <div class="stat-label">Total Recebido</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cards de Despesas e Receitas -->
+            <div class="stats-grid">
+                <div class="stat-card" onclick="applyFilter('despesas')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #dc2626;">💸</div>
+                        <div>
+                            <div class="stat-value" id="total-despesas">R$ 0</div>
+                            <div class="stat-label">Total de Despesas</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="applyFilter('receitas')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #059669;">💵</div>
+                        <div>
+                            <div class="stat-value" id="total-receitas">R$ 0</div>
+                            <div class="stat-label">Total de Receitas</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resultado Financeiro -->
+            <div class="stat-card" style="margin-bottom: 2rem;">
+                <div class="stat-header">
+                    <div class="stat-icon" style="background: #3b82f6;">📊</div>
+                    <div>
+                        <div class="stat-value" id="total-geral">R$ 0</div>
+                        <div class="stat-label">Resultado Financeiro</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3 class="chart-title">Evolução por Status</h3>
+                    <canvas id="lineChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3 class="chart-title">Distribuição por Status</h3>
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="data-table">
+                <div class="table-header">
+                    <h3 class="table-title">Transações</h3>
+                </div>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">
+                                    <input type="checkbox" id="select-all-checkbox" onclick="toggleSelectAll()" title="Selecionar todas as transações">
+                                </th>
+                                <th onclick="sortTable('vencimento')" style="cursor: pointer;">
+                                    Vencimento 
+                                    <span id="sort-vencimento" class="sort-indicator">↕</span>
+                                </th>
+                                <th onclick="sortTable('descricao')" style="cursor: pointer;">
+                                    Descrição 
+                                    <span id="sort-descricao" class="sort-indicator">↕</span>
+                                </th>
+                                <th onclick="sortTable('empresa')" style="cursor: pointer;">
+                                    Empresa 
+                                    <span id="sort-empresa" class="sort-indicator">↕</span>
+                                </th>
+                                <th onclick="sortTable('valor')" style="cursor: pointer;">
+                                    Valor 
+                                    <span id="sort-valor" class="sort-indicator">↕</span>
+                                </th>
+                                <th onclick="sortTable('status')" style="cursor: pointer;">
+                                    Status 
+                                    <span id="sort-status" class="sort-indicator">↕</span>
+                                </th>
+                                <th onclick="sortTable('dataPagamento')" style="cursor: pointer;">
+                                    Data Pagamento 
+                                    <span id="sort-dataPagamento" class="sort-indicator">↕</span>
+                                </th>
+                                <th style="width: 60px; text-align: center;">
+                                    Ações
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-table-body">
+                            <!-- Dados serão inseridos aqui -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="pagination" style="display: none;">
+                    <div class="pagination-info" id="pagination-info">
+                        Mostrando 0-0 de 0 registros
+                    </div>
+                    <div class="pagination-controls" id="pagination-controls">
+                        <!-- Controles de paginação -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cadastro Tab -->
+        <div id="cadastro" class="tab-content" style="display: none;">
+            <div class="cadastro-content">
+                <h3>➕ Cadastro de Transações</h3>
+                <div class="cadastro-form">
+                    <form id="form-cadastro-transacao">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Descrição:</label>
+                                <input type="text" id="cadastro-descricao" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Empresa:</label>
+                                <input type="text" id="cadastro-empresa" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Tipo:</label>
+                                <select id="cadastro-tipo" required>
+                                    <option value="D">Despesa</option>
+                                    <option value="C">Receita</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Valor:</label>
+                                <input type="number" id="cadastro-valor" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Vencimento:</label>
+                                <input type="text" id="cadastro-vencimento" placeholder="DD/MM/AAAA" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Quantidade de Parcelas:</label>
+                                <input type="number" id="cadastro-parcelas" value="1" min="1" max="12">
+                                <small class="form-help">Número de vezes que a transação se repete mensalmente</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Status:</label>
+                                <input type="text" id="cadastro-status" readonly>
+                                <small class="form-help">Definido automaticamente baseado na data de vencimento</small>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-primary" onclick="saveNewTransaction()">💾 Salvar Transação</button>
+                            <button type="button" class="btn" onclick="clearCadastroForm()">🗑️ Limpar Formulário</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fluxo de Caixa Tab -->
+        <div id="fluxo" class="tab-content" style="display: none;">
+            <div class="fluxo-content">
+                <h3>💰 Fluxo de Caixa</h3>
+                <div class="fluxo-grid">
+                    <div class="fluxo-card">
+                        <h4>📈 Projeções</h4>
+                        <div class="projecao-item">
+                            <span>Próximos 7 dias:</span>
+                            <span id="projecao-7dias">R$ 0</span>
+                        </div>
+                        <div class="projecao-item">
+                            <span>Próximos 30 dias:</span>
+                            <span id="projecao-30dias">R$ 0</span>
+                        </div>
+                    </div>
+                    <div class="fluxo-card">
+                        <h4>📊 Saldo Atual</h4>
+                        <div class="saldo-item">
+                            <span>Entradas:</span>
+                            <span id="saldo-entradas" class="valor-positivo">R$ 0</span>
+                        </div>
+                        <div class="saldo-item">
+                            <span>Saídas:</span>
+                            <span id="saldo-saidas" class="valor-negativo">R$ 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análises Gráficas Tab -->
+        <div id="analises" class="tab-content" style="display: none;">
+            <div class="analises-content">
+                <h3>📈 Análises Gráficas</h3>
+                <div class="analises-grid">
+                    <div class="chart-container">
+                        <h4>📊 Comparativo Mensal</h4>
+                        <canvas id="comparativoChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h4>📈 Tendências</h4>
+                        <canvas id="tendenciasChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Relatórios Tab -->
+        <div id="relatorios" class="tab-content" style="display: none;">
+            <div class="relatorios-content">
+                <h3>📋 Relatórios</h3>
+                <div class="relatorios-actions">
+                    <button class="btn btn-primary" onclick="exportToPDF()">📄 Exportar PDF</button>
+                    <button class="btn btn-success" onclick="exportToExcel()">📊 Exportar Excel</button>
+                </div>
+                <div class="relatorios-filtros">
+                    <h4>Filtros Avançados</h4>
+                    <div class="filtros-avancados">
+                        <select id="filtro-tipo" onchange="applyAdvancedFilter()">
+                            <option value="">Todos os Tipos</option>
+                            <option value="D">Despesas</option>
+                            <option value="C">Receitas</option>
+                        </select>
+                        <select id="filtro-status" onchange="applyAdvancedFilter()">
+                            <option value="">Todos os Status</option>
+                            <option value="pago">Pago</option>
+                            <option value="pendente">Pendente</option>
+                            <option value="vencido">Vencido</option>
+                        </select>
+                        <input type="text" id="filtro-empresa" placeholder="Filtrar por empresa" onkeyup="applyAdvancedFilter()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configurações Tab -->
+        <div id="configuracoes" class="tab-content" style="display: none;">
+            <div class="configuracoes-content">
+                <h3>⚙️ Configurações</h3>
+                <div class="config-section">
+                    <h4>🔑 Configuração da API</h4>
+                    <div class="config-item">
+                        <label>Spreadsheet ID:</label>
+                        <input type="text" id="config-spreadsheet-id" value="" placeholder="ID da planilha">
+                    </div>
+                    <div class="config-item">
+                        <label>API Key:</label>
+                        <input type="text" id="config-api-key" value="" placeholder="Chave da API">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveConfig()">💾 Salvar Configuração</button>
+                </div>
+                <div class="config-section">
+                    <h4>🎨 Personalização</h4>
+                    <div class="config-item">
+                        <label>Itens por página:</label>
+                        <select id="config-items-per-page">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Nova Transação -->
+        <div id="modal-nova-transacao" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>➕ Nova Transação</h3>
+                    <span class="close" onclick="closeNewTransactionModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="form-nova-transacao">
+                        <div class="form-group">
+                            <label>Descrição:</label>
+                            <input type="text" id="nova-descricao" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Empresa:</label>
+                            <input type="text" id="nova-empresa" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo:</label>
+                            <select id="nova-tipo" required>
+                                <option value="D">Despesa</option>
+                                <option value="C">Receita</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor:</label>
+                            <input type="number" id="nova-valor" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Vencimento:</label>
+                            <input type="text" id="nova-vencimento" placeholder="DD/MM/AAAA" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Parcela:</label>
+                            <input type="text" id="nova-parcela" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Status:</label>
+                            <select id="nova-status">
+                                <option value="pendente">Pendente</option>
+                                <option value="pago">Pago</option>
+                                <option value="vencido">Vencido</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="saveNewTransaction()">💾 Salvar</button>
+                    <button class="btn" onclick="closeNewTransactionModal()">❌ Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Confirmar Pagamento -->
+        <div id="modal-confirmar-pagamento" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>✅ Confirmar Pagamento</h3>
+                    <span class="close" onclick="closeConfirmPaymentModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja marcar as transações selecionadas como pagas?</p>
+                    <div id="selected-transactions-list"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-success" onclick="confirmMarkAsPaid()">✅ Confirmar</button>
+                    <button class="btn" onclick="closeConfirmPaymentModal()">❌ Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Configurações do Google Sheets
+        const GOOGLE_SHEETS_API_KEY = CONFIG.GOOGLE_SHEETS_API_KEY;
+        const SPREADSHEETS_ID = CONFIG.SPREADSHEETS_ID;
+        const SHEET_NAME = CONFIG.SHEET_NAME;
+        const CORS_PROXY = CONFIG.CORS_PROXY;
+        const API_TIMEOUT = CONFIG.TIMEOUT;
+        
+        // Estado da aplicação
+        let allData = [];
+        let filteredData = [];
+        let currentFilter = null;
+        let currentPeriodFilter = 'all';
+        let currentPage = 1;
+        const itemsPerPage = CONFIG.ITEMS_PER_PAGE;
+        let sortBy = 'vencimento'; // Campo para ordenação
+        let sortOrder = 'asc'; // Ordem da ordenação
+        
+        // Charts
+        let lineChart = null;
+        let pieChart = null;
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            // Inicializa indicador de ordenação padrão
+            const defaultIndicator = document.getElementById('sort-vencimento');
+            if (defaultIndicator) {
+                defaultIndicator.classList.add('active');
+                defaultIndicator.textContent = '↑';
+            }
+        });
+
+        // Função para carregar dados do Google Sheets
+        async function loadData() {
+            showLoading(true);
+            hideMessages();
+            
+            try {
+                console.log('🔍 Conectando com Google Sheets...');
+                console.log('📊 Spreadsheet ID:', SPREADSHEETS_ID);
+                console.log('🔑 API Key:', GOOGLE_SHEETS_API_KEY.substring(0, 10) + '...');
+                
+                // Lista de proxies CORS alternativos
+                const corsProxies = [
+                    'https://cors-anywhere.herokuapp.com/',
+                    'https://api.allorigins.win/raw?url=',
+                    'https://corsproxy.io/?',
+                    'https://thingproxy.freeboard.io/fetch/'
+                ];
+                
+                let response = null;
+                let lastError = null;
+                
+                // Tenta primeiro sem proxy
+                try {
+                    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEETS_ID}/values/${SHEET_NAME}!A:Z`;
+                    console.log('🌐 Tentativa 1 - URL direta:', url);
+                    
+                    response = await axios.get(url, {
+                        params: {
+                            key: GOOGLE_SHEETS_API_KEY,
+                            majorDimension: 'ROWS',
+                            _t: Date.now()
+                        },
+                        timeout: API_TIMEOUT
+                    });
+                } catch (error) {
+                    console.log('⚠️ Erro na tentativa direta:', error.message);
+                    lastError = error;
+                    
+                    // Tenta com diferentes proxies CORS
+                    for (let i = 0; i < corsProxies.length; i++) {
+                        try {
+                            const proxy = corsProxies[i];
+                            const url = `${proxy}https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEETS_ID}/values/${SHEET_NAME}!A:Z?key=${GOOGLE_SHEETS_API_KEY}&majorDimension=ROWS&_t=${Date.now()}`;
+                            console.log(`🌐 Tentativa ${i + 2} - Proxy ${i + 1}:`, proxy);
+                            
+                            response = await axios.get(url, {
+                                timeout: API_TIMEOUT
+                            });
+                            console.log('✅ Sucesso com proxy:', proxy);
+                            break;
+                        } catch (proxyError) {
+                            console.log(`❌ Falha com proxy ${i + 1}:`, proxyError.message);
+                            lastError = proxyError;
+                        }
+                    }
+                }
+
+                if (!response) {
+                    throw new Error(`Falha em todas as tentativas. Último erro: ${lastError?.message || 'Desconhecido'}`);
+                }
+
+                console.log('✅ Resposta da API:', response.status, response.statusText);
+                const rows = response.data.values || [];
+                console.log('📋 Dados recebidos:', rows.length, 'linhas');
+                
+                if (rows.length === 0) {
+                    console.log('⚠️ Planilha vazia, usando dados simulados');
+                    allData = getMockData();
+                } else {
+                    allData = parseSheetData(rows);
+                }
+                
+                filteredData = [...allData];
+                updateUI();
+                showSuccess('Dados carregados com sucesso!');
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar dados:', error);
+                console.error('📝 Detalhes do erro:', {
+                    message: error.message,
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data
+                });
+                
+                // Verifica se é erro 403 específico
+                if (error.response?.status === 403) {
+                    showError('Erro 403: Verifique se a planilha está pública ou se a API key tem permissões corretas. Usando dados simulados.');
+                } else {
+                    showError(`Erro ao carregar dados: ${error.message}. Usando dados simulados.`);
+                }
+                
+                allData = getMockData();
+                filteredData = [...allData];
+                updateUI();
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Função para testar conexão
+        async function testConnection() {
+            showLoading(true);
+            hideMessages();
+            
+            try {
+                console.log('🔍 Testando conexão com Google Sheets...');
+                console.log('📊 Spreadsheet ID:', SPREADSHEETS_ID);
+                console.log('🔑 API Key:', GOOGLE_SHEETS_API_KEY.substring(0, 10) + '...');
+                
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEETS_ID}`;
+                console.log('🌐 URL da requisição:', url);
+                
+                const response = await axios.get(url, {
+                    params: {
+                        key: GOOGLE_SHEETS_API_KEY,
+                        includeGridData: false
+                    },
+                    timeout: API_TIMEOUT
+                });
+                
+                console.log('✅ Resposta da API:', response.status, response.statusText);
+                console.log('📋 Informações da planilha:', response.data);
+                
+                showSuccess('Conexão estabelecida com sucesso!');
+                console.log('✅ Conexão bem-sucedida!');
+                
+            } catch (error) {
+                console.error('❌ Erro na conexão:', error);
+                console.error('📝 Detalhes do erro:', {
+                    message: error.message,
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data
+                });
+                
+                let errorMessage = 'Erro desconhecido';
+                
+                if (error.response?.status === 403) {
+                    errorMessage = 'Acesso negado. Verifique se a planilha está pública.';
+                } else if (error.response?.status === 404) {
+                    errorMessage = 'Planilha não encontrada. Verifique o Spreadsheet ID.';
+                } else if (error.response?.status === 400) {
+                    errorMessage = 'API Key inválida ou sem permissões.';
+                } else if (error.code === 'ECONNABORTED') {
+                    errorMessage = 'Timeout na conexão. Verifique sua internet.';
+                } else if (error.code === 'ERR_NETWORK') {
+                    errorMessage = 'Erro de rede. Verifique sua conexão com a internet.';
+                }
+                
+                showError(`${errorMessage} (${error.message})`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Função para parsear dados da planilha
+        function parseSheetData(rows) {
+            const headers = rows[0] || [];
+            const dataRows = rows.slice(1);
+            
+            console.log('📝 Cabeçalhos encontrados:', headers);
+            
+            // Mapeia as colunas
+            const vencimentoIndex = headers.findIndex(h => 
+                h.toLowerCase().includes('vencimento') || 
+                h.toLowerCase().includes('data vencimento')
+            );
+            
+            const descricaoIndex = headers.findIndex(h => 
+                h.toLowerCase().includes('descrição') || 
+                h.toLowerCase().includes('descricao') ||
+                h.toLowerCase().includes('desc')
+            );
+            
+            const empresaIndex = headers.findIndex(h => 
+                h.toLowerCase().includes('empresa') ||
+                h.toLowerCase().includes('fornecedor') ||
+                h.toLowerCase().includes('cliente')
+            );
+            
+            const tipoIndex = headers.findIndex(h => 
+                h.toLowerCase().includes('tipo') ||
+                h.toLowerCase().includes('categoria')
+            );
+            
+            const valorIndex = headers.findIndex(h => 
+                h.toLowerCase().includes('valor') ||
+                h.toLowerCase().includes('amount')
+            );
+            
+            const parcelaIndex = headers.findIndex(h => 
+                h.toLowerCase().includes('parcela') ||
+                h.toLowerCase().includes('installment')
+            );
+            
+            const situacaoIndex = headers.findIndex(h => 
+                h.toLowerCase().includes('situação') || 
+                h.toLowerCase().includes('situacao') ||
+                h.toLowerCase().includes('status')
+            );
+            
+            const dataPagamentoIndex = headers.findIndex(h => 
+                h.toLowerCase().includes('data pagamento') || 
+                h.toLowerCase().includes('data de pagamento') ||
+                h.toLowerCase().includes('pagamento')
+            );
+
+            return dataRows
+                .filter(row => {
+                    return row && row.length > 0 && 
+                           (row[vencimentoIndex] || row[descricaoIndex] || row[valorIndex]);
+                })
+                .map((row, index) => {
+                    // Processa o valor
+                    let valor = 0;
+                    if (row[valorIndex]) {
+                        const valorStr = row[valorIndex].toString();
+                        valor = parseFloat(valorStr.replace(/\./g, '').replace(',', '.')) || 0;
+                    }
+                    
+                    const situacao = row[situacaoIndex] || '';
+                    const dataPagamento = row[dataPagamentoIndex] || '';
+                    
+                    // Determina o status
+                    let status = 'pendente';
+                    if (situacao.toLowerCase().includes('pago') || dataPagamento) {
+                        status = 'pago';
+                    } else if (row[vencimentoIndex]) {
+                        try {
+                            const vencimento = parseBrazilianDate(row[vencimentoIndex]);
+                            const hoje = new Date();
+                            if (vencimento && vencimento < hoje) {
+                                status = 'vencido';
+                            }
+                        } catch (error) {
+                            console.warn('⚠️ Erro ao processar data de vencimento:', row[vencimentoIndex]);
+                        }
+                    }
+
+                    return {
+                        id: (index + 1).toString(),
+                        vencimento: row[vencimentoIndex] || '',
+                        descricao: row[descricaoIndex] || '',
+                        empresa: row[empresaIndex] || '',
+                        tipo: row[tipoIndex] || '',
+                        valor: valor,
+                        parcela: row[parcelaIndex] || '',
+                        situacao: situacao,
+                        dataPagamento: dataPagamento,
+                        status: status
+                    };
+                });
+        }
+
+        // Função para converter data brasileira
+        function parseBrazilianDate(dateStr) {
+            if (!dateStr) return null;
+            try {
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                }
+            } catch (error) {
+                console.warn('Erro ao processar data:', dateStr);
+            }
+            return null;
+        }
+
+        // Função para verificar se uma data está dentro de um período
+        function isDateInPeriod(dateStr, startDate, endDate) {
+            const date = parseBrazilianDate(dateStr);
+            if (!date) return false;
+            return date >= startDate && date <= endDate;
+        }
+
+        // Função para obter período baseado no filtro
+        function getPeriodDates(period) {
+            const hoje = new Date();
+            const ano = hoje.getFullYear();
+            const mes = hoje.getMonth();
+
+            switch (period) {
+                case 'current-month':
+                    return {
+                        start: new Date(ano, mes, 1),
+                        end: new Date(ano, mes + 1, 0)
+                    };
+                case 'previous-month':
+                    return {
+                        start: new Date(ano, mes - 1, 1),
+                        end: new Date(ano, mes, 0)
+                    };
+                case 'current-year':
+                    return {
+                        start: new Date(ano, 0, 1),
+                        end: new Date(ano, 11, 31)
+                    };
+                default:
+                    return null;
+            }
+        }
+
+        // Função para aplicar filtro de período
+        function applyPeriodFilter(period) {
+            currentPeriodFilter = period;
+            currentPage = 1;
+            
+            // Atualiza botões de filtro
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            if (period === 'all') {
+                filteredData = [...allData];
+            } else {
+                const periodDates = getPeriodDates(period);
+                if (periodDates) {
+                    filteredData = allData.filter(item => {
+                        return isDateInPeriod(item.vencimento, periodDates.start, periodDates.end);
+                    });
+                }
+            }
+            
+            updateUI();
+        }
+
+        // Função para aplicar filtro customizado
+        function applyCustomPeriodFilter() {
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            
+            if (!startDate || !endDate) {
+                showError('Por favor, preencha ambas as datas.');
+                return;
+            }
+            
+            const start = parseBrazilianDate(startDate);
+            const end = parseBrazilianDate(endDate);
+            
+            if (!start || !end) {
+                showError('Formato de data inválido. Use DD/MM/AAAA.');
+                return;
+            }
+            
+            if (start > end) {
+                showError('Data inicial deve ser menor que a data final.');
+                return;
+            }
+            
+            currentPeriodFilter = 'custom';
+            currentPage = 1;
+            
+            filteredData = allData.filter(item => {
+                return isDateInPeriod(item.vencimento, start, end);
+            });
+            
+            updateUI();
+            showSuccess('Filtro customizado aplicado!');
+        }
+
+        // Função para aplicar filtro de status
+        function applyFilter(filterType) {
+            if (currentFilter === filterType) {
+                currentFilter = null;
+                filteredData = allData.filter(item => {
+                    if (currentPeriodFilter !== 'all') {
+                        const periodDates = getPeriodDates(currentPeriodFilter);
+                        return periodDates ? isDateInPeriod(item.vencimento, periodDates.start, periodDates.end) : true;
+                    }
+                    return true;
+                });
+            } else {
+                currentFilter = filterType;
+                filteredData = allData.filter(item => {
+                    let matchesFilter = false;
+                    
+                    switch (filterType) {
+                        case 'pago':
+                            matchesFilter = item.status === 'pago';
+                            break;
+                        case 'pendente':
+                            matchesFilter = item.status === 'pendente';
+                            break;
+                        case 'vencido':
+                            matchesFilter = item.status === 'vencido';
+                            break;
+                        case 'pago-hoje':
+                            const hojeFormatada = new Date().toLocaleDateString('pt-BR');
+                            matchesFilter = item.status === 'pago' && item.dataPagamento === hojeFormatada;
+                            break;
+                        case 'vencendo-hoje':
+                            const vencimento = parseBrazilianDate(item.vencimento);
+                            const hoje = new Date();
+                            matchesFilter = item.tipo === 'D' && vencimento && vencimento.toDateString() === hoje.toDateString() && item.status !== 'pago';
+                            break;
+                        case 'despesas':
+                            matchesFilter = item.tipo === 'D';
+                            break;
+                        case 'receitas':
+                            matchesFilter = item.tipo === 'C';
+                            break;
+                        case 'a-receber-hoje':
+                            const vencimentoHoje = parseBrazilianDate(item.vencimento);
+                            const hojeReceber = new Date();
+                            matchesFilter = item.tipo === 'C' && vencimentoHoje && vencimentoHoje.toDateString() === hojeReceber.toDateString() && item.status !== 'pago';
+                            break;
+                        case 'a-receber':
+                            const vencimentoReceber = parseBrazilianDate(item.vencimento);
+                            const hojeReceberAntigo = new Date();
+                            matchesFilter = item.tipo === 'C' && vencimentoReceber && vencimentoReceber < hojeReceberAntigo && item.status !== 'pago';
+                            break;
+                        case 'total-a-receber':
+                            const vencimentoTotalReceber = parseBrazilianDate(item.vencimento);
+                            const hojeTotalReceber = new Date();
+                            matchesFilter = item.tipo === 'C' && item.status !== 'pago';
+                            break;
+                        case 'total-recebido':
+                            matchesFilter = item.tipo === 'C' && item.status === 'pago';
+                            break;
+                    }
+                    
+                    if (currentPeriodFilter !== 'all') {
+                        const periodDates = getPeriodDates(currentPeriodFilter);
+                        return matchesFilter && periodDates ? isDateInPeriod(item.vencimento, periodDates.start, periodDates.end) : matchesFilter;
+                    }
+                    
+                    return matchesFilter;
+                });
+            }
+            
+            currentPage = 1;
+            updateUI();
+        }
+
+        // Função para limpar filtros
+        function clearFilters() {
+            currentFilter = null;
+            currentPeriodFilter = 'all';
+            currentPage = 1;
+            filteredData = [...allData];
+            
+            // Limpa botões ativos
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector('.filter-btn').classList.add('active');
+            
+            // Limpa inputs customizados
+            document.getElementById('start-date').value = '';
+            document.getElementById('end-date').value = '';
+            document.getElementById('custom-period-inputs').style.display = 'none';
+            
+            updateUI();
+        }
+
+        // Função para alternar período customizado
+        function toggleCustomPeriod() {
+            const inputs = document.getElementById('custom-period-inputs');
+            inputs.style.display = inputs.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Função para mostrar aba
+        function showTab(tabName) {
+            // Remove classe active de todas as abas
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Adiciona classe active na aba clicada
+            event.target.classList.add('active');
+            
+            // Por enquanto, só implementamos a aba geral
+            if (tabName === 'geral') {
+                document.getElementById('geral').style.display = 'block';
+            }
+        }
+
+        // Função para calcular totais
+        function calculateTotals() {
+            const hoje = new Date();
+            const hojeFormatada = hoje.toLocaleDateString('pt-BR');
+            
+            // Calcula valores considerando tipo (D = negativo, C = positivo)
+            const totalPago = filteredData.filter(item => item.status === 'pago').reduce((sum, item) => {
+                const valor = item.tipo === 'D' ? -item.valor : item.valor;
+                return sum + valor;
+            }, 0);
+            
+            const totalPendente = filteredData.filter(item => item.status === 'pendente').reduce((sum, item) => {
+                const valor = item.tipo === 'D' ? -item.valor : item.valor;
+                return sum + valor;
+            }, 0);
+            
+            // Total vencido apenas os que estão vencidos mas não estão pagos
+            const totalVencido = filteredData.filter(item => {
+                const vencimento = parseBrazilianDate(item.vencimento);
+                return vencimento && vencimento < hoje && item.status !== 'pago';
+            }).reduce((sum, item) => {
+                const valor = item.tipo === 'D' ? -item.valor : item.valor;
+                return sum + valor;
+            }, 0);
+            
+            // Total de despesas (tipo D)
+            const totalDespesas = filteredData.filter(item => item.tipo === 'D').reduce((sum, item) => sum + item.valor, 0);
+            
+            // Total de receitas (tipo C)
+            const totalReceitas = filteredData.filter(item => item.tipo === 'C').reduce((sum, item) => sum + item.valor, 0);
+            
+            // Resultado financeiro (receitas - despesas)
+            const resultadoFinanceiro = totalReceitas - totalDespesas;
+            
+            const totalPagoHoje = filteredData.filter(item => 
+                item.status === 'pago' && item.dataPagamento === hojeFormatada
+            ).reduce((sum, item) => {
+                const valor = item.tipo === 'D' ? -item.valor : item.valor;
+                return sum + valor;
+            }, 0);
+            
+            // Vencendo hoje apenas os que não estão pagos E são do tipo D (despesas)
+            const totalVencendoHoje = filteredData.filter(item => {
+                const vencimento = parseBrazilianDate(item.vencimento);
+                return item.tipo === 'D' && vencimento && vencimento.toDateString() === hoje.toDateString() && item.status !== 'pago';
+            }).reduce((sum, item) => {
+                return sum + item.valor; // Sempre positivo pois já filtramos apenas tipo D
+            }, 0);
+            
+            // Cálculos específicos para Receitas (tipo C)
+            const aReceberHoje = filteredData.filter(item => {
+                const vencimento = parseBrazilianDate(item.vencimento);
+                return item.tipo === 'C' && vencimento && vencimento.toDateString() === hoje.toDateString() && item.status !== 'pago';
+            }).reduce((sum, item) => sum + item.valor, 0);
+            
+            const aReceber = filteredData.filter(item => {
+                const vencimento = parseBrazilianDate(item.vencimento);
+                return item.tipo === 'C' && vencimento && vencimento < hoje && item.status !== 'pago';
+            }).reduce((sum, item) => sum + item.valor, 0);
+            
+            // Total a receber: todas as receitas não pagas (evita dupla contagem)
+            const totalAReceber = filteredData.filter(item => 
+                item.tipo === 'C' && item.status !== 'pago'
+            ).reduce((sum, item) => sum + item.valor, 0);
+            
+            const totalRecebido = filteredData.filter(item => 
+                item.tipo === 'C' && item.status === 'pago'
+            ).reduce((sum, item) => sum + item.valor, 0);
+            
+            // Atualiza os elementos HTML
+            document.getElementById('total-pago').textContent = `R$ ${totalPago.toLocaleString()}`;
+            document.getElementById('total-pendente').textContent = `R$ ${totalPendente.toLocaleString()}`;
+            document.getElementById('total-vencido').textContent = `R$ ${totalVencido.toLocaleString()}`;
+            document.getElementById('total-despesas').textContent = `R$ ${totalDespesas.toLocaleString()}`;
+            document.getElementById('total-receitas').textContent = `R$ ${totalReceitas.toLocaleString()}`;
+            document.getElementById('total-geral').textContent = `R$ ${resultadoFinanceiro.toLocaleString()}`;
+            document.getElementById('total-pago-hoje').textContent = `R$ ${totalPagoHoje.toLocaleString()}`;
+            document.getElementById('total-vencendo-hoje').textContent = `R$ ${totalVencendoHoje.toLocaleString()}`;
+            
+            // Atualiza os novos elementos para Receitas
+            document.getElementById('a-receber-hoje').textContent = `R$ ${aReceberHoje.toLocaleString()}`;
+            document.getElementById('a-receber').textContent = `R$ ${aReceber.toLocaleString()}`;
+            document.getElementById('total-a-receber').textContent = `R$ ${totalAReceber.toLocaleString()}`;
+            document.getElementById('total-recebido').textContent = `R$ ${totalRecebido.toLocaleString()}`;
+            
+            return { 
+                totalPago, 
+                totalPendente, 
+                totalVencido, 
+                totalDespesas, 
+                totalReceitas, 
+                resultadoFinanceiro, 
+                totalPagoHoje, 
+                totalVencendoHoje,
+                aReceberHoje,
+                aReceber,
+                totalAReceber,
+                totalRecebido
+            };
+        }
+
+        // Função para atualizar gráficos
+        function updateCharts() {
+            const totals = calculateTotals();
+            
+            // Dados para o gráfico de linha
+            const chartData = filteredData.reduce((acc, item) => {
+                const mes = item.vencimento.split('/')[1] || '01';
+                const existing = acc.find(x => x.mes === mes);
+                if (existing) {
+                    existing[item.status] = (existing[item.status] || 0) + item.valor;
+                } else {
+                    acc.push({ 
+                        mes: mes, 
+                        pago: item.status === 'pago' ? item.valor : 0,
+                        pendente: item.status === 'pendente' ? item.valor : 0,
+                        vencido: item.status === 'vencido' ? item.valor : 0
+                    });
+                }
+                return acc;
+            }, []);
+            
+            // Atualiza gráfico de linha
+            if (lineChart) {
+                lineChart.destroy();
+            }
+            
+            const lineCtx = document.getElementById('lineChart').getContext('2d');
+            lineChart = new Chart(lineCtx, {
+                type: 'line',
+                data: {
+                    labels: chartData.map(d => `Mês ${d.mes}`),
+                    datasets: [
+                        {
+                            label: 'Pago',
+                            data: chartData.map(d => d.pago),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Pendente',
+                            data: chartData.map(d => d.pendente),
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Vencido',
+                            data: chartData.map(d => d.vencido),
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    aspectRatio: 2,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Atualiza gráfico de pizza
+            if (pieChart) {
+                pieChart.destroy();
+            }
+            
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            pieChart = new Chart(pieCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Pago', 'Pendente', 'Vencido'],
+                    datasets: [{
+                        data: [totals.totalPago, totals.totalPendente, totals.totalVencido],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    aspectRatio: 1,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return context.label + ': R$ ' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Função para ordenar dados
+        function sortData(data, field, order) {
+            return data.sort((a, b) => {
+                let aValue = a[field];
+                let bValue = b[field];
+                
+                // Tratamento especial para datas
+                if (field === 'vencimento' || field === 'dataPagamento') {
+                    aValue = parseBrazilianDate(aValue) || new Date(0);
+                    bValue = parseBrazilianDate(bValue) || new Date(0);
+                }
+                
+                // Tratamento especial para valores
+                if (field === 'valor') {
+                    aValue = parseFloat(aValue) || 0;
+                    bValue = parseFloat(bValue) || 0;
+                }
+                
+                // Comparação
+                if (aValue < bValue) return order === 'asc' ? -1 : 1;
+                if (aValue > bValue) return order === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        // Função para atualizar tabela
+        function updateTable() {
+            // Ordena os dados filtrados
+            const sortedData = sortData([...filteredData], sortBy, sortOrder);
+            
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const currentData = sortedData.slice(startIndex, endIndex);
+            
+            const tbody = document.getElementById('data-table-body');
+            tbody.innerHTML = '';
+            
+            currentData.forEach(item => {
+                const row = document.createElement('tr');
+                const valorFormatado = item.tipo === 'D' ? 
+                    `-R$ ${item.valor.toLocaleString()}` : 
+                    `+R$ ${item.valor.toLocaleString()}`;
+                const valorClass = item.tipo === 'D' ? 'valor-negativo' : 'valor-positivo';
+                
+                row.innerHTML = `
+                    <td><input type="checkbox" class="transaction-checkbox" value="${item.id}"></td>
+                    <td>${item.vencimento}</td>
+                    <td>${item.descricao}</td>
+                    <td>${item.empresa}</td>
+                    <td class="${valorClass}">${valorFormatado}</td>
+                    <td><span class="status-badge status-${item.status}">${item.status.toUpperCase()}</span></td>
+                    <td>${item.dataPagamento || '-'}</td>
+                    <td>
+                        ${item.status !== 'pago' ? 
+                            `<button class="btn btn-success btn-sm" onclick="markAsPaid('${item.id}')" title="Marcar como pago">✅</button>` : 
+                            '<span class="text-success">✓</span>'
+                        }
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Atualiza paginação
+            updatePagination();
+        }
+
+        // Função para atualizar paginação
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
+            
+            const pagination = document.getElementById('pagination');
+            const paginationInfo = document.getElementById('pagination-info');
+            const paginationControls = document.getElementById('pagination-controls');
+            
+            if (totalPages > 1) {
+                pagination.style.display = 'flex';
+                paginationInfo.textContent = `Mostrando ${startIndex + 1}-${endIndex} de ${filteredData.length} registros`;
+                
+                let controlsHTML = '';
+                
+                // Botão primeira página
+                controlsHTML += `<button class="page-btn" onclick="goToPage(1)" ${currentPage === 1 ? 'disabled' : ''}>« Primeira</button>`;
+                
+                // Botão anterior
+                controlsHTML += `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹ Anterior</button>`;
+                
+                // Números das páginas
+                const maxPages = Math.min(7, totalPages);
+                let startPage = 1;
+                
+                if (totalPages > 7) {
+                    if (currentPage <= 4) {
+                        startPage = 1;
+                    } else if (currentPage >= totalPages - 3) {
+                        startPage = totalPages - 6;
+                    } else {
+                        startPage = currentPage - 3;
+                    }
+                }
+                
+                for (let i = 0; i < maxPages; i++) {
+                    const pageNum = startPage + i;
+                    controlsHTML += `<button class="page-btn ${pageNum === currentPage ? 'active' : ''}" onclick="goToPage(${pageNum})">${pageNum}</button>`;
+                }
+                
+                // Botão próximo
+                controlsHTML += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Próximo ›</button>`;
+                
+                // Botão última página
+                controlsHTML += `<button class="page-btn" onclick="goToPage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>Última »</button>`;
+                
+                paginationControls.innerHTML = controlsHTML;
+            } else {
+                pagination.style.display = 'none';
+            }
+        }
+
+        // Função para ordenar tabela
+        function sortTable(field) {
+            if (sortBy === field) {
+                sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortBy = field;
+                sortOrder = 'asc';
+            }
+            
+            // Atualiza indicadores visuais
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.classList.remove('active');
+                indicator.textContent = '↕';
+            });
+            
+            const currentIndicator = document.getElementById(`sort-${field}`);
+            if (currentIndicator) {
+                currentIndicator.classList.add('active');
+                currentIndicator.textContent = sortOrder === 'asc' ? '↑' : '↓';
+            }
+            
+            currentPage = 1; // Volta para primeira página ao ordenar
+            updateTable();
+        }
+
+        // Função para ir para uma página
+        function goToPage(page) {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                updateTable();
+            }
+        }
+
+        // Função para atualizar contador de filtros
+        function updateFilterCount() {
+            const countElement = document.getElementById('filter-count');
+            const resultadoFinanceiro = filteredData.reduce((sum, item) => {
+                const valor = item.tipo === 'D' ? -item.valor : item.valor;
+                return sum + valor;
+            }, 0);
+            countElement.textContent = `${filteredData.length} de ${allData.length} transações (Resultado: R$ ${resultadoFinanceiro.toLocaleString()})`;
+        }
+
+        // Função para atualizar toda a UI
+        function updateUI() {
+            updateFilterCount();
+            updateTable();
+            updateCharts();
+        }
+
+        // Funções de utilidade para mensagens
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'flex' : 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function hideMessages() {
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('success').style.display = 'none';
+        }
+
+        // Dados simulados
+        function getMockData() {
+            return [
+                { 
+                    id: '1', 
+                    vencimento: '15/07/2025', 
+                    descricao: 'DIFERENÇA DE ALUGUEL BTN 3X6', 
+                    empresa: 'FRANCISCO LAURENTINO DA SILVA', 
+                    tipo: 'D', 
+                    valor: 300, 
+                    parcela: '1', 
+                    situacao: '1 pago', 
+                    dataPagamento: '17/07/2025',
+                    status: 'pago'
+                },
+                { 
+                    id: '2', 
+                    vencimento: '18/07/2025', 
+                    descricao: 'DARF PREVIDENCIÁRIO', 
+                    empresa: 'DARF', 
+                    tipo: 'D', 
+                    valor: 612.65, 
+                    parcela: '1', 
+                    situacao: '', 
+                    dataPagamento: '',
+                    status: 'vencido'
+                },
+                { 
+                    id: '3', 
+                    vencimento: '18/07/2025', 
+                    descricao: 'FGTS', 
+                    empresa: 'FGTS', 
+                    tipo: 'D', 
+                    valor: 781.58, 
+                    parcela: '1', 
+                    situacao: '', 
+                    dataPagamento: '',
+                    status: 'vencido'
+                },
+                { 
+                    id: '4', 
+                    vencimento: '21/07/2025', 
+                    descricao: 'ALUGUEL CENTRO', 
+                    empresa: 'JOSE GOMES DE SIQUEIRA', 
+                    tipo: 'D', 
+                    valor: 3500, 
+                    parcela: '1', 
+                    situacao: '1 pago', 
+                    dataPagamento: '21/07/2025',
+                    status: 'pago'
+                },
+                { 
+                    id: '5', 
+                    vencimento: '25/07/2025', 
+                    descricao: 'COFINS CUMULATIVO/ELISLECIO', 
+                    empresa: 'RECEITA FEDERAL', 
+                    tipo: 'D', 
+                    valor: 834.95, 
+                    parcela: '1', 
+                    situacao: '', 
+                    dataPagamento: '',
+                    status: 'vencido'
+                },
+                { 
+                    id: '6', 
+                    vencimento: '30/07/2025', 
+                    descricao: 'INSS', 
+                    empresa: 'INSS', 
+                    tipo: 'D', 
+                    valor: 450.00, 
+                    parcela: '1', 
+                    situacao: '', 
+                    dataPagamento: '',
+                    status: 'pendente'
+                },
+                { 
+                    id: '7', 
+                    vencimento: '05/08/2025', 
+                    descricao: 'ENERGIA ELÉTRICA', 
+                    empresa: 'COPEL', 
+                    tipo: 'D', 
+                    valor: 280.50, 
+                    parcela: '1', 
+                    situacao: '', 
+                    dataPagamento: '',
+                    status: 'pendente'
+                },
+                { 
+                    id: '8', 
+                    vencimento: '10/08/2025', 
+                    descricao: 'ÁGUA E ESGOTO', 
+                    empresa: 'SANEPAR', 
+                    tipo: 'D', 
+                    valor: 120.00, 
+                    parcela: '1', 
+                    situacao: '', 
+                    dataPagamento: '',
+                    status: 'pendente'
+                },
+                { 
+                    id: '9', 
+                    vencimento: '15/08/2025', 
+                    descricao: 'INTERNET', 
+                    empresa: 'VIVO', 
+                    tipo: 'D', 
+                    valor: 89.90, 
+                    parcela: '1', 
+                    situacao: '', 
+                    dataPagamento: '',
+                    status: 'pendente'
+                },
+                { 
+                    id: '10', 
+                    vencimento: '20/08/2025', 
+                    descricao: 'TELEFONE', 
+                    empresa: 'OI', 
+                    tipo: 'D', 
+                    valor: 75.00, 
+                    parcela: '1', 
+                    situacao: '', 
+                    dataPagamento: '',
+                    status: 'pendente'
+                },
+                { 
+                    id: '11', 
+                    vencimento: '25/08/2025', 
+                    descricao: 'SEGURO AUTOMÓVEL', 
+                    empresa: 'PORTO SEGURO', 
+                    tipo: 'D', 
+                    valor: 350.00, 
+                    parcela: '1', 
+                    situacao: '', 
+                    dataPagamento: '',
+                    status: 'pendente'
+                },
+                { 
+                    id: '12', 
+                    vencimento: '30/08/2025', 
+                    descricao: 'MANUTENÇÃO EQUIPAMENTOS', 
+                    empresa: 'TECNICOM', 
+                    tipo: 'D', 
+                    valor: 500.00, 
+                    parcela: '1', 
+                    situacao: '', 
+                    dataPagamento: '',
+                    status: 'pendente'
+                },
+                { 
+                    id: '13', 
+                    vencimento: '15/07/2025', 
+                    descricao: 'RECEITA DE SERVIÇOS', 
+                    empresa: 'CLIENTE A', 
+                    tipo: 'C', 
+                    valor: 2500.00, 
+                    parcela: '1', 
+                    situacao: '1 pago', 
+                    dataPagamento: '15/07/2025',
+                    status: 'pago'
+                },
+                { 
+                    id: '14', 
+                    vencimento: '20/07/2025', 
+                    descricao: 'VENDA DE PRODUTOS', 
+                    empresa: 'CLIENTE B', 
+                    tipo: 'C', 
+                    valor: 1800.00, 
+                    parcela: '1', 
+                    situacao: '1 pago', 
+                    dataPagamento: '20/07/2025',
+                    status: 'pago'
+                },
+                { 
+                    id: '15', 
+                    vencimento: '25/07/2025', 
+                    descricao: 'CONSULTORIA', 
+                    empresa: 'CLIENTE C', 
+                    tipo: 'C', 
+                    valor: 3200.00, 
+                    parcela: '1', 
+                    situacao: '', 
+                    dataPagamento: '',
+                    status: 'pendente'
+                },
+                { 
+                    id: '16', 
+                    vencimento: '15/12/2024', 
+                    descricao: 'RECEITA ANTIGA', 
+                    empresa: 'CLIENTE D', 
+                    tipo: 'C', 
+                    valor: 1500.00, 
+                    parcela: '1', 
+                    situacao: '', 
+                    dataPagamento: '',
+                    status: 'vencido'
+                },
+                { 
+                    id: '17', 
+                    vencimento: '20/12/2024', 
+                    descricao: 'SERVIÇOS PRESTADOS', 
+                    empresa: 'CLIENTE E', 
+                    tipo: 'C', 
+                    valor: 2800.00, 
+                    parcela: '1', 
+                    situacao: '1 pago', 
+                    dataPagamento: '18/12/2024',
+                    status: 'pago'
+                },
+                { 
+                    id: '18', 
+                    vencimento: '15/01/2025', 
+                    descricao: 'VENDA DE EQUIPAMENTOS', 
+                    empresa: 'CLIENTE F', 
+                    tipo: 'C', 
+                    valor: 4500.00, 
+                    parcela: '1', 
+                    situacao: '1 pago', 
+                    dataPagamento: '10/01/2025',
+                    status: 'pago'
+                },
+                { 
+                    id: '19', 
+                    vencimento: '15/12/2025', 
+                    descricao: 'A RECEBER HOJE', 
+                    empresa: 'CLIENTE G', 
+                    tipo: 'C', 
+                    valor: 1200.00, 
+                    parcela: '1', 
+                    situacao: '', 
+                    dataPagamento: '',
+                    status: 'pendente'
+                },
+                { 
+                    id: '20', 
+                    vencimento: '10/12/2025', 
+                    descricao: 'A RECEBER ANTIGO', 
+                    empresa: 'CLIENTE H', 
+                    tipo: 'C', 
+                    valor: 800.00, 
+                    parcela: '1', 
+                    situacao: '', 
+                    dataPagamento: '',
+                    status: 'vencido'
+                }
+            ];
+        }
+
+        // Funções para as novas guias
+        function showTab(tabName) {
+            // Esconde todas as guias
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.style.display = 'none');
+            
+            // Remove classe active de todas as tabs
+            const navTabs = document.querySelectorAll('.nav-tab');
+            navTabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Mostra a guia selecionada
+            document.getElementById(tabName).style.display = 'block';
+            
+            // Adiciona classe active na tab selecionada
+            event.target.classList.add('active');
+        }
+
+        // Funções para Nova Transação (Guia de Cadastro)
+        function saveNewTransaction() {
+            const descricao = document.getElementById('cadastro-descricao').value;
+            const empresa = document.getElementById('cadastro-empresa').value;
+            const tipo = document.getElementById('cadastro-tipo').value;
+            const valor = parseFloat(document.getElementById('cadastro-valor').value);
+            const vencimento = document.getElementById('cadastro-vencimento').value;
+            const parcelas = parseInt(document.getElementById('cadastro-parcelas').value);
+            const status = document.getElementById('cadastro-status').value;
+            
+            if (!descricao || !empresa || !valor || !vencimento) {
+                showError('Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+            
+            // Criar transações para cada parcela
+            const transacoesParaSalvar = [];
+            
+            for (let i = 1; i <= parcelas; i++) {
+                const dataVencimento = calcularProximaData(vencimento, i - 1);
+                const statusParcela = calcularStatusAutomatico(dataVencimento);
+                
+                const novaTransacao = {
+                    id: (allData.length + i).toString(),
+                    descricao: descricao,
+                    empresa: empresa,
+                    tipo: tipo,
+                    valor: valor,
+                    vencimento: dataVencimento,
+                    parcela: `${i}/${parcelas}`,
+                    status: statusParcela,
+                    situacao: statusParcela === 'pago' ? '1 pago' : '',
+                    dataPagamento: statusParcela === 'pago' ? new Date().toLocaleDateString('pt-BR') : ''
+                };
+                
+                transacoesParaSalvar.push(novaTransacao);
+            }
+            
+            // Salvar na planilha Google Sheets
+            salvarTransacoesNaPlanilha(transacoesParaSalvar);
+        }
+
+        // Função para calcular próxima data baseada na data inicial
+        function calcularProximaData(dataInicial, mesesAdicionais) {
+            const [dia, mes, ano] = dataInicial.split('/');
+            const data = new Date(ano, mes - 1, dia);
+            data.setMonth(data.getMonth() + mesesAdicionais);
+            return data.toLocaleDateString('pt-BR');
+        }
+
+        // Função para calcular status automático baseado na data de vencimento
+        function calcularStatusAutomatico(dataVencimento) {
+            const hoje = new Date();
+            const vencimento = parseBrazilianDate(dataVencimento);
+            
+            if (!vencimento) return 'pendente';
+            
+            if (vencimento < hoje) {
+                return 'vencido';
+            } else if (vencimento.toDateString() === hoje.toDateString()) {
+                return 'pendente'; // Vencendo hoje
+            } else {
+                return 'pendente';
+            }
+        }
+
+        // Função para atualizar status automaticamente quando a data de vencimento muda
+        function atualizarStatusAutomatico() {
+            const vencimento = document.getElementById('cadastro-vencimento').value;
+            if (vencimento) {
+                const status = calcularStatusAutomatico(vencimento);
+                document.getElementById('cadastro-status').value = status;
+            }
+        }
+
+        // Configurações do Google Apps Script
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2thUW_aIfFLNSh2MSmbI669X7wbLg-LLJb3TMYNJnNjywYy1VeFNX_seGf3kFM-FeBg/exec';
+
+        // Função para salvar transações via Google Apps Script
+        async function salvarTransacoesNaPlanilha(transacoes) {
+            showLoading(true);
+            
+            try {
+                console.log('💾 Salvando transações via Google Apps Script...');
+                console.log('URL do Apps Script:', GOOGLE_APPS_SCRIPT_URL);
+                console.log('ID da Planilha:', SPREADSHEETS_ID);
+                console.log('Nome da Aba:', SHEET_NAME);
+                
+                // Preparar dados para a planilha
+                const dadosParaPlanilha = transacoes.map(transacao => [
+                    transacao.vencimento,
+                    transacao.descricao,
+                    transacao.empresa,
+                    transacao.tipo,
+                    transacao.valor.toString(),
+                    transacao.parcela,
+                    transacao.situacao,
+                    transacao.dataPagamento
+                ]);
+                
+                console.log('Dados para enviar:', dadosParaPlanilha);
+                
+                // Enviar via Google Apps Script
+                const postData = {
+                    action: 'append',
+                    spreadsheetId: SPREADSHEETS_ID,
+                    sheetName: SHEET_NAME,
+                    values: dadosParaPlanilha
+                };
+                
+                console.log('Dados POST:', postData);
+                
+                const response = await axios.post(GOOGLE_APPS_SCRIPT_URL, postData, {
+                    timeout: API_TIMEOUT,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Resposta recebida:', response);
+                
+                if (response.data.status === 'success') {
+                    console.log('✅ Transações salvas via Google Apps Script:', response.data);
+                    
+                    // Adicionar às transações locais
+                    transacoes.forEach(transacao => {
+                        allData.push(transacao);
+                    });
+                    
+                    filteredData = [...allData];
+                    updateUI();
+                    clearCadastroForm();
+                    showSuccess(`${transacoes.length} transação(ões) salva(s) com sucesso na planilha!`);
+                    
+                    // Volta para o Dashboard Principal
+                    showTab('dashboard');
+                } else {
+                    throw new Error(response.data.message || 'Erro desconhecido');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao salvar via Google Apps Script:', error);
+                console.error('Tipo de erro:', error.name);
+                console.error('Mensagem:', error.message);
+                
+                if (error.response) {
+                    console.error('Status:', error.response.status);
+                    console.error('Dados da resposta:', error.response.data);
+                } else if (error.request) {
+                    console.error('Sem resposta do servidor');
+                }
+                
+                showError(`Erro ao salvar na planilha: ${error.message}. As transações foram salvas apenas localmente.`);
+                
+                // Fallback: salvar apenas localmente
+                transacoes.forEach(transacao => {
+                    allData.push(transacao);
+                });
+                filteredData = [...allData];
+                updateUI();
+                clearCadastroForm();
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function clearCadastroForm() {
+            document.getElementById('form-cadastro-transacao').reset();
+            document.getElementById('cadastro-parcelas').value = '1';
+            document.getElementById('cadastro-status').value = '';
+        }
+
+        // Adicionar event listener para atualizar status automaticamente
+        document.addEventListener('DOMContentLoaded', function() {
+            const vencimentoInput = document.getElementById('cadastro-vencimento');
+            if (vencimentoInput) {
+                vencimentoInput.addEventListener('input', atualizarStatusAutomatico);
+            }
+        });
+
+        // Função para marcar transação individual como paga
+        async function markAsPaid(transactionId) {
+            const transaction = allData.find(t => t.id === transactionId);
+            if (transaction) {
+                transaction.status = 'pago';
+                transaction.situacao = '1 pago';
+                transaction.dataPagamento = new Date().toLocaleDateString('pt-BR');
+                
+                // Atualizar na planilha Google Sheets
+                try {
+                    await atualizarTransacaoNaPlanilha(transaction);
+                    showSuccess('Transação marcada como paga com sucesso na planilha!');
+                } catch (error) {
+                    console.error('Erro ao atualizar na planilha:', error);
+                    showSuccess('Transação marcada como paga localmente!');
+                }
+                
+                filteredData = [...allData];
+                updateUI();
+            }
+        }
+
+        // Função para atualizar transação via Google Apps Script
+        async function atualizarTransacaoNaPlanilha(transaction) {
+            try {
+                console.log('🔄 Atualizando transação via Google Apps Script...');
+                console.log('Transação:', transaction);
+                
+                // Primeiro, buscar a linha da transação na planilha
+                const readData = {
+                    action: 'read',
+                    spreadsheetId: SPREADSHEETS_ID,
+                    sheetName: SHEET_NAME
+                };
+                
+                console.log('Dados de leitura:', readData);
+                
+                const readResponse = await axios.post(GOOGLE_APPS_SCRIPT_URL, readData, {
+                    timeout: API_TIMEOUT,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Resposta da leitura:', readResponse);
+                
+                if (readResponse.data.status !== 'success') {
+                    throw new Error('Erro ao ler dados da planilha');
+                }
+                
+                const rows = readResponse.data.data.data || [];
+                let rowIndex = -1;
+                
+                console.log('Procurando transação em', rows.length, 'linhas...');
+                
+                // Encontrar a linha da transação
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (row[0] === transaction.vencimento && 
+                        row[1] === transaction.descricao && 
+                        row[2] === transaction.empresa &&
+                        row[3] === transaction.tipo &&
+                        parseFloat(row[4]) === transaction.valor) {
+                        rowIndex = i + 1; // +1 porque as linhas começam em 1
+                        console.log('Transação encontrada na linha:', rowIndex);
+                        break;
+                    }
+                }
+                
+                if (rowIndex !== -1) {
+                    // Atualizar a linha na planilha
+                    const updateData = [
+                        transaction.vencimento,
+                        transaction.descricao,
+                        transaction.empresa,
+                        transaction.tipo,
+                        transaction.valor.toString(),
+                        transaction.parcela,
+                        transaction.situacao,
+                        transaction.dataPagamento
+                    ];
+                    
+                    const updatePostData = {
+                        action: 'update',
+                        spreadsheetId: SPREADSHEETS_ID,
+                        sheetName: SHEET_NAME,
+                        rowIndex: rowIndex,
+                        values: [updateData]
+                    };
+                    
+                    console.log('Dados de atualização:', updatePostData);
+                    
+                    const updateResponse = await axios.post(GOOGLE_APPS_SCRIPT_URL, updatePostData, {
+                        timeout: API_TIMEOUT,
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    console.log('Resposta da atualização:', updateResponse);
+                    
+                    if (updateResponse.data.status === 'success') {
+                        console.log('✅ Transação atualizada via Google Apps Script');
+                    } else {
+                        throw new Error(updateResponse.data.message || 'Erro ao atualizar');
+                    }
+                } else {
+                    throw new Error('Transação não encontrada na planilha');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao atualizar via Google Apps Script:', error);
+                console.error('Tipo de erro:', error.name);
+                console.error('Mensagem:', error.message);
+                
+                if (error.response) {
+                    console.error('Status:', error.response.status);
+                    console.error('Dados da resposta:', error.response.data);
+                } else if (error.request) {
+                    console.error('Sem resposta do servidor');
+                }
+                
+                throw error;
+            }
+        }
+
+        // Funções para Marcar como Pago
+        let selectedTransactions = [];
+
+        function markSelectedAsPaid() {
+            const checkboxes = document.querySelectorAll('.transaction-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showError('Selecione pelo menos uma transação para marcar como paga.');
+                return;
+            }
+            
+            selectedTransactions = Array.from(checkboxes).map(cb => cb.value);
+            showConfirmPaymentModal();
+        }
+
+        function showConfirmPaymentModal() {
+            const modal = document.getElementById('modal-confirmar-pagamento');
+            const list = document.getElementById('selected-transactions-list');
+            
+            list.innerHTML = '';
+            selectedTransactions.forEach(id => {
+                const transaction = allData.find(t => t.id === id);
+                if (transaction) {
+                    list.innerHTML += `<div>${transaction.descricao} - ${transaction.empresa} - R$ ${transaction.valor.toFixed(2)}</div>`;
+                }
+            });
+            
+            modal.style.display = 'block';
+        }
+
+        function closeConfirmPaymentModal() {
+            document.getElementById('modal-confirmar-pagamento').style.display = 'none';
+            selectedTransactions = [];
+        }
+
+        function confirmMarkAsPaid() {
+            selectedTransactions.forEach(id => {
+                const transaction = allData.find(t => t.id === id);
+                if (transaction) {
+                    transaction.status = 'pago';
+                    transaction.situacao = '1 pago';
+                    transaction.dataPagamento = new Date().toLocaleDateString('pt-BR');
+                }
+            });
+            
+            filteredData = [...allData];
+            updateUI();
+            closeConfirmPaymentModal();
+            showSuccess('Transações marcadas como pagas com sucesso!');
+        }
+
+        // Funções para Configurações
+        function saveConfig() {
+            const spreadsheetId = document.getElementById('config-spreadsheet-id').value;
+            const apiKey = document.getElementById('config-api-key').value;
+            const itemsPerPage = document.getElementById('config-items-per-page').value;
+            
+            // Aqui você pode salvar as configurações
+            localStorage.setItem('dashboard-config', JSON.stringify({
+                spreadsheetId,
+                apiKey,
+                itemsPerPage
+            }));
+            
+            showSuccess('Configurações salvas com sucesso!');
+        }
+
+        // Funções para Relatórios
+        function exportToPDF() {
+            showSuccess('Funcionalidade de exportação PDF será implementada em breve!');
+        }
+
+        function exportToExcel() {
+            showSuccess('Funcionalidade de exportação Excel será implementada em breve!');
+        }
+
+        function applyAdvancedFilter() {
+            const tipo = document.getElementById('filtro-tipo').value;
+            const status = document.getElementById('filtro-status').value;
+            const empresa = document.getElementById('filtro-empresa').value.toLowerCase();
+            
+            filteredData = allData.filter(item => {
+                const matchTipo = !tipo || item.tipo === tipo;
+                const matchStatus = !status || item.status === status;
+                const matchEmpresa = !empresa || item.empresa.toLowerCase().includes(empresa);
+                
+                return matchTipo && matchStatus && matchEmpresa;
+            });
+            
+            updateUI();
+        }
+
+        // Função para selecionar/desselecionar todas as transações
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('select-all-checkbox');
+            const checkboxes = document.querySelectorAll('.transaction-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        }
+
+        // Função para verificar se todas as transações estão selecionadas
+        function updateSelectAllCheckbox() {
+            const selectAllCheckbox = document.getElementById('select-all-checkbox');
+            const checkboxes = document.querySelectorAll('.transaction-checkbox');
+            const checkedCheckboxes = document.querySelectorAll('.transaction-checkbox:checked');
+            
+            if (checkboxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCheckboxes.length === checkboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCheckboxes.length > 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
+        }
+
+        // Adiciona event listener para atualizar o checkbox "selecionar todos"
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('transaction-checkbox')) {
+                updateSelectAllCheckbox();
+            }
+        });
+    </script>
+</body>
+</html> 
