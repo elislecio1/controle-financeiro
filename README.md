@@ -1,158 +1,170 @@
-# Dashboard Financeiro - Cloud Database
+# 💰 Sistema de Controle Financeiro
 
-Dashboard interativo para controle financeiro com armazenamento em nuvem usando **Supabase**.
+Um sistema completo de controle financeiro pessoal e empresarial desenvolvido com React, TypeScript e Supabase.
 
 ## 🚀 Funcionalidades
 
-- **📊 Visualização em Tempo Real**: Conecta com banco de dados em nuvem
-- **📈 Gráficos Interativos**: Gráficos de linha, barras e pizza com Recharts
-- **🎨 Interface Moderna**: Design responsivo com Tailwind CSS
-- **📱 Múltiplas Abas**: Visão geral, análises e cadastro de transações
-- **🔄 Atualização Automática**: Botão para atualizar dados em tempo real
-- **☁️ Armazenamento em Nuvem**: Dados seguros no Supabase
-- **📤 Exportação/Importação**: Backup e restauração de dados
+### 📊 Dashboard Principal
+- Visão geral das finanças
+- Gráficos e estatísticas
+- Filtros por período e categoria
+- Resumo de receitas e despesas
 
-## 📋 Pré-requisitos
+### 💳 Gestão de Transações
+- Cadastro de receitas e despesas
+- Categorização automática
+- Suporte a parcelas
+- Transferências entre contas
+- Histórico completo
 
-- Node.js 16+ 
+### 🏦 Gestão de Contas
+- Múltiplas contas bancárias
+- Cartões de crédito
+- Controle de saldos
+- Limites e vencimentos
+
+### 📈 Investimentos
+- Acompanhamento de carteira
+- Diferentes tipos de investimento
+- Cálculo de rentabilidade
+- Histórico de operações
+
+### 🎯 Metas e Orçamentos
+- Definição de metas financeiras
+- Controle de orçamentos
+- Acompanhamento de progresso
+- Alertas e notificações
+
+## 🛠️ Tecnologias
+
+- **Frontend**: React 18 + TypeScript
+- **Styling**: Tailwind CSS
+- **Charts**: Recharts
+- **Icons**: Lucide React
+- **Build**: Vite
+- **Backend**: Supabase (PostgreSQL)
+- **Deploy**: Vercel
+
+## 📱 Características
+
+- ✅ Interface responsiva
+- ✅ PWA (Progressive Web App)
+- ✅ Modo offline com dados mock
+- ✅ Autenticação segura
+- ✅ Backup automático
+- ✅ Exportação de relatórios
+
+## 🚀 Como Usar
+
+### Pré-requisitos
+- Node.js 16+
 - npm ou yarn
-- Conta no Supabase (gratuita)
+- Conta no Supabase (opcional)
 
-## 🛠️ Instalação
+### Instalação
 
-1. Clone o repositório:
+1. **Clone o repositório**
 ```bash
-git clone <seu-repositorio>
-cd google-sheets-dashboard
+git clone https://github.com/seu-usuario/controle-financeiro.git
+cd controle-financeiro
 ```
 
-2. Instale as dependências:
+2. **Instale as dependências**
 ```bash
 npm install
 ```
 
-3. Configure o Supabase:
-   - Siga o guia em `SUPABASE_SETUP.md`
-   - Crie um arquivo `.env` com suas credenciais
+3. **Configure as variáveis de ambiente**
+```bash
+cp env.example .env
+# Edite o arquivo .env com suas credenciais do Supabase
+```
 
-4. Execute o projeto:
+4. **Execute em desenvolvimento**
 ```bash
 npm run dev
 ```
 
-## ☁️ Configuração do Supabase
-
-### 1. **Criar Projeto**
-1. Acesse [supabase.com](https://supabase.com)
-2. Crie uma conta gratuita
-3. Crie um novo projeto
-
-### 2. **Configurar Banco**
-1. Crie a tabela `transactions` (veja `SUPABASE_SETUP.md`)
-2. Configure as políticas de segurança
-3. Copie as credenciais da API
-
-### 3. **Variáveis de Ambiente**
-Crie um arquivo `.env`:
-```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
-
-## 📊 Estrutura do Banco
-
-A tabela `transactions` deve ter:
-
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| id | uuid | Chave primária |
-| vencimento | text | Data de vencimento |
-| descricao | text | Descrição da transação |
-| empresa | text | Nome da empresa |
-| tipo | text | Tipo (Despesa/Receita/Investimento) |
-| valor | numeric | Valor da transação |
-| parcela | text | Número da parcela |
-| situacao | text | Situação atual |
-| data_pagamento | text | Data do pagamento |
-| created_at | timestamp | Data de criação |
-| updated_at | timestamp | Data de atualização |
-
-## 🎨 Personalização
-
-### Cores
-Edite o arquivo `tailwind.config.js`:
-```javascript
-theme: {
-  extend: {
-    colors: {
-      primary: {
-        500: '#3b82f6', // Sua cor principal
-      }
-    }
-  }
-}
-```
-
-### Dados
-Modifique o arquivo `src/services/supabase.ts` para personalizar a conexão.
-
-## 📱 Responsividade
-
-O dashboard é totalmente responsivo:
-- **Desktop** (1200px+)
-- **Tablet** (768px - 1199px)
-- **Mobile** (320px - 767px)
-
-## 🚀 Deploy
-
-### Vercel
+5. **Build para produção**
 ```bash
 npm run build
+```
+
+## 🌐 Deploy
+
+### Vercel (Recomendado)
+```bash
+npm install -g vercel
+vercel login
 vercel --prod
 ```
 
 ### Netlify
 ```bash
 npm run build
-# Faça upload da pasta dist
+npm run deploy:netlify
 ```
 
-## 🔧 Scripts Disponíveis
+### GitHub Pages
+```bash
+npm run deploy:github
+```
 
-- `npm run dev` - Inicia o servidor de desenvolvimento
-- `npm run build` - Gera build de produção
-- `npm run preview` - Visualiza o build de produção
-- `npm run lint` - Executa o linter
+## 📊 Estrutura do Projeto
 
-## 📈 Próximas Funcionalidades
+```
+src/
+├── components/          # Componentes React
+│   ├── modules/        # Módulos específicos
+│   └── TransactionForm.tsx
+├── services/           # Serviços de API
+│   ├── supabase.ts    # Integração Supabase
+│   └── localStorage.ts # Fallback local
+├── types/              # Definições TypeScript
+├── utils/              # Utilitários
+└── App.tsx            # Componente principal
+```
 
-- [ ] Autenticação de usuários
-- [ ] Tempo real com WebSockets
-- [ ] Exportação de relatórios em PDF
-- [ ] Filtros avançados
-- [ ] Gráficos personalizáveis
-- [ ] Notificações push
-- [ ] Backup automático
+## 🔧 Configuração do Supabase
+
+1. Acesse [supabase.com](https://supabase.com)
+2. Crie um novo projeto
+3. Configure as tabelas necessárias
+4. Copie as credenciais para o arquivo `.env`
+
+## 📈 Roadmap
+
+- [ ] Integração com APIs bancárias
+- [ ] Reconhecimento automático de transações
+- [ ] Relatórios avançados
+- [ ] App mobile nativo
+- [ ] Integração com planilhas
+- [ ] Sistema de alertas
 
 ## 🤝 Contribuição
 
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
+1. Fork o projeto
+2. Crie uma branch para sua feature
+3. Commit suas mudanças
+4. Push para a branch
 5. Abra um Pull Request
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
 ## 📞 Suporte
 
-Para suporte:
-- Consulte `SUPABASE_SETUP.md` para configuração
-- Verifique os logs no console do navegador
-- Abra uma issue no GitHub
+- **Issues**: [GitHub Issues](https://github.com/seu-usuario/controle-financeiro/issues)
+- **Documentação**: [Wiki do Projeto](https://github.com/seu-usuario/controle-financeiro/wiki)
+- **Email**: seu-email@exemplo.com
+
+## 🙏 Agradecimentos
+
+- Comunidade React
+- Equipe Supabase
+- Contribuidores do projeto
 
 ---
 
-**🎉 Dashboard migrado com sucesso para Cloud Database!** 
+**⭐ Se este projeto te ajudou, deixe uma estrela no GitHub!** 
