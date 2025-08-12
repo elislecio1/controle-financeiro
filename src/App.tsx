@@ -63,7 +63,16 @@ function App() {
       const cloudData = await supabaseService.getData()
       console.log('✅ Dados carregados com sucesso:', cloudData.length, 'registros')
       setData(cloudData)
-      setFilteredData(cloudData)
+      
+      // Ordenar dados por data de vencimento por padrão
+      const sortedData = [...cloudData].sort((a, b) => {
+        const aDate = new Date(a.vencimento.split('/').reverse().join('-'))
+        const bDate = new Date(b.vencimento.split('/').reverse().join('-'))
+        return aDate.getTime() - bDate.getTime()
+      })
+      
+      setFilteredData(sortedData)
+      setSortConfig({ key: 'vencimento', direction: 'asc' })
       
       // Carregar dados do Módulo 2
       const categoriasData = await supabaseService.getCategorias()
@@ -404,8 +413,8 @@ function App() {
         bValue = Math.abs(bValue)
       }
       
-      // Tratamento especial para datas
-      if (key === 'data') {
+      // Tratamento especial para datas (data e vencimento)
+      if (key === 'data' || key === 'vencimento') {
         aValue = new Date(aValue.split('/').reverse().join('-'))
         bValue = new Date(bValue.split('/').reverse().join('-'))
       }
@@ -885,18 +894,18 @@ function App() {
             {/* Data Table */}
             <div className="bg-white shadow rounded-lg">
               <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Dados Detalhados</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Transações</h3>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th 
                           className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                          onClick={() => handleSort('data')}
+                          onClick={() => handleSort('vencimento')}
                         >
                           <div className="flex items-center">
-                            Data
-                            {sortConfig?.key === 'data' && (
+                            Data de Vencimento
+                            {sortConfig?.key === 'vencimento' && (
                               <span className="ml-1">
                                 {sortConfig.direction === 'asc' ? '↑' : '↓'}
                               </span>
@@ -976,14 +985,15 @@ function App() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {paginatedData.map((item) => (
                         <tr key={item.id} className={`hover:bg-gray-50 ${
+                          item.tipo === 'despesa' ? 'bg-red-50' :
                           item.status === 'pago' ? 'bg-green-50' : 
                           item.status === 'vencido' ? 'bg-red-50' : 'bg-yellow-50'
                         }`}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.data}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.vencimento}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.descricao}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.categoria}</td>
                           <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getClasseValor(item.valor)}`}>
-                            {formatarValorTabela(item.valor)}
+                            {item.tipo === 'despesa' ? '- ' : ''}{formatarMoeda(Math.abs(item.valor))}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
