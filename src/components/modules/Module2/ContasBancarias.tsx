@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Save, X, CreditCard } from 'lucide-react'
+import { Plus, Edit, Trash2, Save, X, CreditCard, Eye, EyeOff } from 'lucide-react'
 import { supabaseService } from '../../../services/supabase'
 import { ContaBancaria } from '../../../types'
 import { formatarMoeda } from '../../../utils/formatters'
@@ -542,16 +542,16 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
                           }`}
                         >
                           {conta.ativo ? (
-                            <>
-                              <Eye className="h-3 w-3 mr-1" />
-                              Ativa
-                            </>
-                          ) : (
-                            <>
-                              <EyeOff className="h-3 w-3 mr-1" />
-                              Inativa
-                            </>
-                          )}
+                            <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                <Eye className="h-3 w-3 mr-1" />
+                                Ativa
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                <EyeOff className="h-3 w-3 mr-1" />
+                                Inativa
+                              </span>
+                            )}
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
