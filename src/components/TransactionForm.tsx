@@ -29,6 +29,7 @@ export default function TransactionForm({
     descricao: '',
     conta: contas.length > 0 ? contas[0].nome : '',
     categoria: 'Outros',
+    subcategoria: '',
     forma: 'Dinheiro',
     tipo: 'despesa',
     vencimento: '',
@@ -39,6 +40,23 @@ export default function TransactionForm({
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [valorDisplay, setValorDisplay] = useState<string>('') // Estado local para o valor exibido
+  const [subcategoriasFiltradas, setSubcategoriasFiltradas] = useState<Subcategoria[]>([])
+
+  // Função para filtrar subcategorias baseada na categoria selecionada
+  const filtrarSubcategorias = (categoriaNome: string) => {
+    const categoria = categorias.find(cat => cat.nome === categoriaNome)
+    if (categoria) {
+      const subcats = subcategorias.filter(sub => sub.categoriaId === categoria.id)
+      setSubcategoriasFiltradas(subcats)
+    } else {
+      setSubcategoriasFiltradas([])
+    }
+  }
+
+  // Atualizar subcategorias quando categoria mudar
+  useEffect(() => {
+    filtrarSubcategorias(formData.categoria)
+  }, [formData.categoria, categorias, subcategorias])
 
   // Carregar dados da transação para edição
   useEffect(() => {
@@ -49,6 +67,7 @@ export default function TransactionForm({
         descricao: transactionToEdit.descricao || '',
         conta: transactionToEdit.conta || (contas.length > 0 ? contas[0].nome : ''),
         categoria: transactionToEdit.categoria || 'Outros',
+        subcategoria: transactionToEdit.subcategoria || '',
         forma: transactionToEdit.forma || 'Dinheiro',
         tipo: transactionToEdit.tipo || 'despesa',
         vencimento: transactionToEdit.vencimento || '',
@@ -64,6 +83,15 @@ export default function TransactionForm({
       ...prev,
       [field]: value
     }))
+    
+    // Se a categoria mudou, limpar a subcategoria
+    if (field === 'categoria') {
+      setFormData(prev => ({
+        ...prev,
+        categoria: value as string,
+        subcategoria: ''
+      }))
+    }
   }
 
   // Função para formatar data automaticamente
@@ -235,6 +263,7 @@ export default function TransactionForm({
           descricao: formData.descricao,
           conta: formData.conta,
           categoria: formData.categoria,
+          subcategoria: formData.subcategoria,
           forma: formData.forma,
           tipo: formData.tipo,
           vencimento: formData.vencimento || formData.data,
@@ -263,6 +292,7 @@ export default function TransactionForm({
           descricao: '',
           conta: contas.length > 0 ? contas[0].nome : '',
           categoria: 'Outros',
+          subcategoria: '',
           forma: 'Dinheiro',
           tipo: 'despesa',
           vencimento: '',
@@ -299,6 +329,7 @@ export default function TransactionForm({
       descricao: '',
       conta: contas.length > 0 ? contas[0].nome : '',
       categoria: 'Outros',
+      subcategoria: '',
       forma: 'Dinheiro',
       tipo: 'despesa',
       vencimento: '',
@@ -420,7 +451,7 @@ export default function TransactionForm({
             </div>
           </div>
 
-          {/* Terceira linha - Categoria e Forma de Pagamento */}
+          {/* Terceira linha - Categoria e Subcategoria */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -442,6 +473,33 @@ export default function TransactionForm({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
+                Subcategoria
+              </label>
+              <select
+                value={formData.subcategoria}
+                onChange={(e) => handleInputChange('subcategoria', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+                disabled={subcategoriasFiltradas.length === 0}
+              >
+                <option value="">Selecione uma subcategoria</option>
+                {subcategoriasFiltradas.map((subcat) => (
+                  <option key={subcat.id} value={subcat.nome}>
+                    {subcat.nome}
+                  </option>
+                ))}
+              </select>
+              {subcategoriasFiltradas.length === 0 && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Nenhuma subcategoria disponível para esta categoria
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Quarta linha - Forma de Pagamento e Tipo */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Forma de Pagamento *
               </label>
               <select
@@ -458,10 +516,7 @@ export default function TransactionForm({
                 <option value="Boleto">Boleto</option>
               </select>
             </div>
-          </div>
 
-          {/* Quarta linha - Tipo e Data de Vencimento */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Tipo *
@@ -476,7 +531,10 @@ export default function TransactionForm({
                 <option value="despesa">Despesa</option>
               </select>
             </div>
+          </div>
 
+          {/* Quinta linha - Data de Vencimento e Parcelas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Data de Vencimento
@@ -488,10 +546,7 @@ export default function TransactionForm({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
               />
             </div>
-          </div>
 
-          {/* Quinta linha - Parcelas e Conta de Transferência */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Parcelas
@@ -504,7 +559,10 @@ export default function TransactionForm({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
               />
             </div>
+          </div>
 
+          {/* Sexta linha - Conta de Transferência */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Conta de Transferência
