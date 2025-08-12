@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
-import { Save, Trash2, AlertCircle, CheckCircle, X } from 'lucide-react'
-import { NewTransaction, Categoria, Subcategoria, ContaBancaria } from '../types'
+import React, { useState, useEffect } from 'react'
+import { Save, Trash2, AlertCircle, CheckCircle, X, Edit } from 'lucide-react'
+import { NewTransaction, Categoria, Subcategoria, ContaBancaria, SheetData } from '../types'
 import { supabaseService } from '../services/supabase'
 import { formatarMoeda, parsearValorBrasileiro, parsearDataBrasileira } from '../utils/formatters'
 
@@ -9,9 +9,20 @@ interface TransactionFormProps {
   categorias?: Categoria[]
   subcategorias?: Subcategoria[]
   contas?: ContaBancaria[]
+  transactionToEdit?: SheetData | null
+  onClose?: () => void
+  isEditing?: boolean
 }
 
-export default function TransactionForm({ onTransactionSaved, categorias = [], subcategorias = [], contas = [] }: TransactionFormProps) {
+export default function TransactionForm({ 
+  onTransactionSaved, 
+  categorias = [], 
+  subcategorias = [], 
+  contas = [],
+  transactionToEdit = null,
+  onClose,
+  isEditing = false
+}: TransactionFormProps) {
   const [formData, setFormData] = useState<NewTransaction>({
     data: '',
     valor: 0,
@@ -28,6 +39,25 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [valorDisplay, setValorDisplay] = useState<string>('') // Estado local para o valor exibido
+
+  // Carregar dados da transação para edição
+  useEffect(() => {
+    if (transactionToEdit && isEditing) {
+      setFormData({
+        data: transactionToEdit.data || '',
+        valor: Math.abs(transactionToEdit.valor),
+        descricao: transactionToEdit.descricao || '',
+        conta: transactionToEdit.conta || (contas.length > 0 ? contas[0].nome : ''),
+        categoria: transactionToEdit.categoria || 'Outros',
+        forma: transactionToEdit.forma || 'Dinheiro',
+        tipo: transactionToEdit.tipo || 'despesa',
+        vencimento: transactionToEdit.vencimento || '',
+        parcelas: typeof transactionToEdit.parcela === 'number' ? transactionToEdit.parcela : 1,
+        contaTransferencia: transactionToEdit.contaTransferencia || ''
+      })
+      setValorDisplay(formatarMoeda(Math.abs(transactionToEdit.valor)))
+    }
+  }, [transactionToEdit, isEditing, contas])
 
   const handleInputChange = (field: keyof NewTransaction, value: string | number) => {
     setFormData(prev => ({
@@ -171,11 +201,22 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
     handleInputChange('valor', valor)
   }
 
+  // Função para salvar transação (criar ou editar)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.descricao || !formData.valor || !formData.data) {
-      setMessage({ type: 'error', text: 'Por favor, preencha todos os campos obrigatórios.' })
+    if (!formData.descricao.trim()) {
+      setMessage({ type: 'error', text: 'Descrição é obrigatória' })
+      return
+    }
+
+    if (!formData.data) {
+      setMessage({ type: 'error', text: 'Data é obrigatória' })
+      return
+    }
+
+    if (!formData.valor || formData.valor <= 0) {
+      setMessage({ type: 'error', text: 'Valor deve ser maior que zero' })
       return
     }
 
@@ -183,19 +224,64 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
     setMessage(null)
 
     try {
-      console.log('💾 Salvando transação no Supabase...')
+      const valorFinal = formData.tipo === 'despesa' ? -Math.abs(formData.valor) : Math.abs(formData.valor)
       
-      const result = await supabaseService.saveTransaction(formData)
-      
-      if (result.success) {
-        setMessage({ type: 'success', text: result.message })
-        clearForm()
-        onTransactionSaved() // Notifica o componente pai para atualizar os dados
+      if (isEditing && transactionToEdit) {
+        // Atualizar transação existente
+        const updatedTransaction: SheetData = {
+          ...transactionToEdit,
+          data: formData.data,
+          valor: valorFinal,
+          descricao: formData.descricao,
+          conta: formData.conta,
+          categoria: formData.categoria,
+          forma: formData.forma,
+          tipo: formData.tipo,
+          vencimento: formData.vencimento || formData.data,
+          parcela: (formData.parcelas || 1).toString(),
+          contaTransferencia: formData.contaTransferencia
+        }
+        
+        await supabaseService.updateTransaction(transactionToEdit.id, updatedTransaction)
+        setMessage({ type: 'success', text: 'Transação atualizada com sucesso!' })
       } else {
-        setMessage({ type: 'error', text: result.message })
+        // Criar nova transação
+        const newTransaction: NewTransaction = {
+          ...formData,
+          valor: valorFinal
+        }
+        
+        await supabaseService.saveTransaction(newTransaction)
+        setMessage({ type: 'success', text: 'Transação salva com sucesso!' })
+      }
+
+      // Limpar formulário se não estiver editando
+      if (!isEditing) {
+        setFormData({
+          data: '',
+          valor: 0,
+          descricao: '',
+          conta: contas.length > 0 ? contas[0].nome : '',
+          categoria: 'Outros',
+          forma: 'Dinheiro',
+          tipo: 'despesa',
+          vencimento: '',
+          parcelas: 1,
+          contaTransferencia: ''
+        })
+        setValorDisplay('')
+      }
+
+      onTransactionSaved()
+      
+      // Fechar modal se estiver editando
+      if (isEditing && onClose) {
+        setTimeout(() => {
+          onClose()
+        }, 1500)
       }
     } catch (error: any) {
-      console.error('❌ Erro ao salvar transação:', error)
+      console.error('Erro ao salvar transação:', error)
       setMessage({ 
         type: 'error', 
         text: error.message || 'Erro ao salvar transação. Tente novamente.' 
@@ -205,6 +291,7 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
     }
   }
 
+  // Função para limpar formulário
   const clearForm = () => {
     setFormData({
       data: '',
@@ -218,7 +305,8 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
       parcelas: 1,
       contaTransferencia: ''
     })
-    setValorDisplay('') // Limpa também o estado de exibição
+    setValorDisplay('')
+    setMessage(null)
   }
 
   return (
@@ -226,18 +314,23 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
       <div className="px-4 sm:px-6 py-4 sm:py-6">
         <div className="flex justify-between items-center mb-4 sm:mb-6">
           <h3 className="text-lg sm:text-xl font-medium text-gray-900">
-            {/* editingTransaction ? 'Editar Transação' : 'Nova Transação' */}
-            Nova Transação
+            {isEditing ? 'Editar Transação' : 'Nova Transação'}
           </h3>
-          <button
-            onClick={() => {
-              // setShowForm(false) // This state variable is not defined in the original file
-              clearForm()
-            }}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="h-6 w-6" />
-          </button>
+          {isEditing && onClose ? (
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          ) : (
+            <button
+              onClick={clearForm}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">

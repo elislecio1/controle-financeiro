@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
-import { TrendingUp, Users, DollarSign, Activity, Database, Settings, RefreshCw, Calendar, Filter, Search, Plus, Download, Upload, CheckCircle, XCircle, Trash2 } from 'lucide-react'
+import { TrendingUp, Users, DollarSign, Activity, Database, Settings, RefreshCw, Calendar, Filter, Search, Plus, Download, Upload, CheckCircle, XCircle, Trash2, Edit } from 'lucide-react'
 import { SheetData, Categoria, Subcategoria, CentroCusto, Meta, Orcamento, Investimento, ContaBancaria, CartaoCredito } from './types'
 import { supabaseService } from './services/supabase'
 import TransactionForm from './components/TransactionForm'
@@ -58,6 +58,10 @@ function App() {
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [filterTipo, setFilterTipo] = useState<string>('')
   const [filterStatus, setFilterStatus] = useState<string>('')
+
+  // Estados para edição de transações
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [transactionToEdit, setTransactionToEdit] = useState<SheetData | null>(null)
 
   const loadData = async () => {
     try {
@@ -533,6 +537,18 @@ function App() {
         message: error.message || 'Erro ao excluir transação' 
       })
     }
+  }
+
+  // Função para abrir modal de edição
+  const handleEdit = (transaction: SheetData) => {
+    setTransactionToEdit(transaction)
+    setShowEditModal(true)
+  }
+
+  // Função para fechar modal de edição
+  const handleCloseEditModal = () => {
+    setShowEditModal(false)
+    setTransactionToEdit(null)
   }
 
   // Cálculos para estatísticas
@@ -1056,6 +1072,13 @@ function App() {
                           </td>
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
                             <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                              <button
+                                onClick={() => handleEdit(item)}
+                                className="text-blue-600 hover:text-blue-900 p-1"
+                                title="Editar"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
                               {item.status === 'pendente' && (
                                 <button
                                   onClick={() => handleConfirmPayment(item)}
@@ -1181,6 +1204,25 @@ function App() {
             categorias={categorias}
             centrosCusto={centrosCusto}
           />
+        )}
+
+        {/* Modal de Edição de Transação */}
+        {showEditModal && transactionToEdit && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-10 mx-auto p-4 w-full max-w-4xl shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <TransactionForm 
+                  onTransactionSaved={handleTransactionSaved}
+                  categorias={categorias}
+                  subcategorias={subcategorias}
+                  contas={contas}
+                  transactionToEdit={transactionToEdit}
+                  onClose={handleCloseEditModal}
+                  isEditing={true}
+                />
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Modal de Confirmação de Pagamento */}
