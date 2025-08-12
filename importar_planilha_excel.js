@@ -334,7 +334,7 @@ function gerarSQL(transacoes) {
 
 -- Inserir transações únicas
 INSERT INTO transactions (
-  id, data, valor, descricao, conta, forma, tipo_transferencia, 
+  id, data, valor, descricao, conta, forma, 
   categoria, subcategoria, contato, vencimento, 
   created_at, updated_at
 ) VALUES
@@ -366,7 +366,6 @@ INSERT INTO transactions (
   '${transacao.descricao.replace(/'/g, "''")}',
   '${transacao.conta.replace(/'/g, "''")}',
   '${forma}',
-  '${transacao.tipo === 'transferencia' ? 'sim' : 'nao'}',
   '${transacao.categoria.replace(/'/g, "''")}',
   '${transacao.subcategoria.replace(/'/g, "''")}',
   '${transacao.contato.replace(/'/g, "''")}',

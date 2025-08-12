@@ -1,6 +1,6 @@
 -- =====================================================
 -- SCRIPT DE IMPORTAÇÃO DE TRANSAÇÕES DO EXCEL
--- Gerado automaticamente em 12/08/2025, 17:06:26
+-- Gerado automaticamente em 12/08/2025, 17:09:04
 -- Total de transações: 132
 -- =====================================================
 
@@ -9,7 +9,7 @@
 
 -- Inserir transações únicas
 INSERT INTO transactions (
-  id, data, valor, descricao, conta, forma, tipo_transferencia, 
+  id, data, valor, descricao, conta, forma, 
   categoria, subcategoria, contato, vencimento, 
   created_at, updated_at
 ) VALUES
@@ -20,13 +20,12 @@ INSERT INTO transactions (
   'ENERGIA BTN',
   'NEONEGIA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Energia Elétrica',
   'NEONEGIA',
   '2025-01-09',
-  '2025-08-12T20:06:26.475Z',
-  '2025-08-12T20:06:26.475Z'
+  '2025-08-12T20:09:04.068Z',
+  '2025-08-12T20:09:04.068Z'
 ),
 (
   '43c57764-d0c1-a9fc-b989-e813b75d4ccf',
@@ -35,13 +34,12 @@ INSERT INTO transactions (
   'FGTS',
   'FGTS 02/2025',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'FGTS 02/2025',
   '2025-03-20',
-  '2025-08-12T20:06:26.475Z',
-  '2025-08-12T20:06:26.475Z'
+  '2025-08-12T20:09:04.069Z',
+  '2025-08-12T20:09:04.069Z'
 ),
 (
   'd7cb84a2-ac91-bb10-2e04-617226ad7a12',
@@ -50,13 +48,12 @@ INSERT INTO transactions (
   'ESCRITORIO VIRTUAL',
   'MYPLACEOFFICE',
   'transferência',
-  'nao',
   'Geral',
   '',
   'MYPLACEOFFICE',
   '2025-03-25',
-  '2025-08-12T20:06:26.475Z',
-  '2025-08-12T20:06:26.475Z'
+  '2025-08-12T20:09:04.069Z',
+  '2025-08-12T20:09:04.069Z'
 ),
 (
   'cb51e93e-8b4e-ab10-7350-ae7091d90229',
@@ -65,13 +62,12 @@ INSERT INTO transactions (
   'HONORARIOS CONTABEIS',
   'BUREAU',
   'transferência',
-  'nao',
   'Serviços Profissionais',
   'Honorários',
   'BUREAU',
   '2025-04-10',
-  '2025-08-12T20:06:26.475Z',
-  '2025-08-12T20:06:26.475Z'
+  '2025-08-12T20:09:04.069Z',
+  '2025-08-12T20:09:04.069Z'
 ),
 (
   '3f5ccd30-bbb6-3e1b-2d76-3151609c0969',
@@ -80,13 +76,12 @@ INSERT INTO transactions (
   'HONORARIOS CONTABEIS',
   'BUREAU',
   'transferência',
-  'nao',
   'Serviços Profissionais',
   'Honorários',
   'BUREAU',
   '2025-04-10',
-  '2025-08-12T20:06:26.476Z',
-  '2025-08-12T20:06:26.476Z'
+  '2025-08-12T20:09:04.070Z',
+  '2025-08-12T20:09:04.070Z'
 ),
 (
   '9e195147-8042-f1e3-4b8b-29ff03a44b66',
@@ -95,13 +90,12 @@ INSERT INTO transactions (
   'ENERGIA CENTRO',
   'NEONEGIA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Energia Elétrica',
   'NEONEGIA',
   '2025-04-16',
-  '2025-08-12T20:06:26.476Z',
-  '2025-08-12T20:06:26.476Z'
+  '2025-08-12T20:09:04.070Z',
+  '2025-08-12T20:09:04.070Z'
 ),
 (
   '94955d9e-54ba-24ea-d201-80a9496cf0a9',
@@ -110,13 +104,12 @@ INSERT INTO transactions (
   'ESCRITORIO VIRTUAL',
   'MYPLACEOFFICE',
   'transferência',
-  'nao',
   'Geral',
   '',
   'MYPLACEOFFICE',
   '2025-04-25',
-  '2025-08-12T20:06:26.476Z',
-  '2025-08-12T20:06:26.476Z'
+  '2025-08-12T20:09:04.070Z',
+  '2025-08-12T20:09:04.070Z'
 ),
 (
   'b77b5b07-64c2-d976-bd4f-ac5adc00744a',
@@ -125,13 +118,12 @@ INSERT INTO transactions (
   'ENERGIA BTN',
   'NEONEGIA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Energia Elétrica',
   'NEONEGIA',
   '2025-04-29',
-  '2025-08-12T20:06:26.476Z',
-  '2025-08-12T20:06:26.476Z'
+  '2025-08-12T20:09:04.070Z',
+  '2025-08-12T20:09:04.070Z'
 ),
 (
   'aaa29408-3f5f-35e4-1326-d5b2443f2151',
@@ -140,13 +132,12 @@ INSERT INTO transactions (
   'CSLL',
   'DARF',
   'pendente',
-  'nao',
   'Geral',
   '',
   'DARF',
   '2025-04-30',
-  '2025-08-12T20:06:26.476Z',
-  '2025-08-12T20:06:26.476Z'
+  '2025-08-12T20:09:04.071Z',
+  '2025-08-12T20:09:04.071Z'
 ),
 (
   '61f54622-df00-135a-32f0-d6ae75299946',
@@ -155,13 +146,12 @@ INSERT INTO transactions (
   'AGUA BTN',
   'EMBASA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Água e Esgoto',
   'EMBASA',
   '2025-05-05',
-  '2025-08-12T20:06:26.476Z',
-  '2025-08-12T20:06:26.476Z'
+  '2025-08-12T20:09:04.071Z',
+  '2025-08-12T20:09:04.071Z'
 ),
 (
   'd1992a5d-3e8d-7660-17f1-090248a2e70f',
@@ -170,13 +160,12 @@ INSERT INTO transactions (
   'ISSQN',
   'PREFEITURA DE BARUERI',
   'pendente',
-  'nao',
   'Geral',
   '',
   'PREFEITURA DE BARUERI',
   '2025-05-09',
-  '2025-08-12T20:06:26.476Z',
-  '2025-08-12T20:06:26.476Z'
+  '2025-08-12T20:09:04.071Z',
+  '2025-08-12T20:09:04.071Z'
 ),
 (
   '8cce494b-2f28-83ff-7c5c-cb8948f59407',
@@ -185,13 +174,12 @@ INSERT INTO transactions (
   'ADVOGADO',
   'GUILHERME MINUZO',
   'transferência',
-  'nao',
   'Geral',
   '',
   'GUILHERME MINUZO',
   '2025-05-10',
-  '2025-08-12T20:06:26.476Z',
-  '2025-08-12T20:06:26.476Z'
+  '2025-08-12T20:09:04.071Z',
+  '2025-08-12T20:09:04.071Z'
 ),
 (
   '3ad19434-fa60-b4f2-38cc-2295cdc877bb',
@@ -200,13 +188,12 @@ INSERT INTO transactions (
   'HONORARIOS CONTABEIS',
   'BUREAU',
   'transferência',
-  'nao',
   'Serviços Profissionais',
   'Honorários',
   'BUREAU',
   '2025-05-10',
-  '2025-08-12T20:06:26.476Z',
-  '2025-08-12T20:06:26.476Z'
+  '2025-08-12T20:09:04.071Z',
+  '2025-08-12T20:09:04.071Z'
 ),
 (
   '93be6fac-060a-ddb7-1e34-22c7174cc4a2',
@@ -215,13 +202,12 @@ INSERT INTO transactions (
   'HONORARIOS CONTABEIS',
   'BUREAU',
   'transferência',
-  'nao',
   'Serviços Profissionais',
   'Honorários',
   'BUREAU',
   '2025-05-10',
-  '2025-08-12T20:06:26.476Z',
-  '2025-08-12T20:06:26.476Z'
+  '2025-08-12T20:09:04.072Z',
+  '2025-08-12T20:09:04.072Z'
 ),
 (
   'fa892f78-f522-4f9c-1697-805d38944058',
@@ -230,13 +216,12 @@ INSERT INTO transactions (
   'RECALCULO DARF PREVIDENCIÁRIO',
   'DARF/FEVEREITO',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'DARF/FEVEREITO',
   '2025-05-12',
-  '2025-08-12T20:06:26.477Z',
-  '2025-08-12T20:06:26.477Z'
+  '2025-08-12T20:09:04.072Z',
+  '2025-08-12T20:09:04.072Z'
 ),
 (
   'd3b9b673-a3d3-ee6a-a7cb-c52ad28e9d77',
@@ -245,13 +230,12 @@ INSERT INTO transactions (
   'RECALCULO DARF PREVIDENCIÁRIO',
   'DARF/MARÇO',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'DARF/MARÇO',
   '2025-05-12',
-  '2025-08-12T20:06:26.477Z',
-  '2025-08-12T20:06:26.477Z'
+  '2025-08-12T20:09:04.072Z',
+  '2025-08-12T20:09:04.072Z'
 ),
 (
   'eef23ef3-850d-1f1a-3ab0-e648478cace4',
@@ -260,13 +244,12 @@ INSERT INTO transactions (
   'DIFERENÇA DE ALUGUEL BTN 1X6',
   'FRANCISCO LAURENTINO DA SILVA',
   'transferência',
-  'nao',
   'Moradia',
   'Aluguel',
   'FRANCISCO LAURENTINO DA SILVA',
   '2025-05-16',
-  '2025-08-12T20:06:26.477Z',
-  '2025-08-12T20:06:26.477Z'
+  '2025-08-12T20:09:04.073Z',
+  '2025-08-12T20:09:04.073Z'
 ),
 (
   'fd3cb30b-91cd-0b3d-432e-334582d4cba1',
@@ -275,13 +258,12 @@ INSERT INTO transactions (
   'ENERGIA CENTRO',
   'NEONEGIA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Energia Elétrica',
   'NEONEGIA',
   '2025-05-16',
-  '2025-08-12T20:06:26.477Z',
-  '2025-08-12T20:06:26.477Z'
+  '2025-08-12T20:09:04.073Z',
+  '2025-08-12T20:09:04.073Z'
 ),
 (
   'f2eff20a-0cdc-c007-f339-7a730d7cd3b0',
@@ -290,13 +272,12 @@ INSERT INTO transactions (
   'PARCELAMENTO CARTÃO',
   'INTER',
   'transferência',
-  'nao',
   'Cartão de Crédito',
   '',
   'INTER',
   '2025-05-20',
-  '2025-08-12T20:06:26.477Z',
-  '2025-08-12T20:06:26.477Z'
+  '2025-08-12T20:09:04.073Z',
+  '2025-08-12T20:09:04.073Z'
 ),
 (
   '6c256d14-286e-7faf-aa1f-b92c5c1eff2d',
@@ -305,13 +286,12 @@ INSERT INTO transactions (
   'ALUGUEL CENTRO',
   'JOSE GOMES DE SIRQUEIRA',
   'transferência',
-  'nao',
   'Moradia',
   'Aluguel',
   'JOSE GOMES DE SIRQUEIRA',
   '2025-05-20',
-  '2025-08-12T20:06:26.477Z',
-  '2025-08-12T20:06:26.477Z'
+  '2025-08-12T20:09:04.073Z',
+  '2025-08-12T20:09:04.073Z'
 ),
 (
   '6a425ddd-617e-7962-4f6c-1227d06dd8e3',
@@ -320,13 +300,12 @@ INSERT INTO transactions (
   'DARF PREVIDENCIÁRIO',
   'DARF/ABRIL',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'DARF/ABRIL',
   '2025-05-20',
-  '2025-08-12T20:06:26.477Z',
-  '2025-08-12T20:06:26.477Z'
+  '2025-08-12T20:09:04.073Z',
+  '2025-08-12T20:09:04.073Z'
 ),
 (
   '6763ea8c-8595-e257-6549-154e3ebaf45f',
@@ -335,13 +314,12 @@ INSERT INTO transactions (
   'FGTS',
   'FGTS 04/2025',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'FGTS 04/2025',
   '2025-05-20',
-  '2025-08-12T20:06:26.477Z',
-  '2025-08-12T20:06:26.477Z'
+  '2025-08-12T20:09:04.073Z',
+  '2025-08-12T20:09:04.073Z'
 ),
 (
   '066cda55-ec7e-7f3f-eeb1-983bf94522c3',
@@ -350,13 +328,12 @@ INSERT INTO transactions (
   'DAS ABRIL/2025',
   'DAS ',
   'pendente',
-  'nao',
   'Geral',
   '',
   'DAS ',
   '2025-05-20',
-  '2025-08-12T20:06:26.477Z',
-  '2025-08-12T20:06:26.477Z'
+  '2025-08-12T20:09:04.073Z',
+  '2025-08-12T20:09:04.073Z'
 ),
 (
   '3ac9123d-b728-1fbd-3de7-0e8132d86573',
@@ -365,13 +342,12 @@ INSERT INTO transactions (
   'COFINS CUMULATIVO 30/04/2025',
   'RECEITA FEDERAL',
   'pendente',
-  'nao',
   'Geral',
   '',
   'RECEITA FEDERAL',
   '2025-05-23',
-  '2025-08-12T20:06:26.477Z',
-  '2025-08-12T20:06:26.477Z'
+  '2025-08-12T20:09:04.073Z',
+  '2025-08-12T20:09:04.073Z'
 ),
 (
   '434f63d0-923b-6300-b81a-bf3bceb3e8fc',
@@ -380,13 +356,12 @@ INSERT INTO transactions (
   'PIS CUMULATIVO 30/04/2025',
   'RECEITA FEDERAL',
   'pendente',
-  'nao',
   'Geral',
   '',
   'RECEITA FEDERAL',
   '2025-05-23',
-  '2025-08-12T20:06:26.477Z',
-  '2025-08-12T20:06:26.477Z'
+  '2025-08-12T20:09:04.073Z',
+  '2025-08-12T20:09:04.073Z'
 ),
 (
   '49eed8dd-3693-e95c-ec0a-b0bf90a4182c',
@@ -395,13 +370,12 @@ INSERT INTO transactions (
   'ESCRITORIO VIRTUAL',
   'MYPLACEOFFICE',
   'transferência',
-  'nao',
   'Geral',
   '',
   'MYPLACEOFFICE',
   '2025-05-25',
-  '2025-08-12T20:06:26.477Z',
-  '2025-08-12T20:06:26.477Z'
+  '2025-08-12T20:09:04.074Z',
+  '2025-08-12T20:09:04.074Z'
 ),
 (
   '7caa3a34-441e-353c-b74a-b4e7caaf7c9c',
@@ -410,13 +384,12 @@ INSERT INTO transactions (
   'ENERGIA BTN',
   'NEONEGIA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Energia Elétrica',
   'NEONEGIA',
   '2025-05-29',
-  '2025-08-12T20:06:26.478Z',
-  '2025-08-12T20:06:26.478Z'
+  '2025-08-12T20:09:04.074Z',
+  '2025-08-12T20:09:04.074Z'
 ),
 (
   '26ca516c-4ae2-cb1f-cc97-89881932a2f2',
@@ -425,13 +398,12 @@ INSERT INTO transactions (
   'DAS do Parcelamento 5/37',
   'DAS ',
   'transferência',
-  'nao',
   'Geral',
   '',
   'DAS ',
   '2025-05-30',
-  '2025-08-12T20:06:26.478Z',
-  '2025-08-12T20:06:26.478Z'
+  '2025-08-12T20:09:04.074Z',
+  '2025-08-12T20:09:04.074Z'
 ),
 (
   'fbb3dc62-cc58-af21-3f43-1dfd7a82e227',
@@ -440,13 +412,12 @@ INSERT INTO transactions (
   'ALIGUEL BTN',
   'FRANCISCO LAURENTINO DA SILVA',
   'transferência',
-  'nao',
   'Geral',
   '',
   'FRANCISCO LAURENTINO DA SILVA',
   '2025-05-30',
-  '2025-08-12T20:06:26.478Z',
-  '2025-08-12T20:06:26.478Z'
+  '2025-08-12T20:09:04.074Z',
+  '2025-08-12T20:09:04.074Z'
 ),
 (
   '2969077a-6279-db15-7b3b-8a4be9feb2ae',
@@ -455,13 +426,12 @@ INSERT INTO transactions (
   'COMUNICACHAT',
   'COMUNICACHAT',
   'transferência',
-  'nao',
   'Geral',
   '',
   'COMUNICACHAT',
   '2025-06-03',
-  '2025-08-12T20:06:26.478Z',
-  '2025-08-12T20:06:26.478Z'
+  '2025-08-12T20:09:04.074Z',
+  '2025-08-12T20:09:04.074Z'
 ),
 (
   'e6ecbc36-0b19-b68a-db70-a3e11b9430db',
@@ -470,13 +440,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'MARIA MIRELA LACERDA GOMES',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'MARIA MIRELA LACERDA GOMES',
   '2025-06-06',
-  '2025-08-12T20:06:26.478Z',
-  '2025-08-12T20:06:26.478Z'
+  '2025-08-12T20:09:04.074Z',
+  '2025-08-12T20:09:04.074Z'
 ),
 (
   '5b334bf6-e9dd-dc20-cdf8-e747e055aa77',
@@ -485,13 +454,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'MARIA DAS DORES LUCENA SANTOS DA SILVA',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'MARIA DAS DORES LUCENA SANTOS DA SILVA',
   '2025-06-06',
-  '2025-08-12T20:06:26.478Z',
-  '2025-08-12T20:06:26.478Z'
+  '2025-08-12T20:09:04.074Z',
+  '2025-08-12T20:09:04.074Z'
 ),
 (
   'd495daef-60dd-3799-5627-74cbe6ad2c46',
@@ -500,13 +468,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'ISLAINE GONZAGA LUCENA',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'ISLAINE GONZAGA LUCENA',
   '2025-06-06',
-  '2025-08-12T20:06:26.479Z',
-  '2025-08-12T20:06:26.479Z'
+  '2025-08-12T20:09:04.074Z',
+  '2025-08-12T20:09:04.074Z'
 ),
 (
   '88d5fa66-7d7d-5ea2-1aeb-9240088d2040',
@@ -515,13 +482,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'EMILY FERREIRA DOS SANTOS',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'EMILY FERREIRA DOS SANTOS',
   '2025-06-06',
-  '2025-08-12T20:06:26.479Z',
-  '2025-08-12T20:06:26.479Z'
+  '2025-08-12T20:09:04.074Z',
+  '2025-08-12T20:09:04.074Z'
 ),
 (
   '06fe4671-9c77-5608-0d05-781175e1369a',
@@ -530,13 +496,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'ELISNEIDE DOS SANTOS FERREIRA',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'ELISNEIDE DOS SANTOS FERREIRA',
   '2025-06-06',
-  '2025-08-12T20:06:26.479Z',
-  '2025-08-12T20:06:26.479Z'
+  '2025-08-12T20:09:04.074Z',
+  '2025-08-12T20:09:04.074Z'
 ),
 (
   '2010fa25-f7ac-9665-7b4b-fd16925af21e',
@@ -545,13 +510,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'CELIANE FUJISAWA VILELA',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'CELIANE FUJISAWA VILELA',
   '2025-06-06',
-  '2025-08-12T20:06:26.479Z',
-  '2025-08-12T20:06:26.479Z'
+  '2025-08-12T20:09:04.074Z',
+  '2025-08-12T20:09:04.074Z'
 ),
 (
   '89213021-1f68-7b5b-28b7-c38ab2028b2e',
@@ -560,13 +524,12 @@ INSERT INTO transactions (
   'AGUA BTN',
   'EMBASA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Água e Esgoto',
   'EMBASA',
   '2025-06-07',
-  '2025-08-12T20:06:26.480Z',
-  '2025-08-12T20:06:26.480Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   '9d73150f-d42d-f87f-a467-39e8024d7092',
@@ -575,13 +538,12 @@ INSERT INTO transactions (
   'PAGAMENTO DE FÉRIAS',
   'EMILY FERREIRA DOS SANTOS',
   'transferência',
-  'nao',
   'Geral',
   '',
   'EMILY FERREIRA DOS SANTOS',
   '2025-06-09',
-  '2025-08-12T20:06:26.481Z',
-  '2025-08-12T20:06:26.481Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   'e0cfed9a-f48f-ceab-d7df-811849450578',
@@ -590,13 +552,12 @@ INSERT INTO transactions (
   'HONORARIOS CONTABEIS',
   'BUREAU',
   'transferência',
-  'nao',
   'Serviços Profissionais',
   'Honorários',
   'BUREAU',
   '2025-06-10',
-  '2025-08-12T20:06:26.481Z',
-  '2025-08-12T20:06:26.481Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   'd35d375b-3e08-03fc-3f9c-33e760c96d34',
@@ -605,13 +566,12 @@ INSERT INTO transactions (
   'HONORARIOS CONTABEIS',
   'BUREAU',
   'transferência',
-  'nao',
   'Serviços Profissionais',
   'Honorários',
   'BUREAU',
   '2025-06-10',
-  '2025-08-12T20:06:26.481Z',
-  '2025-08-12T20:06:26.481Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   '0c122838-7c45-8f3b-dd4e-c61f314cc49d',
@@ -620,13 +580,12 @@ INSERT INTO transactions (
   'ADVOGADO',
   'GUILHERME MINUZO',
   'transferência',
-  'nao',
   'Geral',
   '',
   'GUILHERME MINUZO',
   '2025-06-10',
-  '2025-08-12T20:06:26.481Z',
-  '2025-08-12T20:06:26.481Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   'f25002f5-57d2-d5d0-51c8-c845e41729ee',
@@ -635,13 +594,12 @@ INSERT INTO transactions (
   'SERVIÇO DE POSTAGEM',
   'CORREIOS',
   'transferência',
-  'nao',
   'Geral',
   '',
   'CORREIOS',
   '2025-06-11',
-  '2025-08-12T20:06:26.481Z',
-  '2025-08-12T20:06:26.481Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   '7fde7fa2-dbc4-d1ad-01b2-6709a14b6a86',
@@ -650,13 +608,12 @@ INSERT INTO transactions (
   'WEBDEC',
   'WEBDEC',
   'transferência',
-  'nao',
   'Geral',
   '',
   'WEBDEC',
   '2025-06-13',
-  '2025-08-12T20:06:26.481Z',
-  '2025-08-12T20:06:26.481Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   '35250421-7d9c-4db7-47ca-dd57b2e09e8b',
@@ -665,13 +622,12 @@ INSERT INTO transactions (
   'DIFERENÇA DE ALUGUEL BTN 2X6',
   'FRANCISCO LAURENTINO DA SILVA',
   'transferência',
-  'nao',
   'Moradia',
   'Aluguel',
   'FRANCISCO LAURENTINO DA SILVA',
   '2025-06-15',
-  '2025-08-12T20:06:26.481Z',
-  '2025-08-12T20:06:26.481Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   '49e74d3c-9bcb-9255-8aa8-832db91d7a65',
@@ -680,13 +636,12 @@ INSERT INTO transactions (
   'PROMOSY',
   'PROMOSY',
   'transferência',
-  'nao',
   'Geral',
   '',
   'PROMOSY',
   '2025-06-16',
-  '2025-08-12T20:06:26.481Z',
-  '2025-08-12T20:06:26.481Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   'ddce7285-5ff9-e574-4b77-9b39de6cae86',
@@ -695,13 +650,12 @@ INSERT INTO transactions (
   'ENERGIA CENTRO',
   'NEOENERGIA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Energia Elétrica',
   'NEOENERGIA',
   '2025-06-16',
-  '2025-08-12T20:06:26.481Z',
-  '2025-08-12T20:06:26.481Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   'c6e06efa-c417-a2a8-6fb0-7a8ad1bda10e',
@@ -710,13 +664,12 @@ INSERT INTO transactions (
   'AGUA CENTRO(05/05 E 06/06)',
   'EMBASA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Água e Esgoto',
   'EMBASA',
   '2025-06-20',
-  '2025-08-12T20:06:26.482Z',
-  '2025-08-12T20:06:26.482Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   'f36f7c56-07d8-581e-fc58-07699b9cbdc4',
@@ -725,13 +678,12 @@ INSERT INTO transactions (
   'ALUGUEL CENTRO',
   'JOSE GOMES DE SIQUEIRA',
   'transferência',
-  'nao',
   'Moradia',
   'Aluguel',
   'JOSE GOMES DE SIQUEIRA',
   '2025-06-20',
-  '2025-08-12T20:06:26.482Z',
-  '2025-08-12T20:06:26.482Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   'b3ab6ca2-0d68-9e77-ddec-e2f99927b65e',
@@ -740,13 +692,12 @@ INSERT INTO transactions (
   'FGTS',
   'FGTS 05/2025',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'FGTS 05/2025',
   '2025-06-20',
-  '2025-08-12T20:06:26.482Z',
-  '2025-08-12T20:06:26.482Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   '590e35ce-20ae-cf41-8d7a-0a33bf3f4c7c',
@@ -755,13 +706,12 @@ INSERT INTO transactions (
   'DARF PREVIDENCIÁRIO',
   'DARF',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'DARF',
   '2025-06-20',
-  '2025-08-12T20:06:26.482Z',
-  '2025-08-12T20:06:26.482Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   'f6a5dae6-cb9b-e9d0-c8e5-15ea09e467a5',
@@ -770,13 +720,12 @@ INSERT INTO transactions (
   'ESCRITORIO VIRTUAL',
   'MYPLACEOFFICE',
   'transferência',
-  'nao',
   'Geral',
   '',
   'MYPLACEOFFICE',
   '2025-06-25',
-  '2025-08-12T20:06:26.482Z',
-  '2025-08-12T20:06:26.482Z'
+  '2025-08-12T20:09:04.075Z',
+  '2025-08-12T20:09:04.075Z'
 ),
 (
   '603f91b9-4367-641b-4ccd-1970a29f3a1e',
@@ -785,13 +734,12 @@ INSERT INTO transactions (
   'CONFINS',
   'DARF',
   'pendente',
-  'nao',
   'Geral',
   '',
   'DARF',
   '2025-06-25',
-  '2025-08-12T20:06:26.482Z',
-  '2025-08-12T20:06:26.482Z'
+  '2025-08-12T20:09:04.076Z',
+  '2025-08-12T20:09:04.076Z'
 ),
 (
   'a7391f7f-d046-fa25-782a-013da0246afb',
@@ -800,13 +748,12 @@ INSERT INTO transactions (
   'PIS-FATURAMENTO',
   'DARF',
   'pendente',
-  'nao',
   'Geral',
   '',
   'DARF',
   '2025-06-25',
-  '2025-08-12T20:06:26.483Z',
-  '2025-08-12T20:06:26.483Z'
+  '2025-08-12T20:09:04.076Z',
+  '2025-08-12T20:09:04.076Z'
 ),
 (
   '4919a82f-2d92-5fa4-0b77-4939a41b1b69',
@@ -815,13 +762,12 @@ INSERT INTO transactions (
   'ENERGIA BTN',
   'NEOENERGIA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Energia Elétrica',
   'NEOENERGIA',
   '2025-06-27',
-  '2025-08-12T20:06:26.483Z',
-  '2025-08-12T20:06:26.483Z'
+  '2025-08-12T20:09:04.076Z',
+  '2025-08-12T20:09:04.076Z'
 ),
 (
   '2bb82101-e36e-f1d6-ad81-e3489d5c7ae0',
@@ -830,13 +776,12 @@ INSERT INTO transactions (
   'ALUGUEL BTN',
   'FRANCISCO LAURENTINO DA SILVA',
   'transferência',
-  'nao',
   'Moradia',
   'Aluguel',
   'FRANCISCO LAURENTINO DA SILVA',
   '2025-06-30',
-  '2025-08-12T20:06:26.483Z',
-  '2025-08-12T20:06:26.483Z'
+  '2025-08-12T20:09:04.076Z',
+  '2025-08-12T20:09:04.076Z'
 ),
 (
   '865c701d-c55f-ba42-6fa3-3d04eb52c4dc',
@@ -845,13 +790,12 @@ INSERT INTO transactions (
   'DAS do Parcelamento 6/37',
   'DAS',
   'transferência',
-  'nao',
   'Geral',
   '',
   'DAS',
   '2025-06-30',
-  '2025-08-12T20:06:26.483Z',
-  '2025-08-12T20:06:26.483Z'
+  '2025-08-12T20:09:04.076Z',
+  '2025-08-12T20:09:04.076Z'
 ),
 (
   '5f7af907-2500-5678-85cf-4d78fccb1ed0',
@@ -860,13 +804,12 @@ INSERT INTO transactions (
   'COMUNICACHAT',
   'COMUNICACHAT',
   'transferência',
-  'nao',
   'Geral',
   '',
   'COMUNICACHAT',
   '2025-07-03',
-  '2025-08-12T20:06:26.483Z',
-  '2025-08-12T20:06:26.483Z'
+  '2025-08-12T20:09:04.076Z',
+  '2025-08-12T20:09:04.076Z'
 ),
 (
   'b299d42d-77f7-fe27-b7f1-08f4815dc826',
@@ -875,13 +818,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'MARIA MIRELA LACERDA GOMES',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'MARIA MIRELA LACERDA GOMES',
   '2025-07-04',
-  '2025-08-12T20:06:26.483Z',
-  '2025-08-12T20:06:26.483Z'
+  '2025-08-12T20:09:04.077Z',
+  '2025-08-12T20:09:04.077Z'
 ),
 (
   'b7511280-57f5-eb67-2bbe-97bc3dd2d293',
@@ -890,13 +832,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'MARIA DAS DORES LUCENA SANTOS DA SILVA',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'MARIA DAS DORES LUCENA SANTOS DA SILVA',
   '2025-07-04',
-  '2025-08-12T20:06:26.483Z',
-  '2025-08-12T20:06:26.483Z'
+  '2025-08-12T20:09:04.077Z',
+  '2025-08-12T20:09:04.077Z'
 ),
 (
   'af80cff9-8a03-ad47-1053-4d81a7807c12',
@@ -905,13 +846,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'ISLAINE GONZAGA LUCENA',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'ISLAINE GONZAGA LUCENA',
   '2025-07-04',
-  '2025-08-12T20:06:26.483Z',
-  '2025-08-12T20:06:26.483Z'
+  '2025-08-12T20:09:04.077Z',
+  '2025-08-12T20:09:04.077Z'
 ),
 (
   'ccfeb8fb-656b-5147-f5c6-19f95e28f102',
@@ -920,13 +860,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'EMILY FERREIRA DOS SANTOS',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'EMILY FERREIRA DOS SANTOS',
   '2025-07-04',
-  '2025-08-12T20:06:26.483Z',
-  '2025-08-12T20:06:26.483Z'
+  '2025-08-12T20:09:04.077Z',
+  '2025-08-12T20:09:04.077Z'
 ),
 (
   'b2254242-3c9a-1b08-5a79-7f02883f173c',
@@ -935,13 +874,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'ELISNEIDE DOS SANTOS FERREIRA',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'ELISNEIDE DOS SANTOS FERREIRA',
   '2025-07-04',
-  '2025-08-12T20:06:26.484Z',
-  '2025-08-12T20:06:26.484Z'
+  '2025-08-12T20:09:04.077Z',
+  '2025-08-12T20:09:04.077Z'
 ),
 (
   '49a2ec3f-25cb-2b6e-fa34-4743c8958e77',
@@ -950,13 +888,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'CELIANE FUJISAWA VILELA',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'CELIANE FUJISAWA VILELA',
   '2025-07-04',
-  '2025-08-12T20:06:26.484Z',
-  '2025-08-12T20:06:26.484Z'
+  '2025-08-12T20:09:04.077Z',
+  '2025-08-12T20:09:04.077Z'
 ),
 (
   '14634fb9-55b4-d14c-5faf-37c3a77fb387',
@@ -965,13 +902,12 @@ INSERT INTO transactions (
   'AGUA CENTRO',
   'EMBASA',
   'pendente',
-  'nao',
   'Serviços Públicos',
   'Água e Esgoto',
   'EMBASA',
   '2025-07-05',
-  '2025-08-12T20:06:26.484Z',
-  '2025-08-12T20:06:26.484Z'
+  '2025-08-12T20:09:04.077Z',
+  '2025-08-12T20:09:04.077Z'
 ),
 (
   '1ac8eb2a-d501-466c-d648-ff850d1558fc',
@@ -980,13 +916,12 @@ INSERT INTO transactions (
   'AGUA BTN',
   'EMBASA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Água e Esgoto',
   'EMBASA',
   '2025-07-07',
-  '2025-08-12T20:06:26.484Z',
-  '2025-08-12T20:06:26.484Z'
+  '2025-08-12T20:09:04.077Z',
+  '2025-08-12T20:09:04.077Z'
 ),
 (
   '4618a511-96da-e585-3928-b8eab2dedc45',
@@ -995,13 +930,12 @@ INSERT INTO transactions (
   'PARCELAMENTO INTER 02/34',
   'INTER',
   'transferência',
-  'nao',
   'Geral',
   '',
   'INTER',
   '2025-07-09',
-  '2025-08-12T20:06:26.484Z',
-  '2025-08-12T20:06:26.484Z'
+  '2025-08-12T20:09:04.077Z',
+  '2025-08-12T20:09:04.077Z'
 ),
 (
   '7466cd5b-cb8d-7cc8-1070-be4088eb64fb',
@@ -1010,13 +944,12 @@ INSERT INTO transactions (
   'HONORARIOS CONTABEIS',
   'BUREAU',
   'transferência',
-  'nao',
   'Serviços Profissionais',
   'Honorários',
   'BUREAU',
   '2025-07-10',
-  '2025-08-12T20:06:26.484Z',
-  '2025-08-12T20:06:26.484Z'
+  '2025-08-12T20:09:04.077Z',
+  '2025-08-12T20:09:04.077Z'
 ),
 (
   'b63d73a0-bff5-2d74-073d-7cf92f9d3c4c',
@@ -1025,13 +958,12 @@ INSERT INTO transactions (
   'HONORARIOS CONTABEIS',
   'BUREAU',
   'transferência',
-  'nao',
   'Serviços Profissionais',
   'Honorários',
   'BUREAU',
   '2025-07-10',
-  '2025-08-12T20:06:26.484Z',
-  '2025-08-12T20:06:26.484Z'
+  '2025-08-12T20:09:04.077Z',
+  '2025-08-12T20:09:04.077Z'
 ),
 (
   '6a8b7262-82cb-65c8-3878-7b76fbbbebbd',
@@ -1040,13 +972,12 @@ INSERT INTO transactions (
   'ISQN BARUERI',
   'PREFEITURA DE BARUERI',
   'pendente',
-  'nao',
   'Geral',
   '',
   'PREFEITURA DE BARUERI',
   '2025-07-10',
-  '2025-08-12T20:06:26.484Z',
-  '2025-08-12T20:06:26.484Z'
+  '2025-08-12T20:09:04.077Z',
+  '2025-08-12T20:09:04.077Z'
 ),
 (
   'f2b75abc-4b54-6e5a-f208-0683175a4706',
@@ -1055,13 +986,12 @@ INSERT INTO transactions (
   'ADVOGADO',
   'GUILHERME MINUZO',
   'pendente',
-  'nao',
   'Geral',
   '',
   'GUILHERME MINUZO',
   '2025-07-10',
-  '2025-08-12T20:06:26.484Z',
-  '2025-08-12T20:06:26.484Z'
+  '2025-08-12T20:09:04.077Z',
+  '2025-08-12T20:09:04.077Z'
 ),
 (
   '8f229139-5a0c-4302-b99c-9ed89c7b670d',
@@ -1070,13 +1000,12 @@ INSERT INTO transactions (
   'SERVIÇO DE POSTAGEM',
   'CORREIOS',
   'transferência',
-  'nao',
   'Geral',
   '',
   'CORREIOS',
   '2025-07-11',
-  '2025-08-12T20:06:26.484Z',
-  '2025-08-12T20:06:26.484Z'
+  '2025-08-12T20:09:04.078Z',
+  '2025-08-12T20:09:04.078Z'
 ),
 (
   '5b3b57c1-0ccb-50cd-d7ef-9f8df32d7556',
@@ -1085,13 +1014,12 @@ INSERT INTO transactions (
   'WEBDEC',
   'WEBDEC',
   'transferência',
-  'nao',
   'Geral',
   '',
   'WEBDEC',
   '2025-07-13',
-  '2025-08-12T20:06:26.484Z',
-  '2025-08-12T20:06:26.484Z'
+  '2025-08-12T20:09:04.078Z',
+  '2025-08-12T20:09:04.078Z'
 ),
 (
   '0aabd329-49d9-81e2-c464-ff77a42debd9',
@@ -1100,13 +1028,12 @@ INSERT INTO transactions (
   'SERVIÇO DE POSTAGEM',
   'CORREIOS',
   'transferência',
-  'nao',
   'Geral',
   '',
   'CORREIOS',
   '2025-07-13',
-  '2025-08-12T20:06:26.484Z',
-  '2025-08-12T20:06:26.484Z'
+  '2025-08-12T20:09:04.078Z',
+  '2025-08-12T20:09:04.078Z'
 ),
 (
   '03c7fcf7-4405-ddf4-6e36-7acfa4237cec',
@@ -1115,13 +1042,12 @@ INSERT INTO transactions (
   'DIFERENÇA DE ALUGUEL BTN 3X6',
   'FRANCISCO LAURENTINO DA SILVA',
   'transferência',
-  'nao',
   'Moradia',
   'Aluguel',
   'FRANCISCO LAURENTINO DA SILVA',
   '2025-07-15',
-  '2025-08-12T20:06:26.484Z',
-  '2025-08-12T20:06:26.484Z'
+  '2025-08-12T20:09:04.078Z',
+  '2025-08-12T20:09:04.078Z'
 ),
 (
   'edb9c2cf-41ef-9d29-dc84-bc64c9520ed1',
@@ -1130,13 +1056,12 @@ INSERT INTO transactions (
   'ENERGIA CENTRO',
   'NEOENERGIA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Energia Elétrica',
   'NEOENERGIA',
   '2025-07-16',
-  '2025-08-12T20:06:26.484Z',
-  '2025-08-12T20:06:26.484Z'
+  '2025-08-12T20:09:04.078Z',
+  '2025-08-12T20:09:04.078Z'
 ),
 (
   '4f8d410d-bb29-7766-a1c0-cbfa07fb59b4',
@@ -1145,13 +1070,12 @@ INSERT INTO transactions (
   'DARF PREVIDENCIÁRIO',
   'DARF',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'DARF',
   '2025-07-18',
-  '2025-08-12T20:06:26.485Z',
-  '2025-08-12T20:06:26.485Z'
+  '2025-08-12T20:09:04.078Z',
+  '2025-08-12T20:09:04.078Z'
 ),
 (
   '8366fa55-2afc-1069-6836-3a437d60647b',
@@ -1160,13 +1084,12 @@ INSERT INTO transactions (
   'FGTS',
   'FGTS 06/2025',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'FGTS 06/2025',
   '2025-07-18',
-  '2025-08-12T20:06:26.485Z',
-  '2025-08-12T20:06:26.485Z'
+  '2025-08-12T20:09:04.078Z',
+  '2025-08-12T20:09:04.078Z'
 ),
 (
   '1acd4e71-44ab-ded8-6eb6-8f96137fe3ed',
@@ -1175,13 +1098,12 @@ INSERT INTO transactions (
   'ALUGUEL CENTRO',
   'JOSE GOMES DE SIQUEIRA',
   'transferência',
-  'nao',
   'Moradia',
   'Aluguel',
   'JOSE GOMES DE SIQUEIRA',
   '2025-07-20',
-  '2025-08-12T20:06:26.485Z',
-  '2025-08-12T20:06:26.485Z'
+  '2025-08-12T20:09:04.078Z',
+  '2025-08-12T20:09:04.078Z'
 ),
 (
   'c9f1b3cb-a1a3-7dfc-f352-1a01224476f8',
@@ -1190,13 +1112,12 @@ INSERT INTO transactions (
   'DAS',
   'DAS',
   'pendente',
-  'nao',
   'Geral',
   '',
   'DAS',
   '2025-07-21',
-  '2025-08-12T20:06:26.485Z',
-  '2025-08-12T20:06:26.485Z'
+  '2025-08-12T20:09:04.078Z',
+  '2025-08-12T20:09:04.078Z'
 ),
 (
   '526ac0ef-1a23-61dd-3b24-771815d485c4',
@@ -1205,13 +1126,12 @@ INSERT INTO transactions (
   'ESCRITORIO VIRTUAL',
   'MYPLACEOFFICE',
   'transferência',
-  'nao',
   'Geral',
   '',
   'MYPLACEOFFICE',
   '2025-07-25',
-  '2025-08-12T20:06:26.485Z',
-  '2025-08-12T20:06:26.485Z'
+  '2025-08-12T20:09:04.078Z',
+  '2025-08-12T20:09:04.078Z'
 ),
 (
   'f9bd62b3-da10-3f8a-7796-14a2af2fa5a8',
@@ -1220,13 +1140,12 @@ INSERT INTO transactions (
   'COFINS CUMULATIVO/ELISLECIO',
   'DARF',
   'pendente',
-  'nao',
   'Geral',
   '',
   'DARF',
   '2025-07-25',
-  '2025-08-12T20:06:26.485Z',
-  '2025-08-12T20:06:26.485Z'
+  '2025-08-12T20:09:04.078Z',
+  '2025-08-12T20:09:04.078Z'
 ),
 (
   'a3257d93-9f9b-8385-64ff-051e531ba91e',
@@ -1235,13 +1154,12 @@ INSERT INTO transactions (
   'PIS CUMULATIVO/ELISLECIO',
   'DARF',
   'pendente',
-  'nao',
   'Geral',
   '',
   'DARF',
   '2025-07-25',
-  '2025-08-12T20:06:26.485Z',
-  '2025-08-12T20:06:26.485Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   'f75b5cec-0a50-3056-58cf-f8e326e407f0',
@@ -1250,13 +1168,12 @@ INSERT INTO transactions (
   'ENERGIA BTN',
   'NEOENERGIA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Energia Elétrica',
   'NEOENERGIA',
   '2025-07-29',
-  '2025-08-12T20:06:26.485Z',
-  '2025-08-12T20:06:26.485Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   '543787b2-737a-4fff-7ad2-9840cc58c063',
@@ -1265,13 +1182,12 @@ INSERT INTO transactions (
   'DAS/DS Parcelamento 7/37',
   'DAS',
   'transferência',
-  'nao',
   'Geral',
   '',
   'DAS',
   '2025-07-30',
-  '2025-08-12T20:06:26.485Z',
-  '2025-08-12T20:06:26.485Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   '22aa0bde-8c32-3992-006b-fbe6a0b3d6ed',
@@ -1280,13 +1196,12 @@ INSERT INTO transactions (
   'ALUGUEL BTN',
   'FRANCISCO LAURENTINO DA SILVA',
   'transferência',
-  'nao',
   'Moradia',
   'Aluguel',
   'FRANCISCO LAURENTINO DA SILVA',
   '2025-07-30',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   'a5acc058-2304-55e4-df1a-c8b3e1eff222',
@@ -1295,13 +1210,12 @@ INSERT INTO transactions (
   'CSLL PRESUMIDO MENSAL 042025',
   'RECEITA FEDERAL',
   'pendente',
-  'nao',
   'Geral',
   '',
   'RECEITA FEDERAL',
   '2025-07-31',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   'c809079f-789b-b634-f59c-0182db834777',
@@ -1310,13 +1224,12 @@ INSERT INTO transactions (
   'DARF IRPJ ELISLECIO',
   'DARF',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'DARF',
   '2025-07-31',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   'd83586e7-c911-b43e-2d58-c440bd67cb38',
@@ -1325,13 +1238,12 @@ INSERT INTO transactions (
   'DARF CSLL ELISLECIO',
   'DARF',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'DARF',
   '2025-07-31',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   'd073fba6-e186-65c0-852b-5bbd305b3dc1',
@@ -1340,13 +1252,12 @@ INSERT INTO transactions (
   'ENTRADA DO PARCELAMENTO DIVIDA ATIVA 1/12',
   'DAS',
   'transferência',
-  'nao',
   'Geral',
   '',
   'DAS',
   '2025-07-31',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   'bdf3858b-ab31-b68f-f921-d8b6737814f2',
@@ -1355,13 +1266,12 @@ INSERT INTO transactions (
   'CSLL PRESUMIDO MENSAL',
   'DARF/ELISLECIO',
   'pendente',
-  'nao',
   'Geral',
   '',
   'DARF/ELISLECIO',
   '2025-07-31',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   '190c1bd6-e6a3-d8fe-a80c-69ca1ffe9e36',
@@ -1370,13 +1280,12 @@ INSERT INTO transactions (
   'IRPJ PRESUMIDO MENSAL',
   'DARF/ELISLECIO',
   'pendente',
-  'nao',
   'Geral',
   '',
   'DARF/ELISLECIO',
   '2025-07-31',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   'aa02a5e5-a604-e062-43d7-6ac75f21d9a0',
@@ -1385,13 +1294,12 @@ INSERT INTO transactions (
   'COMUNICACHAT',
   'COMUNICACHAT',
   'transferência',
-  'nao',
   'Geral',
   '',
   'COMUNICACHAT',
   '2025-08-03',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   '2f0b9608-8301-a653-6057-b67b4b554ef7',
@@ -1400,13 +1308,12 @@ INSERT INTO transactions (
   'AGUA CENTRO',
   'EMBASA',
   'pendente',
-  'nao',
   'Serviços Públicos',
   'Água e Esgoto',
   'EMBASA',
   '2025-08-05',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   'e6163c35-88ac-3efa-0489-9b5c14ce3918',
@@ -1415,13 +1322,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'MARIA MIRELA LACERDA GOMES',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'MARIA MIRELA LACERDA GOMES',
   '2025-08-06',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   'ff4e08da-1c11-b0a6-913e-a2e512634cfd',
@@ -1430,13 +1336,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'MARIA DAS DORES LUCENA SANTOS DA SILVA',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'MARIA DAS DORES LUCENA SANTOS DA SILVA',
   '2025-08-06',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   'f35f25ef-f6b8-9710-0be8-69ab55f558e4',
@@ -1445,13 +1350,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'ISLAINE GONZAGA LUCENA',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'ISLAINE GONZAGA LUCENA',
   '2025-08-06',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   '710ef530-9150-15b7-8348-7a2a1cb8b1b3',
@@ -1460,13 +1364,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'EMILY FERREIRA DOS SANTOS',
   'pendente',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'EMILY FERREIRA DOS SANTOS',
   '2025-08-06',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   '3a7d1a20-fa0b-83db-6a65-97e55fb85070',
@@ -1475,13 +1378,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'ELISNEIDE DOS SANTOS FERREIRA',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'ELISNEIDE DOS SANTOS FERREIRA',
   '2025-08-06',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   'dfd178f7-3774-96cc-ecbf-ff0e6471fbc1',
@@ -1490,13 +1392,12 @@ INSERT INTO transactions (
   'PAGAMENTO FUNCIONARIOS',
   'CELIANE FUJISAWA VILELA',
   'transferência',
-  'nao',
   'Recursos Humanos',
   'Salários',
   'CELIANE FUJISAWA VILELA',
   '2025-08-06',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   'b737e36a-8679-44ab-820b-43ee6ba90a75',
@@ -1505,13 +1406,12 @@ INSERT INTO transactions (
   'AGUA BTN',
   'EMBASA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Água e Esgoto',
   'EMBASA',
   '2025-08-07',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   '54d2c0cc-6116-10ce-3350-472ba4257456',
@@ -1520,13 +1420,12 @@ INSERT INTO transactions (
   'PARCELAMENTO INTER 03/34',
   'INTER',
   'transferência',
-  'nao',
   'Geral',
   '',
   'INTER',
   '2025-08-09',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   'fa1d6d8c-11c9-c1fe-34fc-850846064dfb',
@@ -1535,13 +1434,12 @@ INSERT INTO transactions (
   'HONORARIOS CONTABEIS',
   'BUREAU',
   'pendente',
-  'nao',
   'Serviços Profissionais',
   'Honorários',
   'BUREAU',
   '2025-08-10',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   '6d67b784-8723-a8e9-6919-a0bedea42d38',
@@ -1550,13 +1448,12 @@ INSERT INTO transactions (
   'HONORARIOS CONTABEIS',
   'BUREAU',
   'pendente',
-  'nao',
   'Serviços Profissionais',
   'Honorários',
   'BUREAU',
   '2025-08-10',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   '57dcab67-0621-d48b-d48c-d364d04cd82e',
@@ -1565,13 +1462,12 @@ INSERT INTO transactions (
   'ADVOGADO',
   'GUILHERME MINUZO',
   'pendente',
-  'nao',
   'Geral',
   '',
   'GUILHERME MINUZO',
   '2025-08-10',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   '893a206d-1daa-415a-bf32-179f7f9a1ee2',
@@ -1580,13 +1476,12 @@ INSERT INTO transactions (
   'SERVIÇO DE POSTAGEM',
   'CORREIOS',
   'transferência',
-  'nao',
   'Geral',
   '',
   'CORREIOS',
   '2025-08-11',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.079Z',
+  '2025-08-12T20:09:04.079Z'
 ),
 (
   '7238d912-578e-28c0-39f5-31825c95a62e',
@@ -1595,13 +1490,12 @@ INSERT INTO transactions (
   'ISSQN',
   'BARUERI',
   'transferência',
-  'nao',
   'Geral',
   '',
   'BARUERI',
   '2025-08-11',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.080Z',
+  '2025-08-12T20:09:04.080Z'
 ),
 (
   '00918c3f-ab63-fce5-9fa8-af5737191aee',
@@ -1610,13 +1504,12 @@ INSERT INTO transactions (
   'WEBDEC',
   'WEBDEC',
   'pendente',
-  'nao',
   'Geral',
   '',
   'WEBDEC',
   '2025-08-13',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.080Z',
+  '2025-08-12T20:09:04.080Z'
 ),
 (
   '70b4b1ff-23d8-7e50-335b-407f63c1f3ad',
@@ -1625,13 +1518,12 @@ INSERT INTO transactions (
   'DIFERENÇA DE ALUGUEL BTN 3X6',
   'FRANCISCO LAURENTINO DA SILVA',
   'pendente',
-  'nao',
   'Moradia',
   'Aluguel',
   'FRANCISCO LAURENTINO DA SILVA',
   '2025-08-15',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.080Z',
+  '2025-08-12T20:09:04.080Z'
 ),
 (
   '7b644a3f-60c3-a981-1f79-4c2c92c6871c',
@@ -1640,13 +1532,12 @@ INSERT INTO transactions (
   'ENERGIA CENTRO',
   'NEOENERGIA',
   'pendente',
-  'nao',
   'Serviços Públicos',
   'Energia Elétrica',
   'NEOENERGIA',
   '2025-08-18',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.080Z',
+  '2025-08-12T20:09:04.080Z'
 ),
 (
   '099b225d-69df-3bce-09d4-eb96745dba69',
@@ -1655,13 +1546,12 @@ INSERT INTO transactions (
   'FGTS',
   'FGTS',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'FGTS',
   '2025-08-20',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.080Z',
+  '2025-08-12T20:09:04.080Z'
 ),
 (
   'b191a978-1c96-9e34-a175-1c82204f3de2',
@@ -1670,13 +1560,12 @@ INSERT INTO transactions (
   'DARF PREVIDENCIÁRIO',
   'DARF',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'DARF',
   '2025-08-20',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.080Z',
+  '2025-08-12T20:09:04.080Z'
 ),
 (
   'd1dea50d-8dc5-6562-f2b1-04d9f4edab75',
@@ -1685,13 +1574,12 @@ INSERT INTO transactions (
   'DAS DS',
   'DAS',
   'pendente',
-  'nao',
   'Geral',
   '',
   'DAS',
   '2025-08-20',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.080Z',
+  '2025-08-12T20:09:04.080Z'
 ),
 (
   'c75290df-642d-01ec-fc9e-4cd8525dd6a4',
@@ -1700,13 +1588,12 @@ INSERT INTO transactions (
   'ALUGUEL CENTRO',
   'JOSE GOMES DE SIQUEIRA',
   'pendente',
-  'nao',
   'Moradia',
   'Aluguel',
   'JOSE GOMES DE SIQUEIRA',
   '2025-08-20',
-  '2025-08-12T20:06:26.486Z',
-  '2025-08-12T20:06:26.486Z'
+  '2025-08-12T20:09:04.080Z',
+  '2025-08-12T20:09:04.080Z'
 ),
 (
   '13e351b8-2c2b-382b-8e11-d58c7f1e33d2',
@@ -1715,13 +1602,12 @@ INSERT INTO transactions (
   'DAS do Parcelamento 8/37',
   'DAS',
   'pendente',
-  'nao',
   'Geral',
   '',
   'DAS',
   '2025-08-30',
-  '2025-08-12T20:06:26.487Z',
-  '2025-08-12T20:06:26.487Z'
+  '2025-08-12T20:09:04.080Z',
+  '2025-08-12T20:09:04.080Z'
 ),
 (
   '7b13764f-bc0c-d407-6860-f6933773aaca',
@@ -1730,13 +1616,12 @@ INSERT INTO transactions (
   'ENTRADA DO PARCELAMENTO DIVIDA ATIVA 1/12',
   'DAS',
   'pendente',
-  'nao',
   'Geral',
   '',
   'DAS',
   '2025-08-30',
-  '2025-08-12T20:06:26.487Z',
-  '2025-08-12T20:06:26.487Z'
+  '2025-08-12T20:09:04.080Z',
+  '2025-08-12T20:09:04.080Z'
 ),
 (
   '40668154-29c1-160f-379f-1ec963cb8d93',
@@ -1745,13 +1630,12 @@ INSERT INTO transactions (
   'AGUA CENTRO',
   'EMBASA',
   'pendente',
-  'nao',
   'Serviços Públicos',
   'Água e Esgoto',
   'EMBASA',
   '2025-09-05',
-  '2025-08-12T20:06:26.487Z',
-  '2025-08-12T20:06:26.487Z'
+  '2025-08-12T20:09:04.080Z',
+  '2025-08-12T20:09:04.080Z'
 ),
 (
   'ce365da0-16de-f2b0-fb90-3dd1f0cd747a',
@@ -1760,13 +1644,12 @@ INSERT INTO transactions (
   'AGUA BTN',
   'EMBASA',
   'pendente',
-  'nao',
   'Serviços Públicos',
   'Água e Esgoto',
   'EMBASA',
   '2025-09-07',
-  '2025-08-12T20:06:26.487Z',
-  '2025-08-12T20:06:26.487Z'
+  '2025-08-12T20:09:04.081Z',
+  '2025-08-12T20:09:04.081Z'
 ),
 (
   '04610bed-285a-6871-1ad9-b8272a9f6ca3',
@@ -1775,13 +1658,12 @@ INSERT INTO transactions (
   'PARCELAMENTO INTER 03/34',
   'INTER',
   'pendente',
-  'nao',
   'Geral',
   '',
   'INTER',
   '2025-09-09',
-  '2025-08-12T20:06:26.487Z',
-  '2025-08-12T20:06:26.487Z'
+  '2025-08-12T20:09:04.081Z',
+  '2025-08-12T20:09:04.081Z'
 ),
 (
   'd316717e-2cd8-8ac2-7da8-83c203f7cb9f',
@@ -1790,13 +1672,12 @@ INSERT INTO transactions (
   'ADVOGADO',
   'GUILHERME MINUZO',
   'pendente',
-  'nao',
   'Geral',
   '',
   'GUILHERME MINUZO',
   '2025-09-10',
-  '2025-08-12T20:06:26.487Z',
-  '2025-08-12T20:06:26.487Z'
+  '2025-08-12T20:09:04.081Z',
+  '2025-08-12T20:09:04.081Z'
 ),
 (
   '28d40a2e-2d64-d82b-3ddd-8bfca2a9933e',
@@ -1805,13 +1686,12 @@ INSERT INTO transactions (
   'SERVIÇO DE POSTAGEM',
   'CORREIOS',
   'pendente',
-  'nao',
   'Geral',
   '',
   'CORREIOS',
   '2025-09-11',
-  '2025-08-12T20:06:26.487Z',
-  '2025-08-12T20:06:26.487Z'
+  '2025-08-12T20:09:04.081Z',
+  '2025-08-12T20:09:04.081Z'
 ),
 (
   '7430659d-d391-669c-e673-0be200fa8393',
@@ -1820,13 +1700,12 @@ INSERT INTO transactions (
   'WEBDEC',
   'WEBDEC',
   'pendente',
-  'nao',
   'Geral',
   '',
   'WEBDEC',
   '2025-09-13',
-  '2025-08-12T20:06:26.487Z',
-  '2025-08-12T20:06:26.487Z'
+  '2025-08-12T20:09:04.081Z',
+  '2025-08-12T20:09:04.081Z'
 ),
 (
   '15026da4-7409-83ce-7643-7b1c7698bc5a',
@@ -1835,13 +1714,12 @@ INSERT INTO transactions (
   'DIFERENÇA DE ALUGUEL BTN 3X6',
   'FRANCISCO LAURENTINO DA SILVA',
   'pendente',
-  'nao',
   'Moradia',
   'Aluguel',
   'FRANCISCO LAURENTINO DA SILVA',
   '2025-09-15',
-  '2025-08-12T20:06:26.487Z',
-  '2025-08-12T20:06:26.487Z'
+  '2025-08-12T20:09:04.081Z',
+  '2025-08-12T20:09:04.081Z'
 ),
 (
   'e7176bc0-f592-9a46-fdf0-2f8f3b260c3d',
@@ -1850,13 +1728,12 @@ INSERT INTO transactions (
   'ALUGUEL CENTRO',
   'JOSE GOMES DE SIQUEIRA',
   'pendente',
-  'nao',
   'Moradia',
   'Aluguel',
   'JOSE GOMES DE SIQUEIRA',
   '2025-09-20',
-  '2025-08-12T20:06:26.488Z',
-  '2025-08-12T20:06:26.488Z'
+  '2025-08-12T20:09:04.082Z',
+  '2025-08-12T20:09:04.082Z'
 ),
 (
   '7daf1882-9769-c039-4b27-1135ff0afde8',
@@ -1865,13 +1742,12 @@ INSERT INTO transactions (
   'DAS do Parcelamento 8/37',
   'DAS',
   'pendente',
-  'nao',
   'Geral',
   '',
   'DAS',
   '2025-09-30',
-  '2025-08-12T20:06:26.488Z',
-  '2025-08-12T20:06:26.488Z'
+  '2025-08-12T20:09:04.082Z',
+  '2025-08-12T20:09:04.082Z'
 ),
 (
   'c6fd821d-70d7-fb55-b2f0-3a571db41e23',
@@ -1880,13 +1756,12 @@ INSERT INTO transactions (
   'ENTRADA DO PARCELAMENTO DIVIDA ATIVA 2/12',
   'DAS',
   'pendente',
-  'nao',
   'Geral',
   '',
   'DAS',
   '2025-09-30',
-  '2025-08-12T20:06:26.488Z',
-  '2025-08-12T20:06:26.488Z'
+  '2025-08-12T20:09:04.082Z',
+  '2025-08-12T20:09:04.082Z'
 ),
 (
   '18862500-cd1e-9eeb-e700-f4c401e4cb52',
@@ -1895,13 +1770,12 @@ INSERT INTO transactions (
   'PARCELAMENTO INTER 2X27',
   'INTER',
   'pendente',
-  'nao',
   'Geral',
   '',
   'INTER',
   '2025-04-27',
-  '2025-08-12T20:06:26.494Z',
-  '2025-08-12T20:06:26.494Z'
+  '2025-08-12T20:09:04.090Z',
+  '2025-08-12T20:09:04.090Z'
 ),
 (
   'ee61c19b-60d3-2f8c-0eec-07d0fa6b1e2b',
@@ -1910,13 +1784,12 @@ INSERT INTO transactions (
   'FGTS',
   'FGTS',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'FGTS',
   '2025-06-20',
-  '2025-08-12T20:06:26.504Z',
-  '2025-08-12T20:06:26.504Z'
+  '2025-08-12T20:09:04.094Z',
+  '2025-08-12T20:09:04.094Z'
 ),
 (
   'd412463d-bcf1-5600-0f29-43dedc164bdb',
@@ -1925,13 +1798,12 @@ INSERT INTO transactions (
   'AGUA BTN',
   'EMBASA',
   'transferência',
-  'nao',
   'Serviços Públicos',
   'Água e Esgoto',
   'EMBASA',
   '2025-07-07',
-  '2025-08-12T20:06:26.507Z',
-  '2025-08-12T20:06:26.507Z'
+  '2025-08-12T20:09:04.100Z',
+  '2025-08-12T20:09:04.100Z'
 ),
 (
   'bcdb0c57-f600-f8c9-6e1e-8b03eee56514',
@@ -1940,13 +1812,12 @@ INSERT INTO transactions (
   'FGTS',
   'FGTS',
   'pendente',
-  'nao',
   'Impostos',
   '',
   'FGTS',
   '2025-07-18',
-  '2025-08-12T20:06:26.508Z',
-  '2025-08-12T20:06:26.508Z'
+  '2025-08-12T20:09:04.100Z',
+  '2025-08-12T20:09:04.100Z'
 ),
 (
   'f59cc604-ea25-ae2c-a1b8-da0ed820d164',
@@ -1955,13 +1826,12 @@ INSERT INTO transactions (
   'COMPRAS SUPERMERCADO',
   'KENIO SUPERMERCADO',
   'transferência',
-  'nao',
   'Geral',
   '',
   'KENIO SUPERMERCADO',
   '2025-07-30',
-  '2025-08-12T20:06:26.508Z',
-  '2025-08-12T20:06:26.508Z'
+  '2025-08-12T20:09:04.100Z',
+  '2025-08-12T20:09:04.100Z'
 ),
 (
   'f2dd42ae-971d-d6c2-93f8-b283329248d0',
@@ -1970,13 +1840,12 @@ INSERT INTO transactions (
   'MATERIAL DE LIMPEZA',
   'ESSENCIAL PRODUTOS',
   'transferência',
-  'nao',
   'Geral',
   '',
   'ESSENCIAL PRODUTOS',
   '2025-07-30',
-  '2025-08-12T20:06:26.508Z',
-  '2025-08-12T20:06:26.508Z'
+  '2025-08-12T20:09:04.100Z',
+  '2025-08-12T20:09:04.100Z'
 ),
 (
   '1f688e07-7512-28a8-6829-bfc3d50df162',
@@ -1985,13 +1854,12 @@ INSERT INTO transactions (
   'COMPRAS ADNAPEL',
   'ADNAPEL',
   'transferência',
-  'nao',
   'Geral',
   '',
   'ADNAPEL',
   '2025-07-30',
-  '2025-08-12T20:06:26.508Z',
-  '2025-08-12T20:06:26.508Z'
+  '2025-08-12T20:09:04.100Z',
+  '2025-08-12T20:09:04.100Z'
 );
 
 
