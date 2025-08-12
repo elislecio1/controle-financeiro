@@ -150,6 +150,27 @@ function App() {
     loadData()
   }
 
+  // Função para recarregar categorias e subcategorias
+  const handleCategoriaSaved = async () => {
+    try {
+      const categoriasData = await supabaseService.getCategorias()
+      const subcategoriasData = await supabaseService.getSubcategorias()
+      setCategorias(categoriasData)
+      setSubcategorias(subcategoriasData)
+    } catch (error) {
+      console.error('Erro ao recarregar categorias:', error)
+    }
+  }
+
+  const handleSubcategoriaSaved = async () => {
+    try {
+      const subcategoriasData = await supabaseService.getSubcategorias()
+      setSubcategorias(subcategoriasData)
+    } catch (error) {
+      console.error('Erro ao recarregar subcategorias:', error)
+    }
+  }
+
   // Função para exportar dados
   const handleExportData = async () => {
     try {
@@ -1188,6 +1209,8 @@ function App() {
             onOrcamentoChange={setOrcamentos}
             onContaChange={setContas}
             onCartaoChange={setCartoes}
+            onCategoriaSaved={handleCategoriaSaved}
+            onSubcategoriaSaved={handleSubcategoriaSaved}
           />
         )}
 

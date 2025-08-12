@@ -22,6 +22,8 @@ interface Module2Props {
   onOrcamentoChange: (orcamentos: Orcamento[]) => void
   onContaChange: (contas: ContaBancaria[]) => void
   onCartaoChange: (cartoes: CartaoCredito[]) => void
+  onCategoriaSaved?: () => void
+  onSubcategoriaSaved?: () => void
 }
 
 export default function Module2({
@@ -38,7 +40,9 @@ export default function Module2({
   onMetaChange,
   onOrcamentoChange,
   onContaChange,
-  onCartaoChange
+  onCartaoChange,
+  onCategoriaSaved,
+  onSubcategoriaSaved
 }: Module2Props) {
   const [activeSection, setActiveSection] = useState<'categorias' | 'centros' | 'metas' | 'contas' | 'cartoes'>('categorias')
 
@@ -124,6 +128,8 @@ export default function Module2({
           subcategorias={subcategorias}
           onCategoriaChange={onCategoriaChange}
           onSubcategoriaChange={onSubcategoriaChange}
+          onCategoriaSaved={onCategoriaSaved}
+          onSubcategoriaSaved={onSubcategoriaSaved}
         />
       )}
 
