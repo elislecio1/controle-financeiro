@@ -74,11 +74,9 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
     return numbers
   }
 
-  // Função para converter valor brasileiro para número - VERSÃO SIMPLES
+  // Função para converter valor brasileiro para número - VERSÃO MELHORADA
   const parseValue = (valueString: string): number => {
     if (!valueString || valueString.trim() === '') return 0
-    
-    console.log('🔍 parseValue - input:', valueString)
     
     // Remove espaços e símbolos de moeda
     let valor = valueString.replace(/[R$\s]/g, '')
@@ -100,7 +98,6 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
         const decimalPart = parts[1].substring(0, 2) // Limita a 2 casas decimais
         const valorConvertido = integerPart + '.' + decimalPart
         numero = parseFloat(valorConvertido)
-        console.log('🔍 parseValue - formato brasileiro:', valorConvertido, '→', numero)
       }
     }
     // Abordagem 2: Se tem ponto, trata como decimal inglês
@@ -108,45 +105,97 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
       const parts = valor.split('.')
       if (parts.length === 2 && parts[1].length <= 2) {
         numero = parseFloat(valor)
-        console.log('🔍 parseValue - formato inglês:', valor, '→', numero)
       } else {
         // Múltiplos pontos = milhares, remove todos
         const valorLimpo = valor.replace(/\./g, '')
         numero = parseFloat(valorLimpo)
-        console.log('🔍 parseValue - milhares removidos:', valorLimpo, '→', numero)
       }
     }
     // Abordagem 3: Apenas números
     else {
       numero = parseFloat(valor)
-      console.log('🔍 parseValue - apenas números:', valor, '→', numero)
     }
     
     const resultado = isNaN(numero) ? 0 : (isNegativo ? -numero : numero)
-    console.log('🔍 parseValue - resultado final:', resultado)
-    
     return resultado
   }
 
-  // Função para lidar com mudanças no campo valor - ABORDAGEM SIMPLES
-  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value
-    console.log('🔍 handleValorChange - inputValue:', inputValue)
+  // Função para formatar valor automaticamente durante digitação
+  const formatCurrencyInput = (value: string): string => {
+    if (!value) return ''
     
-    // Permite qualquer digitação, apenas remove R$ e espaços
-    let cleanValue = inputValue.replace(/[R$\s]/g, '')
-    console.log('🔍 cleanValue após limpeza:', cleanValue)
+    // Remove tudo que não é número, vírgula ou ponto
+    let cleanValue = value.replace(/[^\d,.]/g, '')
     
-    // Se está vazio, limpa o valor
-    if (!cleanValue) {
-      handleInputChange('valor', 0)
-      return
+    // Se não tem vírgula nem ponto, permite digitação livre
+    if (!cleanValue.includes(',') && !cleanValue.includes('.')) {
+      return cleanValue
     }
     
-    // Converte para número usando a função parseValue
-    const valor = parseValue(cleanValue)
-    console.log('🔍 valor convertido:', valor)
+    // Se tem vírgula, trata como formato brasileiro
+    if (cleanValue.includes(',')) {
+      const parts = cleanValue.split(',')
+      if (parts.length === 2) {
+        const integerPart = parts[0].replace(/\./g, '') // Remove pontos de milhares
+        const decimalPart = parts[1].substring(0, 2) // Limita a 2 casas decimais
+        
+        // Formata com pontos de milhares
+        const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+        
+        return `${formattedInteger},${decimalPart}`
+      }
+      return cleanValue
+    }
     
+    // Se tem ponto, verifica se é decimal ou milhares
+    if (cleanValue.includes('.')) {
+      const parts = cleanValue.split('.')
+      
+      // Se tem mais de 2 partes, é formato inglês (ex: 15.587.26)
+      if (parts.length > 2) {
+        // Remove todos os pontos e adiciona vírgula antes dos últimos 2 dígitos
+        const allDigits = parts.join('')
+        if (allDigits.length >= 2) {
+          const integerPart = allDigits.slice(0, -2)
+          const decimalPart = allDigits.slice(-2)
+          
+          // Formata com pontos de milhares
+          const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+          
+          return `${formattedInteger},${decimalPart}`
+        }
+      }
+      
+      // Se tem apenas 1 ponto, pode ser decimal inglês
+      if (parts.length === 2 && parts[1].length <= 2) {
+        // Converte para formato brasileiro
+        const integerPart = parts[0].replace(/\./g, '')
+        const decimalPart = parts[1]
+        
+        // Formata com pontos de milhares
+        const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+        
+        return `${formattedInteger},${decimalPart}`
+      }
+    }
+    
+    return cleanValue
+  }
+
+  // Função para lidar com mudanças no campo valor com formatação automática
+  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value
+    
+    // Formata o valor para exibição
+    const formattedValue = formatCurrencyInput(inputValue)
+    
+    // Atualiza o input com o valor formatado
+    e.target.value = formattedValue
+    
+    // Converte para número usando a função parseValue existente
+    const valor = parseValue(formattedValue)
+    
+    // Atualiza o estado
     handleInputChange('valor', valor)
   }
 
@@ -244,7 +293,7 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
               />
             </div>
 
-                         {/* Valor - VERSÃO ALTERNATIVA SEM FORMATAÇÃO */}
+                         {/* Valor - COM FORMATAÇÃO AUTOMÁTICA */}
              <div>
                <label className="block text-sm font-medium text-gray-700 mb-2">
                  Valor * <span className="text-red-500">*</span>
@@ -252,16 +301,13 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
                <input
                  type="text"
                  placeholder="0,00"
-                 value={formData.valor ? formData.valor.toString() : ''}
-                 onChange={(e) => {
-                   const valor = parseValue(e.target.value)
-                   handleInputChange('valor', valor)
-                 }}
+                 value={formData.valor ? formatCurrencyInput(formData.valor.toString()) : ''}
+                 onChange={handleValorChange}
                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                  required
                />
                <p className="mt-1 text-sm text-gray-500">
-                 Digite qualquer valor: 54,28 ou 15.587,26 ou 15587.26 ou 54.28
+                 Digite valores como: 54,28 ou 15.587,26 ou 15587.26
                </p>
              </div>
 
