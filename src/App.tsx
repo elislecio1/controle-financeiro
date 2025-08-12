@@ -57,8 +57,8 @@ function App() {
 
   // Novos estados para filtros de transações
   const [searchTerm, setSearchTerm] = useState<string>('')
-  const [filterTipo, setFilterTipo] = useState<string>('')
-  const [filterStatus, setFilterStatus] = useState<string>('')
+  const [filterTipo, setFilterTipo] = useState<string>('todos')
+  const [filterStatus, setFilterStatus] = useState<string>('todos')
 
   // Estados para edição de transações
   const [showEditModal, setShowEditModal] = useState(false)
@@ -147,6 +147,34 @@ function App() {
   useEffect(() => {
     loadData()
   }, [])
+
+  // useEffect para aplicar filtros de busca, tipo e status
+  useEffect(() => {
+    let filtered = [...data]
+    
+    // Aplicar filtro de busca
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(item =>
+        item.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.categoria.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.subcategoria?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.conta.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+    
+    // Aplicar filtro de tipo
+    if (filterTipo && filterTipo !== 'todos') {
+      filtered = filtered.filter(item => item.tipo === filterTipo)
+    }
+    
+    // Aplicar filtro de status
+    if (filterStatus && filterStatus !== 'todos') {
+      filtered = filtered.filter(item => item.status === filterStatus)
+    }
+    
+    setFilteredData(filtered)
+    setCurrentPage(1) // Reset para primeira página quando aplicar filtros
+  }, [data, searchTerm, filterTipo, filterStatus])
 
   // Função para recarregar dados quando uma transação é salva
   const handleTransactionSaved = () => {
@@ -987,9 +1015,10 @@ function App() {
                         onChange={(e) => setFilterTipo(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                       >
-                        <option value="">Todos</option>
+                        <option value="todos">Todos</option>
                         <option value="receita">Receitas</option>
                         <option value="despesa">Despesas</option>
+                        <option value="transferencia">Transferências</option>
                       </select>
                     </div>
                     
@@ -1000,7 +1029,7 @@ function App() {
                         onChange={(e) => setFilterStatus(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                       >
-                        <option value="">Todos</option>
+                        <option value="todos">Todos</option>
                         <option value="pendente">Pendente</option>
                         <option value="pago">Pago</option>
                         <option value="vencido">Vencido</option>
