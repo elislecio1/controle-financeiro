@@ -7,6 +7,7 @@ import TransactionForm from './components/TransactionForm'
 import Module2 from './components/modules/Module2/Module2'
 import Module3 from './components/modules/Module3/Module3'
 import Module4 from './components/modules/Module4/Module4'
+import DataImport from './components/DataImport'
 import { formatarMoeda, formatarValorTabela, getClasseValor } from './utils/formatters'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
@@ -711,7 +712,8 @@ function App() {
                     { id: 'transactions', name: 'Transações', icon: Plus },
             { id: 'module2', name: 'Organização e Planejamento', icon: Settings },
             { id: 'module3', name: 'Recursos Avançados', icon: TrendingUp },
-            { id: 'module4', name: 'Relatórios e Análises', icon: BarChart }
+            { id: 'module4', name: 'Relatórios e Análises', icon: BarChart },
+            { id: 'import', name: 'Importação de Dados', icon: Upload }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1272,6 +1274,10 @@ function App() {
             categorias={categorias}
             centrosCusto={centrosCusto}
           />
+        )}
+
+        {activeTab === 'import' && (
+          <DataImport />
         )}
 
         {/* Modal de Edição de Transação */}
