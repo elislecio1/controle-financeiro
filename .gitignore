@@ -15,6 +15,9 @@ build/
 .env.test.local
 .env.production.local
 
+# Google Sheets credentials
+google-sheets-credentials.json
+
 # IDE files
 .vscode/
 .idea/
