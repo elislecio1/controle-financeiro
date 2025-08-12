@@ -485,7 +485,7 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
                       Tipo
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Saldo Real
+                      Saldo
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Saldo Previsto
@@ -593,7 +593,7 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
               <div className="text-2xl font-bold text-green-600">
                 {formatarMoeda(contas.reduce((sum, conta) => sum + calcularSaldoReal(conta.nome), 0))}
               </div>
-              <div className="text-sm text-gray-500">Saldo Total Real</div>
+              <div className="text-sm text-gray-500">Saldo Total</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">

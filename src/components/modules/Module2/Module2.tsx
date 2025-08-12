@@ -87,7 +87,7 @@ export default function Module2({
               </div>
             </div>
             <div className="ml-4">
-              <h2 className="text-xl font-semibold text-gray-900">Módulo 2: Organização e Planejamento</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Organização e Planejamento</h2>
               <p className="text-sm text-gray-500">
                 Organize suas finanças com categorização, centros de custo, metas e orçamentos
               </p>

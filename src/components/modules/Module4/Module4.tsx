@@ -31,7 +31,7 @@ export default function Module4({ data, categorias, centrosCusto }: Module4Props
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Módulo 4: Relatórios e Análises</h1>
+          <h2 className="text-xl font-semibold text-gray-900">Relatórios e Análises</h2>
           <p className="text-gray-600 mt-2">
             Transformando dados em informações estratégicas para tomada de decisões
           </p>

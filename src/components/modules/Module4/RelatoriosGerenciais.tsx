@@ -13,68 +13,105 @@ export default function RelatoriosGerenciais({ data, categorias, centrosCusto }:
   const [periodo, setPeriodo] = useState('2024')
   const [mes, setMes] = useState('12')
 
-  // Dados mock para demonstração
-  const dreData = [
-    { conta: 'Receitas Operacionais', valor: 50000, tipo: 'receita' },
-    { conta: '(-) Deduções', valor: -5000, tipo: 'despesa' },
-    { conta: 'Receita Líquida', valor: 45000, tipo: 'receita' },
-    { conta: '(-) Custos', valor: -20000, tipo: 'despesa' },
-    { conta: 'Resultado Bruto', valor: 25000, tipo: 'receita' },
-    { conta: '(-) Despesas Operacionais', valor: -15000, tipo: 'despesa' },
-    { conta: 'Resultado Operacional', valor: 10000, tipo: 'receita' },
-    { conta: '(-) Despesas Financeiras', valor: -2000, tipo: 'despesa' },
-    { conta: 'Resultado Líquido', valor: 8000, tipo: 'receita' }
-  ]
+  // Calcular dados reais baseados nas transações
+  const calcularDadosReais = () => {
+    if (!data || data.length === 0) return { dre: [], balanco: [], fluxo: [], categoria: [], centro: [] }
 
-  const balancoData = [
-    { conta: 'Ativo Circulante', valor: 100000, tipo: 'ativo' },
-    { conta: 'Caixa e Bancos', valor: 30000, tipo: 'ativo' },
-    { conta: 'Contas a Receber', valor: 40000, tipo: 'ativo' },
-    { conta: 'Estoques', valor: 30000, tipo: 'ativo' },
-    { conta: 'Ativo Não Circulante', valor: 200000, tipo: 'ativo' },
-    { conta: 'Imobilizado', valor: 150000, tipo: 'ativo' },
-    { conta: 'Investimentos', valor: 50000, tipo: 'ativo' },
-    { conta: 'Total do Ativo', valor: 300000, tipo: 'ativo' },
-    { conta: 'Passivo Circulante', valor: 80000, tipo: 'passivo' },
-    { conta: 'Fornecedores', valor: 30000, tipo: 'passivo' },
-    { conta: 'Contas a Pagar', valor: 50000, tipo: 'passivo' },
-    { conta: 'Patrimônio Líquido', valor: 220000, tipo: 'patrimonio' },
-    { conta: 'Capital Social', valor: 200000, tipo: 'patrimonio' },
-    { conta: 'Lucros Acumulados', valor: 20000, tipo: 'patrimonio' },
-    { conta: 'Total do Passivo + PL', valor: 300000, tipo: 'passivo' }
-  ]
+    // Filtrar dados por período
+    const dadosPeriodo = data.filter(item => {
+      const ano = item.vencimento?.split('/')[2] || item.data?.split('/')[2]
+      return ano === periodo
+    })
 
-  const fluxoCaixaData = [
-    { mes: 'Jan', entradas: 45000, saidas: 35000, saldo: 10000 },
-    { mes: 'Fev', entradas: 48000, saidas: 38000, saldo: 10000 },
-    { mes: 'Mar', entradas: 52000, saidas: 42000, saldo: 10000 },
-    { mes: 'Abr', entradas: 49000, saidas: 39000, saldo: 10000 },
-    { mes: 'Mai', entradas: 51000, saidas: 41000, saldo: 10000 },
-    { mes: 'Jun', entradas: 54000, saidas: 44000, saldo: 10000 },
-    { mes: 'Jul', entradas: 47000, saidas: 37000, saldo: 10000 },
-    { mes: 'Ago', entradas: 50000, saidas: 40000, saldo: 10000 },
-    { mes: 'Set', entradas: 53000, saidas: 43000, saldo: 10000 },
-    { mes: 'Out', entradas: 46000, saidas: 36000, saldo: 10000 },
-    { mes: 'Nov', entradas: 49000, saidas: 39000, saldo: 10000 },
-    { mes: 'Dez', entradas: 52000, saidas: 42000, saldo: 10000 }
-  ]
+    // DRE - Demonstrativo de Resultados
+    const receitas = dadosPeriodo.filter(item => item.tipo === 'receita' && item.status === 'pago')
+      .reduce((sum, item) => sum + Math.abs(item.valor), 0)
+    
+    const despesas = dadosPeriodo.filter(item => item.tipo === 'despesa' && item.status === 'pago')
+      .reduce((sum, item) => sum + Math.abs(item.valor), 0)
+    
+    const resultadoLiquido = receitas - despesas
 
-  const categoriaData = [
-    { categoria: 'Alimentação', valor: 15000, percentual: 30 },
-    { categoria: 'Transporte', valor: 10000, percentual: 20 },
-    { categoria: 'Moradia', valor: 12000, percentual: 24 },
-    { categoria: 'Saúde', valor: 5000, percentual: 10 },
-    { categoria: 'Educação', valor: 3000, percentual: 6 },
-    { categoria: 'Lazer', valor: 2000, percentual: 4 },
-    { categoria: 'Serviços', valor: 3000, percentual: 6 }
-  ]
+    const dreData = [
+      { conta: 'Receitas Operacionais', valor: receitas, tipo: 'receita' },
+      { conta: '(-) Despesas Operacionais', valor: -despesas, tipo: 'despesa' },
+      { conta: 'Resultado Líquido', valor: resultadoLiquido, tipo: resultadoLiquido >= 0 ? 'receita' : 'despesa' }
+    ]
 
-  const centroCustoData = [
-    { centro: 'Administrativo', valor: 20000, percentual: 40 },
-    { centro: 'Comercial', valor: 15000, percentual: 30 },
-    { centro: 'Produção', valor: 10000, percentual: 20 },
-    { centro: 'TI', valor: 5000, percentual: 10 }
-  ]
+    // Balanço Patrimonial
+    const ativoCirculante = dadosPeriodo.filter(item => 
+      item.tipo === 'receita' && item.status === 'pago'
+    ).reduce((sum, item) => sum + Math.abs(item.valor), 0)
+    
+    const passivoCirculante = dadosPeriodo.filter(item => 
+      item.tipo === 'despesa' && item.status === 'pendente'
+    ).reduce((sum, item) => sum + Math.abs(item.valor), 0)
+    
+    const patrimonioLiquido = ativoCirculante - passivoCirculante
+
+    const balancoData = [
+      { conta: 'Ativo Circulante', valor: ativoCirculante, tipo: 'ativo' },
+      { conta: 'Passivo Circulante', valor: passivoCirculante, tipo: 'passivo' },
+      { conta: 'Patrimônio Líquido', valor: patrimonioLiquido, tipo: 'patrimonio' }
+    ]
+
+    // Fluxo de Caixa por mês
+    const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    const fluxoCaixaData = meses.map((nomeMes, index) => {
+      const mesNum = index + 1
+      const dadosMes = dadosPeriodo.filter(item => {
+        const mesItem = parseInt(item.vencimento?.split('/')[1] || item.data?.split('/')[1])
+        return mesItem === mesNum
+      })
+      
+      const entradas = dadosMes.filter(item => item.tipo === 'receita' && item.status === 'pago')
+        .reduce((sum, item) => sum + Math.abs(item.valor), 0)
+      
+      const saidas = dadosMes.filter(item => item.tipo === 'despesa' && item.status === 'pago')
+        .reduce((sum, item) => sum + Math.abs(item.valor), 0)
+      
+      return {
+        mes: nomeMes,
+        entradas,
+        saidas,
+        saldo: entradas - saidas
+      }
+    })
+
+    // Análise por Categoria
+    const categoriaData = categorias.map(cat => {
+      const valor = dadosPeriodo.filter(item => 
+        item.categoria === cat.nome && item.status === 'pago'
+      ).reduce((sum, item) => sum + Math.abs(item.valor), 0)
+      
+      const percentual = despesas > 0 ? (valor / despesas) * 100 : 0
+      
+      return {
+        categoria: cat.nome,
+        valor,
+        percentual: Math.round(percentual * 100) / 100
+      }
+    }).filter(item => item.valor > 0).sort((a, b) => b.valor - a.valor)
+
+    // Análise por Centro de Custo
+    const centroCustoData = centrosCusto.map(centro => {
+      const valor = dadosPeriodo.filter(item => 
+        item.centro === centro.nome && item.status === 'pago'
+      ).reduce((sum, item) => sum + Math.abs(item.valor), 0)
+      
+      const percentual = despesas > 0 ? (valor / despesas) * 100 : 0
+      
+      return {
+        centro: centro.nome,
+        valor,
+        percentual: Math.round(percentual * 100) / 100
+      }
+    }).filter(item => item.valor > 0).sort((a, b) => b.valor - a.valor)
+
+    return { dre: dreData, balanco: balancoData, fluxo: fluxoCaixaData, categoria: categoriaData, centro: centroCustoData }
+  }
+
+  const { dre: dreData, balanco: balancoData, fluxo: fluxoCaixaData, categoria: categoriaData, centro: centroCustoData } = calcularDadosReais()
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658']
 
