@@ -279,10 +279,9 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async getData(): Promise<SheetData[]> {
     try {
-      // Se o Supabase não estiver configurado, usar dados mock
+      // Se o Supabase não estiver configurado, retornar erro
       if (!isSupabaseConfigured) {
-        console.log('🔄 Supabase não configurado, usando dados mock')
-        return mockData
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY')
       }
       
       console.log('🔍 Conectando com Supabase...')
@@ -294,8 +293,8 @@ class SupabaseServiceImpl implements SupabaseService {
         .limit(1)
 
       if (testError) {
-        console.log('⚠️ Não foi possível conectar ao Supabase, usando dados mock')
-        return mockData
+        console.error('❌ Erro na conexão com Supabase:', testError)
+        throw new Error(`Erro na conexão: ${testError.message}`)
       }
 
       const { data, error } = await supabase
@@ -305,8 +304,7 @@ class SupabaseServiceImpl implements SupabaseService {
 
       if (error) {
         console.error('❌ Erro ao buscar dados:', error)
-        console.log('⚠️ Usando dados mock devido ao erro')
-        return mockData
+        throw new Error(`Erro ao buscar dados: ${error.message}`)
       }
 
       console.log('✅ Dados carregados com sucesso:', data?.length || 0, 'registros')
@@ -342,8 +340,7 @@ class SupabaseServiceImpl implements SupabaseService {
       return sheetData
     } catch (error: any) {
       console.error('❌ Erro ao carregar dados:', error)
-      console.log('⚠️ Usando dados mock devido ao erro')
-      return mockData
+      throw error
     }
   }
 
@@ -622,16 +619,14 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async testConnection(): Promise<{ success: boolean; message: string; data?: any }> {
     try {
-      // Se o Supabase não estiver configurado, retornar sucesso com dados mock
+      // Se o Supabase não estiver configurado, retornar erro
       if (!isSupabaseConfigured) {
-        console.log('🔄 Supabase não configurado, usando modo offline')
         return {
-          success: true,
-          message: 'Sistema funcionando em modo offline com dados de demonstração',
+          success: false,
+          message: 'Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY',
           data: { 
-            mode: 'offline',
-            transactions: mockData.length,
-            categories: mockCategorias.length
+            mode: 'error',
+            error: 'missing_config'
           }
         }
       }
@@ -774,10 +769,9 @@ class SupabaseServiceImpl implements SupabaseService {
   // Métodos para Categorias
   async getCategorias(): Promise<Categoria[]> {
     try {
-      // Se o Supabase não estiver configurado, usar dados mock
+      // Se o Supabase não estiver configurado, retornar erro
       if (!isSupabaseConfigured) {
-        console.log('🔄 Supabase não configurado, usando categorias mock')
-        return mockCategorias
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY')
       }
       
       console.log('🔍 Buscando categorias no Supabase...')
@@ -789,15 +783,15 @@ class SupabaseServiceImpl implements SupabaseService {
         .order('nome')
 
       if (error) {
-        console.log('⚠️ Erro ao buscar categorias, usando dados mock')
-        return mockCategorias
+        console.error('❌ Erro ao buscar categorias:', error)
+        throw new Error(`Erro ao buscar categorias: ${error.message}`)
       }
 
       console.log('✅ Categorias carregadas:', data?.length || 0, 'registros')
-      return data || mockCategorias
+      return data || []
     } catch (error) {
       console.error('❌ Erro ao buscar categorias:', error)
-      return mockCategorias
+      throw error
     }
   }
 

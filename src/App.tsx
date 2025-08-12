@@ -96,13 +96,28 @@ function App() {
       setConnectionStatus({ success: true, message: 'Dados carregados com sucesso!' })
     } catch (error: any) {
       console.error('❌ Erro ao carregar dados:', error)
-      setConnectionStatus({ 
-        success: false, 
-        message: error.message || 'Erro ao carregar dados do banco. Tente novamente.' 
-      })
+      
+      // Verificar se é erro de configuração do Supabase
+      if (error.message && error.message.includes('Supabase não configurado')) {
+        setConnectionStatus({ 
+          success: false, 
+          message: '⚠️ Supabase não configurado. Configure as variáveis de ambiente para conectar ao banco de dados.' 
+        })
+      } else {
+        setConnectionStatus({ 
+          success: false, 
+          message: error.message || 'Erro ao carregar dados do banco. Tente novamente.' 
+        })
+      }
+      
       // Não define dados simulados, mantém arrays vazios
       setData([])
       setFilteredData([])
+      setCategorias([])
+      setSubcategorias([])
+      setContas([])
+      setCartoes([])
+      setInvestimentos([])
     } finally {
       setLoading(false)
     }
