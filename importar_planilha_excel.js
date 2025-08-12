@@ -334,7 +334,7 @@ function gerarSQL(transacoes) {
 
 -- Inserir transações únicas
 INSERT INTO transactions (
-  id, data, descricao, valor, tipo, status, conta, 
+  id, data, valor, descricao, conta, forma, tipo_transferencia, 
   categoria, subcategoria, contato, vencimento, 
   created_at, updated_at
 ) VALUES
@@ -343,14 +343,30 @@ INSERT INTO transactions (
   transacoes.forEach((transacao, index) => {
     const isLast = index === transacoes.length - 1;
     
+    // Determinar forma de pagamento baseado no status
+    let forma = 'dinheiro';
+    if (transacao.status === 'pago') {
+      if (transacao.conta.toLowerCase().includes('cartão') || transacao.conta.toLowerCase().includes('cartao')) {
+        forma = 'cartão';
+      } else if (transacao.conta.toLowerCase().includes('pix') || transacao.conta.toLowerCase().includes('transferência')) {
+        forma = 'pix';
+      } else if (transacao.conta.toLowerCase().includes('boleto')) {
+        forma = 'boleto';
+      } else {
+        forma = 'transferência';
+      }
+    } else {
+      forma = 'pendente';
+    }
+    
     sql += `(
   '${transacao.id}',
   '${transacao.data}',
-  '${transacao.descricao.replace(/'/g, "''")}',
   ${transacao.valor},
-  '${transacao.tipo}',
-  '${transacao.status}',
+  '${transacao.descricao.replace(/'/g, "''")}',
   '${transacao.conta.replace(/'/g, "''")}',
+  '${forma}',
+  '${transacao.tipo === 'transferencia' ? 'sim' : 'nao'}',
   '${transacao.categoria.replace(/'/g, "''")}',
   '${transacao.subcategoria.replace(/'/g, "''")}',
   '${transacao.contato.replace(/'/g, "''")}',
@@ -375,7 +391,7 @@ WHERE created_at >= '${new Date().toISOString().split('T')[0]}';
 
 -- Mostrar algumas transações inseridas para verificação
 SELECT 
-  data, descricao, valor, tipo, status, conta, categoria
+  data, descricao, valor, tipo, status, conta, categoria, forma
 FROM transactions 
 WHERE created_at >= '${new Date().toISOString().split('T')[0]}'
 ORDER BY data DESC
