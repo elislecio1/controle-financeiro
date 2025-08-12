@@ -27,6 +27,7 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
   
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [valorDisplay, setValorDisplay] = useState<string>('') // Estado local para o valor exibido
 
   const handleInputChange = (field: keyof NewTransaction, value: string | number) => {
     setFormData(prev => ({
@@ -120,7 +121,7 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
     return resultado
   }
 
-  // Função para formatar valor automaticamente durante digitação
+  // Função para formatar valor automaticamente durante digitação - VERSÃO SIMPLIFICADA
   const formatCurrencyInput = (value: string): string => {
     if (!value) return ''
     
@@ -182,21 +183,48 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
     return cleanValue
   }
 
-  // Função para lidar com mudanças no campo valor com formatação automática
+  // Função para lidar com mudanças no campo valor com formatação automática - VERSÃO CORRIGIDA
   const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value
+    
+    // Atualiza o estado de exibição imediatamente
+    setValorDisplay(inputValue)
     
     // Formata o valor para exibição
     const formattedValue = formatCurrencyInput(inputValue)
     
-    // Atualiza o input com o valor formatado
-    e.target.value = formattedValue
-    
     // Converte para número usando a função parseValue existente
     const valor = parseValue(formattedValue)
     
-    // Atualiza o estado
+    // Atualiza o estado principal
     handleInputChange('valor', valor)
+    
+    // Atualiza o estado de exibição com o valor formatado
+    setValorDisplay(formattedValue)
+  }
+
+  // Função para exibir o valor formatado no input
+  const getDisplayValue = (): string => {
+    if (!formData.valor || formData.valor === 0) return ''
+    
+    // Converte o número para string e formata
+    const valorString = formData.valor.toString()
+    
+    // Se o valor tem decimais, formata como moeda brasileira
+    if (valorString.includes('.')) {
+      const parts = valorString.split('.')
+      const integerPart = parts[0]
+      const decimalPart = parts[1].padEnd(2, '0').substring(0, 2)
+      
+      // Adiciona pontos de milhares
+      const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+      
+      return `${formattedInteger},${decimalPart}`
+    }
+    
+    // Se é número inteiro, adiciona vírgula e zeros
+    const formattedInteger = valorString.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    return `${formattedInteger},00`
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -246,6 +274,7 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
       parcelas: 1,
       contaTransferencia: ''
     })
+    setValorDisplay('') // Limpa também o estado de exibição
   }
 
   return (
@@ -301,7 +330,7 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
                <input
                  type="text"
                  placeholder="0,00"
-                 value={formData.valor ? formatCurrencyInput(formData.valor.toString()) : ''}
+                 value={valorDisplay}
                  onChange={handleValorChange}
                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                  required
