@@ -125,11 +125,21 @@ const DataImport: React.FC = () => {
         if (data.length > 0) {
           const headers = data[0]
           const autoMapping: ColumnMapping = {}
+          
+          // Criar mapeamento baseado na estrutura real do arquivo
           headers.forEach((header: string, index: number) => {
             const columnLetter = String.fromCharCode(65 + index) // A, B, C, etc.
-            autoMapping[columnLetter] = detectColumnType(header, data.slice(1))
+            const detectedType = detectColumnType(header, data.slice(1))
+            autoMapping[columnLetter] = detectedType
+            
+            console.log(`Coluna ${columnLetter}: "${header}" -> ${detectedType}`)
           })
+          
           setColumnMapping(autoMapping)
+          
+          // Log para debug
+          console.log('Mapeamento automático criado:', autoMapping)
+          console.log('Primeiras linhas de dados:', data.slice(0, 3))
         }
       }
     } catch (error) {
@@ -182,26 +192,34 @@ const DataImport: React.FC = () => {
     const headerLower = header.toLowerCase()
     
     // Detectar tipo baseado no cabeçalho
-    if (headerLower.includes('data') || headerLower.includes('date') || headerLower.includes('dt')) {
+    if (headerLower.includes('data') || headerLower.includes('date') || headerLower.includes('dt') || 
+        headerLower.includes('vencimento') || headerLower.includes('pagamento')) {
       return 'data'
-    } else if (headerLower.includes('desc') || headerLower.includes('memo') || headerLower.includes('obs')) {
+    } else if (headerLower.includes('desc') || headerLower.includes('memo') || headerLower.includes('obs') ||
+               headerLower.includes('descrição') || headerLower.includes('descricao')) {
       return 'descricao'
     } else if (headerLower.includes('valor') || headerLower.includes('amount') || headerLower.includes('vl')) {
       return 'valor'
     } else if (headerLower.includes('tipo') || headerLower.includes('type')) {
       return 'tipo'
-    } else if (headerLower.includes('status') || headerLower.includes('situacao')) {
+    } else if (headerLower.includes('status') || headerLower.includes('situacao') || 
+               headerLower.includes('situação') || headerLower.includes('pagamento')) {
       return 'status'
-    } else if (headerLower.includes('conta') || headerLower.includes('account')) {
+    } else if (headerLower.includes('conta') || headerLower.includes('account') || 
+               headerLower.includes('empresa') || headerLower.includes('banco')) {
       return 'conta'
     } else if (headerLower.includes('categoria') || headerLower.includes('category')) {
       return 'categoria'
     } else if (headerLower.includes('subcategoria') || headerLower.includes('subcategory')) {
       return 'subcategoria'
-    } else if (headerLower.includes('contato') || headerLower.includes('contact') || headerLower.includes('cliente')) {
+    } else if (headerLower.includes('contato') || headerLower.includes('contact') || 
+               headerLower.includes('cliente') || headerLower.includes('fornecedor')) {
       return 'contato'
-    } else if (headerLower.includes('vencimento') || headerLower.includes('due')) {
+    } else if (headerLower.includes('vencimento') || headerLower.includes('due') || 
+               headerLower.includes('venc')) {
       return 'vencimento'
+    } else if (headerLower.includes('parcela') || headerLower.includes('parcelamento')) {
+      return 'parcelas'
     }
     
     // Tentar detectar baseado no conteúdo da primeira linha
@@ -330,20 +348,30 @@ const DataImport: React.FC = () => {
       })
 
       // Validar campos obrigatórios
-      if (!mappedData.data || !mappedData.valor) {
+      if (!mappedData.data && !mappedData.vencimento) {
+        return null
+      }
+      if (!mappedData.valor) {
         return null
       }
 
-      // Converter data
+      // Converter data - priorizar vencimento, depois data de pagamento
       let dataISO = ''
-      if (mappedData.data) {
+      if (mappedData.vencimento) {
+        dataISO = convertDateToISO(mappedData.vencimento.toString())
+      } else if (mappedData.data) {
         dataISO = convertDateToISO(mappedData.data.toString())
       }
 
-      // Converter valor
+      // Converter valor - lidar com formato brasileiro (vírgula como decimal)
       let valor = 0
       if (mappedData.valor) {
-        valor = parseFloat(mappedData.valor.toString().replace(/[^\d.,-]/g, '').replace(',', '.'))
+        const valorStr = mappedData.valor.toString()
+          .replace(/[^\d.,-]/g, '') // Remove caracteres especiais exceto dígitos, vírgula, ponto e hífen
+          .replace(/\./g, '') // Remove pontos (separadores de milhares)
+          .replace(',', '.') // Converte vírgula para ponto (decimal)
+        
+        valor = parseFloat(valorStr)
         if (isNaN(valor)) valor = 0
       }
 
@@ -351,28 +379,93 @@ const DataImport: React.FC = () => {
       let tipo = 'despesa'
       if (mappedData.tipo) {
         const tipoStr = mappedData.tipo.toString().toLowerCase()
-        if (tipoStr.includes('receita') || tipoStr.includes('receipt') || tipoStr.includes('credit')) {
+        if (tipoStr.includes('receita') || tipoStr.includes('receipt') || tipoStr.includes('credit') || 
+            tipoStr.includes('r') || tipoStr.includes('recebimento')) {
           tipo = 'receita'
-        } else if (tipoStr.includes('transferencia') || tipoStr.includes('transfer')) {
+        } else if (tipoStr.includes('transferencia') || tipoStr.includes('transfer') || 
+                   tipoStr.includes('t') || tipoStr.includes('transf')) {
           tipo = 'transferencia'
+        } else if (tipoStr.includes('despesa') || tipoStr.includes('d') || tipoStr.includes('pagamento')) {
+          tipo = 'despesa'
         }
       } else if (valor > 0) {
         tipo = 'receita'
       }
 
-      // Determinar status
+      // Determinar status baseado no campo situação/pagamento
       let status = 'pendente'
       if (mappedData.status) {
         const statusStr = mappedData.status.toString().toLowerCase()
-        if (statusStr.includes('pago') || statusStr.includes('paid') || statusStr.includes('liquidado')) {
+        if (statusStr.includes('pago') || statusStr.includes('paid') || statusStr.includes('liquidado') ||
+            statusStr.includes('pagamento')) {
           status = 'pago'
-        } else if (statusStr.includes('vencido') || statusStr.includes('overdue')) {
+        } else if (statusStr.includes('vencido') || statusStr.includes('overdue') || 
+                   statusStr.includes('venc') || statusStr.includes('vencido')) {
           status = 'vencido'
+        } else if (statusStr.includes('pendente') || statusStr.includes('pending')) {
+          status = 'pendente'
         }
       }
 
       // Determinar conta padrão se não especificada
       let conta = mappedData.conta || 'Conta Principal'
+      
+      // Se o campo conta estiver vazio mas empresa estiver preenchido, usar empresa
+      if (!conta || conta === 'Conta Principal') {
+        if (mappedData.empresa) {
+          conta = mappedData.empresa
+        }
+      }
+
+      // Determinar categoria padrão
+      let categoria = mappedData.categoria || 'Geral'
+      if (!categoria || categoria === 'Geral') {
+        // Tentar inferir categoria baseado na descrição
+        const descricao = mappedData.descricao || ''
+        if (descricao.toLowerCase().includes('energia') || descricao.toLowerCase().includes('água') || 
+            descricao.toLowerCase().includes('agua')) {
+          categoria = 'Serviços Públicos'
+        } else if (descricao.toLowerCase().includes('aluguel') || descricao.toLowerCase().includes('rent')) {
+          categoria = 'Moradia'
+        } else if (descricao.toLowerCase().includes('honorários') || descricao.toLowerCase().includes('honorarios')) {
+          categoria = 'Serviços Profissionais'
+        } else if (descricao.toLowerCase().includes('funcionários') || descricao.toLowerCase().includes('funcionarios')) {
+          categoria = 'Recursos Humanos'
+        } else if (descricao.toLowerCase().includes('dar') || descricao.toLowerCase().includes('imposto')) {
+          categoria = 'Impostos'
+        }
+      }
+
+      // Determinar subcategoria
+      let subcategoria = mappedData.subcategoria || ''
+      if (!subcategoria) {
+        // Tentar inferir subcategoria baseado na descrição
+        const descricao = mappedData.descricao || ''
+        if (descricao.toLowerCase().includes('energia')) {
+          subcategoria = 'Energia Elétrica'
+        } else if (descricao.toLowerCase().includes('água') || descricao.toLowerCase().includes('agua')) {
+          subcategoria = 'Água e Esgoto'
+        } else if (descricao.toLowerCase().includes('aluguel')) {
+          subcategoria = 'Aluguel'
+        }
+      }
+
+      // Determinar contato
+      let contato = mappedData.contato || ''
+      if (!contato) {
+        // Tentar inferir contato baseado na empresa
+        if (mappedData.empresa) {
+          contato = mappedData.empresa
+        }
+      }
+
+      // Determinar vencimento
+      let vencimento = dataISO
+      if (mappedData.vencimento) {
+        vencimento = convertDateToISO(mappedData.vencimento.toString())
+      } else if (mappedData.data) {
+        vencimento = convertDateToISO(mappedData.data.toString())
+      }
 
       return {
         data: dataISO,
@@ -381,10 +474,11 @@ const DataImport: React.FC = () => {
         tipo: tipo,
         status: status,
         conta: conta,
-        categoria: mappedData.categoria || 'Geral',
-        subcategoria: mappedData.subcategoria || '',
-        contato: mappedData.contato || '',
-        vencimento: mappedData.vencimento ? convertDateToISO(mappedData.vencimento.toString()) : dataISO,
+        categoria: categoria,
+        subcategoria: subcategoria,
+        contato: contato,
+        vencimento: vencimento,
+        parcelas: mappedData.parcelas || '',
         created_at: new Date().toISOString()
       }
     } catch (error) {
@@ -395,33 +489,51 @@ const DataImport: React.FC = () => {
 
   const convertDateToISO = (dateStr: string): string => {
     try {
-      // Tentar diferentes formatos de data
+      // Limpar a string de data
+      const cleanDateStr = dateStr.trim()
+      if (!cleanDateStr || cleanDateStr === '') {
+        return new Date().toISOString().split('T')[0]
+      }
+
+      // Tentar diferentes formatos de data brasileiros
       const formats = [
         /(\d{1,2})\/(\d{1,2})\/(\d{4})/, // DD/MM/YYYY
-        /(\d{4})-(\d{1,2})-(\d{1,2})/,   // YYYY-MM-DD
         /(\d{1,2})-(\d{1,2})-(\d{4})/,   // DD-MM-YYYY
         /(\d{1,2})\.(\d{1,2})\.(\d{4})/, // DD.MM.YYYY
+        /(\d{4})-(\d{1,2})-(\d{1,2})/,   // YYYY-MM-DD
+        /(\d{1,2})\/(\d{1,2})\/(\d{2})/, // DD/MM/YY (assumir 20XX)
       ]
 
       for (const format of formats) {
-        const match = dateStr.match(format)
+        const match = cleanDateStr.match(format)
         if (match) {
           if (match[1].length === 4) {
             // Formato YYYY-MM-DD
             return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`
           } else {
-            // Formato DD/MM/YYYY
-            return `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`
+            // Formato DD/MM/YYYY ou DD/MM/YY
+            let year = match[3]
+            if (year.length === 2) {
+              year = '20' + year // Assumir século 21
+            }
+            return `${year}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`
           }
         }
       }
 
       // Se nenhum formato funcionar, tentar parse direto
-      const parsed = new Date(dateStr)
+      const parsed = new Date(cleanDateStr)
       if (!isNaN(parsed.getTime())) {
         return parsed.toISOString().split('T')[0]
       }
 
+      // Se ainda não funcionar, tentar parse com Date.parse
+      const timestamp = Date.parse(cleanDateStr)
+      if (!isNaN(timestamp)) {
+        return new Date(timestamp).toISOString().split('T')[0]
+      }
+
+      console.warn(`Não foi possível converter a data: "${dateStr}"`)
       return new Date().toISOString().split('T')[0]
     } catch (error) {
       console.error('Erro ao converter data:', dateStr, error)
