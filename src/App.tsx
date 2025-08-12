@@ -394,6 +394,12 @@ function App() {
     setConnectionStatus({ success: true, message: `Filtro de conta: ${conta === 'todas' ? 'Todas as contas' : conta}` })
   }
 
+  // Função para obter o banco de uma conta
+  const getBancoConta = (contaNome: string): string => {
+    const conta = contas.find(c => c.nome === contaNome)
+    return conta?.banco || '-'
+  }
+
   // Função para atualizar dados
   const handleRefresh = async () => {
     await loadData()
@@ -1045,6 +1051,10 @@ function App() {
                           <span className="sm:hidden">Cat.</span>
                         </th>
                         <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <span className="hidden sm:inline">Banco</span>
+                          <span className="sm:hidden">Banco</span>
+                        </th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Valor
                         </th>
                         <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1077,6 +1087,9 @@ function App() {
                           </td>
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                             {item.categoria}
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                            {getBancoConta(item.conta)}
                           </td>
                           <td className={`px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium ${getClasseValor(item.tipo === 'despesa' ? -Math.abs(item.valor) : item.valor)}`}>
                             {item.tipo === 'despesa' ? '- ' : ''}{formatarMoeda(Math.abs(item.valor))}

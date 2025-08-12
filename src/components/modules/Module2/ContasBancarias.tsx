@@ -61,10 +61,10 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
       if (transacao.tipo === 'receita') {
         return saldo + transacao.valor
       } else if (transacao.tipo === 'despesa') {
-        return saldo - transacao.valor
+        return saldo - Math.abs(transacao.valor)
       } else if (transacao.tipo === 'transferencia') {
-        // Para transferências, considerar entrada e saída
-        return saldo
+        // Para transferências, somar o valor (já está com sinal correto)
+        return saldo + transacao.valor
       }
       return saldo
     }, 0)
@@ -85,7 +85,10 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
       if (transacao.tipo === 'receita') {
         return saldo + transacao.valor
       } else if (transacao.tipo === 'despesa') {
-        return saldo - transacao.valor
+        return saldo - Math.abs(transacao.valor)
+      } else if (transacao.tipo === 'transferencia') {
+        // Para transferências, somar o valor (já está com sinal correto)
+        return saldo + transacao.valor
       }
       return saldo
     }, 0)
