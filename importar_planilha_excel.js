@@ -73,12 +73,39 @@ function converterDataParaISO(dataStr) {
 function converterValor(valorStr) {
   if (!valorStr || valorStr === '') return 0;
   
-  const valorLimpo = valorStr.toString()
-    .replace(/[^\d.,-]/g, '') // Remove caracteres especiais
-    .replace(/\./g, '') // Remove pontos (separadores de milhares)
-    .replace(',', '.'); // Converte vírgula para ponto
+  // Converter para string e limpar
+  const valorLimpo = valorStr.toString().trim();
   
-  const valor = parseFloat(valorLimpo);
+  // Se já for um número, retornar como está
+  if (typeof valorStr === 'number') {
+    return valorStr;
+  }
+  
+  // Remover caracteres especiais exceto dígitos, vírgula, ponto e hífen
+  let valorProcessado = valorLimpo.replace(/[^\d.,-]/g, '');
+  
+  // Verificar se tem vírgula (separador decimal brasileiro)
+  if (valorProcessado.includes(',')) {
+    // Se tem vírgula, é formato brasileiro: 1.234,56
+    // Remover pontos (separadores de milhares) e substituir vírgula por ponto
+    valorProcessado = valorProcessado.replace(/\./g, '').replace(',', '.');
+  } else if (valorProcessado.includes('.')) {
+    // Se só tem ponto, verificar se é decimal ou milhares
+    const partes = valorProcessado.split('.');
+    if (partes.length === 2 && partes[1].length <= 2) {
+      // Formato americano: 123.45
+      valorProcessado = valorProcessado;
+    } else {
+      // Formato com separador de milhares: 1.234
+      valorProcessado = valorProcessado.replace(/\./g, '');
+    }
+  }
+  
+  const valor = parseFloat(valorProcessado);
+  
+  // Log para debug
+  console.log(`Valor original: "${valorStr}" -> Processado: "${valorProcessado}" -> Final: ${valor}`);
+  
   return isNaN(valor) ? 0 : valor;
 }
 
