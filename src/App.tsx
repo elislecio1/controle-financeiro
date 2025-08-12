@@ -460,6 +460,9 @@ function App() {
       setData(updatedData)
       setFilteredData(updatedData)
       
+      // Recarregar dados das contas para atualizar saldos
+      await loadContas()
+      
       setShowPaymentModal(false)
       setSelectedTransaction(null)
       setPaymentDate('')
@@ -498,6 +501,9 @@ function App() {
       )
       setData(updatedData)
       setFilteredData(updatedData)
+      
+      // Recarregar dados das contas para atualizar saldos
+      await loadContas()
       
       setConnectionStatus({ 
         success: true, 

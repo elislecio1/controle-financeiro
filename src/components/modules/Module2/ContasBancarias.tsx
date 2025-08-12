@@ -1,11 +1,23 @@
 import React, { useState, useEffect } from 'react'
-import { CreditCard, Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react'
-import { ContaBancaria } from '../../../types'
+import { Plus, Edit, Trash2, Save, X, CreditCard } from 'lucide-react'
 import { supabaseService } from '../../../services/supabase'
+import { ContaBancaria } from '../../../types'
+import { formatarMoeda } from '../../../utils/formatters'
 
 interface ContasBancariasProps {
   contas: ContaBancaria[]
   onContaChange: (contas: ContaBancaria[]) => void
+}
+
+// Interface para transações
+interface Transaction {
+  id: string
+  conta: string
+  valor: number
+  tipo: 'receita' | 'despesa' | 'transferencia' | 'investimento'
+  status: 'pago' | 'pendente' | 'vencido'
+  vencimento: string
+  dataPagamento?: string
 }
 
 export default function ContasBancarias({ contas, onContaChange }: ContasBancariasProps) {
@@ -13,6 +25,7 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
   const [editingConta, setEditingConta] = useState<ContaBancaria | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [transactions, setTransactions] = useState<Transaction[]>([])
   const [formData, setFormData] = useState({
     nome: '',
     tipo: 'conta_corrente' as 'conta_corrente' | 'poupanca' | 'investimento' | 'cartao_credito' | 'cartao_debito',
@@ -23,6 +36,60 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
     limite: 0,
     ativo: true
   })
+
+  // Carregar transações para cálculo de saldos
+  useEffect(() => {
+    loadTransactions()
+  }, [])
+
+  const loadTransactions = async () => {
+    try {
+      const data = await supabaseService.getData()
+      setTransactions(data)
+    } catch (error) {
+      console.error('Erro ao carregar transações:', error)
+    }
+  }
+
+  // Função para calcular saldo real baseado nas transações pagas
+  const calcularSaldoReal = (contaNome: string): number => {
+    const transacoesConta = transactions.filter(t => 
+      t.conta === contaNome && t.status === 'pago'
+    )
+    
+    return transacoesConta.reduce((saldo, transacao) => {
+      if (transacao.tipo === 'receita') {
+        return saldo + transacao.valor
+      } else if (transacao.tipo === 'despesa') {
+        return saldo - transacao.valor
+      } else if (transacao.tipo === 'transferencia') {
+        // Para transferências, considerar entrada e saída
+        return saldo
+      }
+      return saldo
+    }, 0)
+  }
+
+  // Função para calcular saldo previsto até o final do mês
+  const calcularSaldoPrevisto = (contaNome: string): number => {
+    const hoje = new Date()
+    const fimDoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
+    const fimDoMesStr = fimDoMes.toLocaleDateString('pt-BR')
+    
+    const transacoesConta = transactions.filter(t => 
+      t.conta === contaNome && 
+      t.vencimento <= fimDoMesStr
+    )
+    
+    return transacoesConta.reduce((saldo, transacao) => {
+      if (transacao.tipo === 'receita') {
+        return saldo + transacao.valor
+      } else if (transacao.tipo === 'despesa') {
+        return saldo - transacao.valor
+      }
+      return saldo
+    }, 0)
+  }
 
   const tiposConta = [
     { value: 'conta_corrente', label: 'Conta Corrente' },
@@ -243,8 +310,8 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
               {editingConta ? 'Editar Conta' : 'Nova Conta Bancária'}
             </h4>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Nome da Conta * <span className="text-red-500">*</span>
@@ -418,7 +485,10 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
                       Tipo
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Saldo
+                      Saldo Real
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Saldo Previsto
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -448,14 +518,19 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <span className={conta.saldo >= 0 ? 'text-green-600' : 'text-red-600'}>
-                          {formatarMoeda(conta.saldo)}
+                        <span className={calcularSaldoReal(conta.nome) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                          {formatarMoeda(calcularSaldoReal(conta.nome))}
                         </span>
                         {conta.limite && conta.limite > 0 && (
                           <div className="text-xs text-gray-500">
                             Limite: {formatarMoeda(conta.limite)}
                           </div>
                         )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span className={calcularSaldoPrevisto(conta.nome) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                          {formatarMoeda(calcularSaldoPrevisto(conta.nome))}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
@@ -509,16 +584,22 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
         <div className="px-4 py-5 sm:p-6">
           <h4 className="text-lg font-medium text-gray-900 mb-4">Resumo das Contas</h4>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">{contas.length}</div>
               <div className="text-sm text-gray-500">Total de Contas</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {formatarMoeda(contas.reduce((sum, conta) => sum + conta.saldo, 0))}
+                {formatarMoeda(contas.reduce((sum, conta) => sum + calcularSaldoReal(conta.nome), 0))}
               </div>
-              <div className="text-sm text-gray-500">Saldo Total</div>
+              <div className="text-sm text-gray-500">Saldo Total Real</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">
+                {formatarMoeda(contas.reduce((sum, conta) => sum + calcularSaldoPrevisto(conta.nome), 0))}
+              </div>
+              <div className="text-sm text-gray-500">Saldo Total Previsto</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
