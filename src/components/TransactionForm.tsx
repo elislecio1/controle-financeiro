@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Save, Trash2, AlertCircle, CheckCircle } from 'lucide-react'
+import { Save, Trash2, AlertCircle, CheckCircle, X } from 'lucide-react'
 import { NewTransaction, Categoria, Subcategoria, ContaBancaria } from '../types'
 import { supabaseService } from '../services/supabase'
 import { formatarMoeda, parsearValorBrasileiro, parsearDataBrasileira } from '../utils/formatters'
@@ -223,10 +223,24 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
 
   return (
     <div className="bg-white shadow rounded-lg">
-      <div className="px-4 py-5 sm:p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-6">Nova Transação</h3>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="px-4 sm:px-6 py-4 sm:py-6">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <h3 className="text-lg sm:text-xl font-medium text-gray-900">
+            {/* editingTransaction ? 'Editar Transação' : 'Nova Transação' */}
+            Nova Transação
+          </h3>
+          <button
+            onClick={() => {
+              // setShowForm(false) // This state variable is not defined in the original file
+              clearForm()
+            }}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Mensagem de status */}
           {message && (
             <div className={`p-4 rounded-md ${
@@ -245,220 +259,207 @@ export default function TransactionForm({ onTransactionSaved, categorias = [], s
             </div>
           )}
 
-          {/* Campos obrigatórios */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Data/Vencimento */}
+          {/* Primeira linha - Data e Valor */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Data de Vencimento * <span className="text-red-500">*</span>
+                Data *
               </label>
               <input
-                type="text"
-                placeholder="DD/MM/AAAA"
+                type="date"
                 value={formData.data}
-                onChange={(e) => {
-                  const formattedDate = formatDate(e.target.value)
-                  handleInputChange('data', formattedDate)
-                  handleInputChange('vencimento', formattedDate)
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                onChange={(e) => handleInputChange('data', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                 required
               />
             </div>
 
-                         {/* Valor - COM FORMATAÇÃO AUTOMÁTICA */}
-             <div>
-               <label className="block text-sm font-medium text-gray-700 mb-2">
-                 Valor * <span className="text-red-500">*</span>
-               </label>
-               <input
-                 type="text"
-                 placeholder="0,00"
-                 value={valorDisplay}
-                 onChange={handleValorChange}
-                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                 required
-               />
-               <p className="mt-1 text-sm text-gray-500">
-                 Digite valores como: 54,28 ou 15.587,26 ou 15587.26
-               </p>
-             </div>
-
-            {/* Tipo */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo * <span className="text-red-500">*</span>
+                Valor *
               </label>
-              <select
-                value={formData.tipo}
-                onChange={(e) => handleInputChange('tipo', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              <input
+                type="text"
+                placeholder="0,00"
+                value={valorDisplay}
+                onChange={handleValorChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                 required
-              >
-                <option value="despesa">Despesa</option>
-                <option value="receita">Receita</option>
-                <option value="transferencia">Transferência</option>
-                <option value="investimento">Investimento</option>
-              </select>
+              />
+              <p className="mt-1 text-xs sm:text-sm text-gray-500">
+                Digite valores como: 54,28 ou 15.587,26 ou 15587.26
+              </p>
             </div>
           </div>
 
-          {/* Descrição */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Descrição * <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              placeholder="Descrição da transação"
-              value={formData.descricao}
-              onChange={(e) => handleInputChange('descricao', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-
-          {/* Campos opcionais */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Conta */}
+          {/* Segunda linha - Descrição e Conta */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Conta</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Descrição *
+              </label>
+              <input
+                type="text"
+                value={formData.descricao}
+                onChange={(e) => handleInputChange('descricao', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+                placeholder="Ex: Salário, Aluguel, Supermercado"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Conta *
+              </label>
               <select
                 value={formData.conta}
                 onChange={(e) => handleInputChange('conta', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+                required
               >
-                <option value="">Selecione uma conta</option>
                 {contas.map((conta) => (
-                  <option key={conta.id} value={conta.nome}>
-                    {conta.nome} - {conta.banco}
+                  <option key={conta.nome} value={conta.nome}>
+                    {conta.nome}
                   </option>
                 ))}
               </select>
             </div>
+          </div>
 
-            {/* Categoria */}
+          {/* Terceira linha - Categoria e Forma de Pagamento */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Categoria *
+              </label>
               <select
                 value={formData.categoria}
                 onChange={(e) => handleInputChange('categoria', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+                required
               >
-                <option value="">Selecione uma categoria</option>
-                {categorias.map((categoria) => (
-                  <option key={categoria.id} value={categoria.nome}>
-                    {categoria.nome}
+                {categorias.map((cat) => (
+                  <option key={cat.nome} value={cat.nome}>
+                    {cat.nome}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Forma de Pagamento */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Forma de Pagamento</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Forma de Pagamento *
+              </label>
               <select
                 value={formData.forma}
                 onChange={(e) => handleInputChange('forma', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+                required
               >
                 <option value="Dinheiro">Dinheiro</option>
                 <option value="PIX">PIX</option>
                 <option value="Cartão de Débito">Cartão de Débito</option>
                 <option value="Cartão de Crédito">Cartão de Crédito</option>
-                <option value="Boleto">Boleto</option>
                 <option value="Transferência">Transferência</option>
-                <option value="Cheque">Cheque</option>
+                <option value="Boleto">Boleto</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Quarta linha - Tipo e Data de Vencimento */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tipo *
+              </label>
+              <select
+                value={formData.tipo}
+                onChange={(e) => handleInputChange('tipo', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+                required
+              >
+                <option value="receita">Receita</option>
+                <option value="despesa">Despesa</option>
               </select>
             </div>
 
-            {/* Vencimento */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Vencimento</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Data de Vencimento
+              </label>
               <input
-                type="text"
-                placeholder="DD/MM/AAAA"
+                type="date"
                 value={formData.vencimento}
-                onChange={(e) => handleInputChange('vencimento', formatDate(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                onChange={(e) => handleInputChange('vencimento', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
               />
             </div>
+          </div>
 
-            {/* Conta de Transferência - aparece apenas quando tipo é transferencia */}
-            {formData.tipo === 'transferencia' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Conta de Destino</label>
-                <select
-                  value={formData.contaTransferencia || ''}
-                  onChange={(e) => handleInputChange('contaTransferencia', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Selecione a conta de destino</option>
-                  {contas.map((conta) => (
-                    <option key={conta.id} value={conta.nome}>
-                      {conta.nome} - {conta.banco}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Parcelas */}
+          {/* Quinta linha - Parcelas e Conta de Transferência */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Parcelas</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Parcelas
+              </label>
               <input
                 type="number"
                 min="1"
-                max="60"
                 value={formData.parcelas}
                 onChange={(e) => handleInputChange('parcelas', parseInt(e.target.value) || 1)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
               />
             </div>
 
-            {/* Contato */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Contato</label>
-              <input
-                type="text"
-                placeholder="Nome do contato"
-                value={formData.contato || ''}
-                onChange={(e) => handleInputChange('contato', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Conta de Transferência
+              </label>
+              <select
+                value={formData.contaTransferencia}
+                onChange={(e) => handleInputChange('contaTransferencia', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+              >
+                <option value="">Selecione uma conta</option>
+                {contas.map((conta) => (
+                  <option key={conta.nome} value={conta.nome}>
+                    {conta.nome}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          {/* Observações */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Observações</label>
-            <textarea
-              placeholder="Observações adicionais"
-              value={formData.observacoes || ''}
-              onChange={(e) => handleInputChange('observacoes', e.target.value)}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          {/* Botões */}
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={clearForm}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-            >
-              <Trash2 className="h-4 w-4 mr-2 inline" />
-              Limpar
-            </button>
-            
+          {/* Botões responsivos */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 sm:flex-none bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             >
-              <Save className="h-4 w-4 mr-2 inline" />
-              {loading ? 'Salvando...' : 'Salvar Transação'}
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Salvando...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center">
+                  <Save className="h-4 w-4 mr-2" />
+                  Nova Transação
+                </span>
+              )}
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => {
+                // setShowForm(false) // This state variable is not defined in the original file
+                clearForm()
+              }}
+              className="flex-1 sm:flex-none bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm sm:text-base"
+            >
+              Cancelar
             </button>
           </div>
         </form>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
-import { TrendingUp, Users, DollarSign, Activity, Database, Settings, RefreshCw, Calendar, Filter, Search, Plus, Download, Upload } from 'lucide-react'
+import { TrendingUp, Users, DollarSign, Activity, Database, Settings, RefreshCw, Calendar, Filter, Search, Plus, Download, Upload, CheckCircle, XCircle, Trash2 } from 'lucide-react'
 import { SheetData, Categoria, Subcategoria, CentroCusto, Meta, Orcamento, Investimento, ContaBancaria, CartaoCredito } from './types'
 import { supabaseService } from './services/supabase'
 import TransactionForm from './components/TransactionForm'
@@ -31,7 +31,7 @@ function App() {
 
   // Estados para paginação
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 20
+  const [itemsPerPage, setItemsPerPage] = useState(25)
 
   // Estados para Módulo 2
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -53,6 +53,11 @@ function App() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<SheetData | null>(null)
   const [paymentDate, setPaymentDate] = useState<string>('')
+
+  // Novos estados para filtros de transações
+  const [searchTerm, setSearchTerm] = useState<string>('')
+  const [filterTipo, setFilterTipo] = useState<string>('')
+  const [filterStatus, setFilterStatus] = useState<string>('')
 
   const loadData = async () => {
     try {
@@ -511,6 +516,25 @@ function App() {
     }
   }
 
+  // Função para excluir transação
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta transação?')) {
+      return
+    }
+
+    try {
+      await supabaseService.deleteTransaction(id)
+      setData(data.filter(item => item.id !== id))
+      setFilteredData(filteredData.filter(item => item.id !== id))
+      setConnectionStatus({ success: true, message: 'Transação excluída com sucesso!' })
+    } catch (error: any) {
+      setConnectionStatus({ 
+        success: false, 
+        message: error.message || 'Erro ao excluir transação' 
+      })
+    }
+  }
+
   // Cálculos para estatísticas
   const totalReceitas = filteredData.filter(item => item.tipo === 'receita').reduce((sum, item) => sum + Math.abs(item.valor), 0)
   const totalDespesas = filteredData.filter(item => item.tipo === 'despesa').reduce((sum, item) => sum + Math.abs(item.valor), 0)
@@ -891,20 +915,80 @@ function App() {
               </div>
             </div>
 
-            {/* Data Table */}
+            {/* Tabela de Transações responsiva */}
             <div className="bg-white shadow rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Transações</h3>
+              <div className="px-4 sm:px-6 py-4 sm:py-6">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-4">Transações</h3>
+                
+                {/* Filtros responsivos */}
+                <div className="mb-4 sm:mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Buscar</label>
+                      <input
+                        type="text"
+                        placeholder="Descrição, categoria..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                      <select
+                        value={filterTipo}
+                        onChange={(e) => setFilterTipo(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      >
+                        <option value="">Todos</option>
+                        <option value="receita">Receitas</option>
+                        <option value="despesa">Despesas</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      >
+                        <option value="">Todos</option>
+                        <option value="pendente">Pendente</option>
+                        <option value="pago">Pago</option>
+                        <option value="vencido">Vencido</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Itens por página</label>
+                      <select
+                        value={itemsPerPage}
+                        onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      >
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tabela responsiva */}
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th 
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                           onClick={() => handleSort('vencimento')}
                         >
                           <div className="flex items-center">
-                            Data de Vencimento
+                            <span className="hidden sm:inline">Data de Vencimento</span>
+                            <span className="sm:hidden">Vencimento</span>
                             {sortConfig?.key === 'vencimento' && (
                               <span className="ml-1">
                                 {sortConfig.direction === 'asc' ? '↑' : '↓'}
@@ -912,76 +996,30 @@ function App() {
                             )}
                           </div>
                         </th>
-                        <th 
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                          onClick={() => handleSort('descricao')}
-                        >
-                          <div className="flex items-center">
-                            Descrição
-                            {sortConfig?.key === 'descricao' && (
-                              <span className="ml-1">
-                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                              </span>
-                            )}
-                          </div>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <span className="hidden sm:inline">Descrição</span>
+                          <span className="sm:hidden">Desc.</span>
                         </th>
-                        <th 
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                          onClick={() => handleSort('categoria')}
-                        >
-                          <div className="flex items-center">
-                            Categoria
-                            {sortConfig?.key === 'categoria' && (
-                              <span className="ml-1">
-                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                              </span>
-                            )}
-                          </div>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <span className="hidden sm:inline">Categoria</span>
+                          <span className="sm:hidden">Cat.</span>
                         </th>
-                        <th 
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                          onClick={() => handleSort('valor')}
-                        >
-                          <div className="flex items-center">
-                            Valor
-                            {sortConfig?.key === 'valor' && (
-                              <span className="ml-1">
-                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                              </span>
-                            )}
-                          </div>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Valor
                         </th>
-                        <th 
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                          onClick={() => handleSort('status')}
-                        >
-                          <div className="flex items-center">
-                            Status
-                            {sortConfig?.key === 'status' && (
-                              <span className="ml-1">
-                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                              </span>
-                            )}
-                          </div>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <span className="hidden sm:inline">Forma de Pagamento</span>
+                          <span className="sm:hidden">Forma</span>
                         </th>
-                        <th 
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                          onClick={() => handleSort('forma')}
-                        >
-                          <div className="flex items-center">
-                            Forma
-                            {sortConfig?.key === 'forma' && (
-                              <span className="ml-1">
-                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                              </span>
-                            )}
-                          </div>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Ações
                         </th>
                       </tr>
                     </thead>
+                    
                     <tbody className="bg-white divide-y divide-gray-200">
                       {paginatedData.map((item) => (
                         <tr key={item.id} className={`hover:bg-gray-50 ${
@@ -989,41 +1027,60 @@ function App() {
                           item.status === 'pago' ? 'bg-green-50' : 
                           item.status === 'vencido' ? 'bg-red-50' : 'bg-yellow-50'
                         }`}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.vencimento}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.descricao}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.categoria}</td>
-                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getClasseValor(item.tipo === 'despesa' ? -Math.abs(item.valor) : item.valor)}`}>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
+                            {item.vencimento}
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                            <div className="max-w-xs truncate" title={item.descricao}>
+                              {item.descricao}
+                            </div>
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                            {item.categoria}
+                          </td>
+                          <td className={`px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium ${getClasseValor(item.tipo === 'despesa' ? -Math.abs(item.valor) : item.valor)}`}>
                             {item.tipo === 'despesa' ? '- ' : ''}{formatarMoeda(Math.abs(item.valor))}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                            {item.forma}
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                               item.status === 'pago' ? 'bg-green-100 text-green-800' :
                               item.status === 'vencido' ? 'bg-red-100 text-red-800' :
                               'bg-yellow-100 text-yellow-800'
                             }`}>
-                              {item.status.toUpperCase()}
+                              {item.status === 'pago' ? 'Pago' :
+                               item.status === 'vencido' ? 'Vencido' : 'Pendente'}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.forma}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <div className="flex space-x-2">
-                              {item.status !== 'pago' ? (
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
+                            <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                              {item.status === 'pendente' && (
                                 <button
                                   onClick={() => handleConfirmPayment(item)}
-                                  className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700"
-                                  title="Confirmar Pagamento"
+                                  className="text-green-600 hover:text-green-900 p-1"
+                                  title="Marcar como pago"
                                 >
-                                  ✓ Pagar
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleUnmarkAsPaid(item)}
-                                  className="bg-yellow-600 text-white px-2 py-1 rounded text-xs hover:bg-yellow-700"
-                                  title="Desmarcar como Pago"
-                                >
-                                  ↺ Desmarcar
+                                  <CheckCircle className="h-4 w-4" />
                                 </button>
                               )}
+                              {item.status === 'pago' && (
+                                <button
+                                  onClick={() => handleUnmarkAsPaid(item)}
+                                  className="text-yellow-600 hover:text-yellow-900 p-1"
+                                  title="Desmarcar como pago"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleDelete(item.id)}
+                                className="text-red-600 hover:text-red-900 p-1"
+                                title="Excluir"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -1032,45 +1089,34 @@ function App() {
                   </table>
                 </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="text-sm text-gray-700">
-                      Mostrando {startIndex + 1} a {Math.min(endIndex, filteredData.length)} de {filteredData.length} resultados
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => goToPage(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="px-3 py-1 text-sm border rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Anterior
-                      </button>
-                      
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => goToPage(page)}
-                          className={`px-3 py-1 text-sm border rounded-md ${
-                            currentPage === page
-                              ? 'bg-blue-600 text-white border-blue-600'
-                              : 'hover:bg-gray-50'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                      
-                      <button
-                        onClick={() => goToPage(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-1 text-sm border rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Próximo
-                      </button>
-                    </div>
+                {/* Paginação responsiva */}
+                <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-xs sm:text-sm text-gray-700">
+                    Mostrando {startIndex + 1} a {Math.min(endIndex, filteredData.length)} de {filteredData.length} resultados
                   </div>
-                )}
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    >
+                      Anterior
+                    </button>
+                    
+                    <span className="text-xs sm:text-sm text-gray-700">
+                      Página {currentPage} de {totalPages}
+                    </span>
+                    
+                    <button
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                    >
+                      Próxima
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

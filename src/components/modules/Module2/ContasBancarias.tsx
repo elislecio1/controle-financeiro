@@ -302,41 +302,52 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
         </div>
       )}
 
-      {/* Formulário */}
+      {/* Formulário responsivo */}
       {showForm && (
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h4 className="text-lg font-medium text-gray-900 mb-4">
-              {editingConta ? 'Editar Conta' : 'Nova Conta Bancária'}
-            </h4>
+        <div className="bg-white shadow rounded-lg mb-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg sm:text-xl font-medium text-gray-900">
+                {editingConta ? 'Editar Conta' : 'Nova Conta Bancária'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowForm(false)
+                  clearForm()
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
             
-                          <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nome da Conta * <span className="text-red-500">*</span>
+                    Nome da Conta *
                   </label>
                   <input
                     type="text"
                     value={formData.nome}
                     onChange={(e) => handleInputChange('nome', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Ex: Conta Principal"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+                    placeholder="Ex: Conta Corrente Principal"
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tipo * <span className="text-red-500">*</span>
+                    Tipo de Conta *
                   </label>
                   <select
                     value={formData.tipo}
                     onChange={(e) => handleInputChange('tipo', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                     required
                   >
-                    {tiposConta.map(tipo => (
+                    {tiposConta.map((tipo) => (
                       <option key={tipo.value} value={tipo.value}>
                         {tipo.label}
                       </option>
@@ -346,16 +357,16 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Banco * <span className="text-red-500">*</span>
+                    Banco *
                   </label>
                   <select
                     value={formData.banco}
                     onChange={(e) => handleInputChange('banco', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                     required
                   >
-                    <option value="">Selecione o banco</option>
-                    {bancos.map(banco => (
+                    <option value="">Selecione um banco</option>
+                    {bancos.map((banco) => (
                       <option key={banco} value={banco}>
                         {banco}
                       </option>
@@ -371,7 +382,7 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
                     type="text"
                     value={formData.agencia}
                     onChange={(e) => handleInputChange('agencia', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                     placeholder="Ex: 0001"
                   />
                 </div>
@@ -384,7 +395,7 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
                     type="text"
                     value={formData.conta}
                     onChange={(e) => handleInputChange('conta', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                     placeholder="Ex: 12345-6"
                   />
                 </div>
@@ -398,58 +409,66 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
                     step="0.01"
                     value={formData.saldo}
                     onChange={(e) => handleInputChange('saldo', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                     placeholder="0,00"
                   />
                 </div>
 
-                {((formData.tipo as string) === 'cartao_credito' || (formData.tipo as string) === 'cartao_debito') && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Limite do Cartão
-                    </label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Limite (para cartões)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.limite}
+                    onChange={(e) => handleInputChange('limite', parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+                    placeholder="0,00"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="flex items-center">
                     <input
-                      type="number"
-                      step="0.01"
-                      value={formData.limite}
-                      onChange={(e) => handleInputChange('limite', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="0,00"
+                      type="checkbox"
+                      checked={formData.ativo}
+                      onChange={(e) => handleInputChange('ativo', e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                  </div>
-                )}
+                    <span className="ml-2 text-sm text-gray-700">Conta ativa</span>
+                  </label>
+                </div>
               </div>
 
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="ativo"
-                  checked={formData.ativo}
-                  onChange={(e) => handleInputChange('ativo', e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="ativo" className="ml-2 block text-sm text-gray-900">
-                  Conta ativa
-                </label>
-              </div>
-
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    clearForm()
-                    setShowForm(false)
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Cancelar
-                </button>
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 sm:flex-none bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 >
-                  {loading ? 'Processando...' : (editingConta ? 'Atualizar' : 'Salvar')}
+                  {loading ? (
+                    <span className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Salvando...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center">
+                      <Save className="h-4 w-4 mr-2" />
+                      {editingConta ? 'Atualizar' : 'Salvar'}
+                    </span>
+                  )}
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForm(false)
+                    clearForm()
+                  }}
+                  className="flex-1 sm:flex-none bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm sm:text-base"
+                >
+                  Cancelar
                 </button>
               </div>
             </form>
@@ -457,10 +476,10 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
         </div>
       )}
 
-      {/* Lista de Contas */}
+      {/* Tabela responsiva */}
       <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h4 className="text-lg font-medium text-gray-900 mb-4">Contas Cadastradas</h4>
+        <div className="px-4 sm:px-6 py-4 sm:py-6">
+          <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-4">Contas Cadastradas</h4>
           
           {contas.length === 0 ? (
             <div className="text-center py-8">
@@ -471,53 +490,54 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
               </p>
             </div>
           ) : (
-            <div className="overflow-hidden">
+            <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Conta
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Banco
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Tipo
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Saldo
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Saldo Previsto
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Ações
                     </th>
                   </tr>
                 </thead>
+                
                 <tbody className="bg-white divide-y divide-gray-200">
                   {contas.map((conta) => (
                     <tr key={conta.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{conta.nome}</div>
                         {conta.agencia && conta.conta && (
-                          <div className="text-sm text-gray-500">
+                          <div className="text-xs sm:text-sm text-gray-500">
                             Ag: {conta.agencia} | Conta: {conta.conta}
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-900">
                         {conta.banco}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                           {getTipoLabel(conta.tipo)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-900">
                         <span className={calcularSaldoReal(conta.nome) >= 0 ? 'text-green-600' : 'text-red-600'}>
                           {formatarMoeda(calcularSaldoReal(conta.nome))}
                         </span>
@@ -527,12 +547,12 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-900">
                         <span className={calcularSaldoPrevisto(conta.nome) >= 0 ? 'text-green-600' : 'text-red-600'}>
                           {formatarMoeda(calcularSaldoPrevisto(conta.nome))}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                         <button
                           onClick={() => handleToggleStatus(conta.id)}
                           className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${
@@ -554,17 +574,19 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
                             )}
                         </button>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex flex-col sm:flex-row gap-2 justify-end">
                           <button
                             onClick={() => handleEdit(conta)}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-blue-600 hover:text-blue-900 p-1"
+                            title="Editar"
                           >
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(conta.id)}
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-600 hover:text-red-900 p-1"
+                            title="Excluir"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -579,39 +601,39 @@ export default function ContasBancarias({ contas, onContaChange }: ContasBancari
         </div>
       </div>
 
-      {/* Resumo */}
+      {/* Resumo responsivo */}
       <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h4 className="text-lg font-medium text-gray-900 mb-4">Resumo das Contas</h4>
+        <div className="px-4 sm:px-6 py-4 sm:py-6">
+          <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-4">Resumo das Contas</h4>
           
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{contas.length}</div>
-              <div className="text-sm text-gray-500">Total de Contas</div>
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">{contas.length}</div>
+              <div className="text-xs sm:text-sm text-gray-500">Total de Contas</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">
                 {formatarMoeda(contas.reduce((sum, conta) => sum + calcularSaldoReal(conta.nome), 0))}
               </div>
-              <div className="text-sm text-gray-500">Saldo Total</div>
+              <div className="text-xs sm:text-sm text-gray-500">Saldo Total</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">
                 {formatarMoeda(contas.reduce((sum, conta) => sum + calcularSaldoPrevisto(conta.nome), 0))}
               </div>
-              <div className="text-sm text-gray-500">Saldo Total Previsto</div>
+              <div className="text-xs sm:text-sm text-gray-500">Saldo Total Previsto</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-xl sm:text-2xl font-bold text-purple-600">
                 {contas.filter(c => c.tipo === 'cartao_credito' || c.tipo === 'cartao_debito').length}
               </div>
-              <div className="text-sm text-gray-500">Cartões</div>
+              <div className="text-xs sm:text-sm text-gray-500">Cartões</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="text-xl sm:text-2xl font-bold text-orange-600">
                 {contas.filter(c => c.ativo).length}
               </div>
-              <div className="text-sm text-gray-500">Contas Ativas</div>
+              <div className="text-xs sm:text-sm text-gray-500">Contas Ativas</div>
             </div>
           </div>
         </div>
