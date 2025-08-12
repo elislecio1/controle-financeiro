@@ -992,7 +992,7 @@ function App() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.vencimento}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.descricao}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.categoria}</td>
-                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getClasseValor(item.valor)}`}>
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${getClasseValor(item.tipo === 'despesa' ? -Math.abs(item.valor) : item.valor)}`}>
                             {item.tipo === 'despesa' ? '- ' : ''}{formatarMoeda(Math.abs(item.valor))}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
