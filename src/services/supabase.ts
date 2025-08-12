@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { SheetData, NewTransaction, Categoria, Subcategoria, Investimento, ContaBancaria, CartaoCredito } from '../types'
+import { SheetData, NewTransaction, Categoria, Subcategoria, Investimento, ContaBancaria, CartaoCredito, Contato } from '../types'
 import { formatarMoeda, formatarData, parsearDataBrasileira, parsearValorBrasileiro } from '../utils/formatters'
 
 // Configurações do Supabase
@@ -238,6 +238,43 @@ const mockCartoes: CartaoCredito[] = [
   }
 ]
 
+// Mock data para contatos
+const mockContatos: Contato[] = [
+  {
+    id: 'aa0e8400-e29b-41d4-a716-446655440001',
+    nome: 'João Silva',
+    tipo: 'cliente',
+    email: 'joao.silva@email.com',
+    telefone: '(11) 99999-9999',
+    cpfCnpj: '123.456.789-00',
+    endereco: 'Rua das Flores, 123 - São Paulo/SP',
+    observacoes: 'Cliente preferencial',
+    ativo: true
+  },
+  {
+    id: 'aa0e8400-e29b-41d4-a716-446655440002',
+    nome: 'Empresa ABC Ltda',
+    tipo: 'fornecedor',
+    email: 'contato@empresaabc.com.br',
+    telefone: '(11) 3333-3333',
+    cpfCnpj: '12.345.678/0001-90',
+    endereco: 'Av. Paulista, 1000 - São Paulo/SP',
+    observacoes: 'Fornecedor de materiais',
+    ativo: true
+  },
+  {
+    id: 'aa0e8400-e29b-41d4-a716-446655440003',
+    nome: 'Maria Santos',
+    tipo: 'cliente',
+    email: 'maria.santos@email.com',
+    telefone: '(11) 88888-8888',
+    cpfCnpj: '987.654.321-00',
+    endereco: 'Rua do Comércio, 456 - Rio de Janeiro/RJ',
+    observacoes: 'Cliente desde 2023',
+    ativo: true
+  }
+]
+
 export interface SupabaseService {
   getData(): Promise<SheetData[]>
   saveTransaction(transaction: NewTransaction): Promise<{ success: boolean; message: string; data?: SheetData }>
@@ -272,6 +309,12 @@ export interface SupabaseService {
   saveCartao(cartao: Omit<CartaoCredito, 'id'>): Promise<{ success: boolean; message: string; data?: CartaoCredito }>
   updateCartao(id: string, data: Partial<CartaoCredito>): Promise<{ success: boolean; message: string }>
   deleteCartao(id: string): Promise<{ success: boolean; message: string }>
+
+  // Métodos para Contatos
+  getContatos(): Promise<Contato[]>
+  saveContato(contato: Omit<Contato, 'id'>): Promise<{ success: boolean; message: string; data?: Contato }>
+  updateContato(id: string, data: Partial<Contato>): Promise<{ success: boolean; message: string }>
+  deleteContato(id: string): Promise<{ success: boolean; message: string }>
 }
 
 class SupabaseServiceImpl implements SupabaseService {
@@ -1367,6 +1410,121 @@ class SupabaseServiceImpl implements SupabaseService {
       return {
         success: false,
         message: 'Erro ao deletar cartão de crédito: ' + error.message
+      }
+    }
+  }
+
+  // Métodos para Contatos
+  async getContatos(): Promise<Contato[]> {
+    try {
+      // Se o Supabase não estiver configurado, usar dados mock
+      if (!isSupabaseConfigured) {
+        console.log('🔄 Supabase não configurado, usando contatos mock')
+        return mockContatos
+      }
+      
+      console.log('🔍 Buscando contatos no Supabase...')
+      
+      const { data, error } = await supabase
+        .from('contatos')
+        .select('*')
+        .eq('ativo', true)
+        .order('nome')
+
+      if (error) {
+        console.log('⚠️ Erro ao buscar contatos, usando dados mock')
+        return mockContatos
+      }
+
+      console.log('✅ Contatos carregados:', data?.length || 0, 'registros')
+      return data || mockContatos
+    } catch (error) {
+      console.error('❌ Erro ao buscar contatos:', error)
+      return mockContatos
+    }
+  }
+
+  async saveContato(contato: Omit<Contato, 'id'>): Promise<{ success: boolean; message: string; data?: Contato }> {
+    try {
+      console.log('💾 Salvando contato no Supabase...')
+      
+      const { data, error } = await supabase
+        .from('contatos')
+        .insert([contato])
+        .select()
+        .single()
+
+      if (error) {
+        console.error('❌ Erro ao salvar contato:', error)
+        return {
+          success: false,
+          message: 'Erro ao salvar contato: ' + error.message
+        }
+      }
+
+      console.log('✅ Contato salvo com sucesso')
+      return {
+        success: true,
+        message: 'Contato salvo com sucesso!',
+        data: data
+      }
+    } catch (error: any) {
+      console.error('❌ Erro ao salvar contato:', error)
+      return {
+        success: false,
+        message: 'Erro ao salvar contato: ' + error.message
+      }
+    }
+  }
+
+  async updateContato(id: string, data: Partial<Contato>): Promise<{ success: boolean; message: string }> {
+    try {
+      const { error } = await supabase
+        .from('contatos')
+        .update(data)
+        .eq('id', id)
+
+      if (error) {
+        return {
+          success: false,
+          message: 'Erro ao atualizar contato: ' + error.message
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Contato atualizado com sucesso!'
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Erro ao atualizar contato: ' + error.message
+      }
+    }
+  }
+
+  async deleteContato(id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const { error } = await supabase
+        .from('contatos')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        return {
+          success: false,
+          message: 'Erro ao deletar contato: ' + error.message
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Contato deletado com sucesso!'
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Erro ao deletar contato: ' + error.message
       }
     }
   }

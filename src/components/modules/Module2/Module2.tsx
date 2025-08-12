@@ -5,6 +5,7 @@ import CentrosCusto from './CentrosCusto'
 import MetasOrcamentos from './MetasOrcamentos'
 import ContasBancarias from './ContasBancarias'
 import CartoesCredito from './CartoesCredito'
+import Contatos from './Contatos'
 import { Categoria, Subcategoria, CentroCusto, Meta, Orcamento, ContaBancaria, CartaoCredito } from '../../../types'
 
 interface Module2Props {
@@ -44,7 +45,7 @@ export default function Module2({
   onCategoriaSaved,
   onSubcategoriaSaved
 }: Module2Props) {
-  const [activeSection, setActiveSection] = useState<'categorias' | 'centros' | 'metas' | 'contas' | 'cartoes'>('categorias')
+  const [activeSection, setActiveSection] = useState<'categorias' | 'centros' | 'metas' | 'contas' | 'cartoes' | 'contatos'>('categorias')
 
   const sections = [
     {
@@ -76,6 +77,12 @@ export default function Module2({
       name: 'Cartões de Crédito',
       icon: CreditCard,
       description: 'Gerencie seus cartões de crédito e limites'
+    },
+    {
+      id: 'contatos',
+      name: 'Contatos',
+      icon: Users,
+      description: 'Gerencie clientes e fornecedores'
     }
   ]
 
@@ -163,6 +170,10 @@ export default function Module2({
           contas={contas}
           onCartaoChange={onCartaoChange}
         />
+      )}
+
+      {activeSection === 'contatos' && (
+        <Contatos />
       )}
 
       {/* Resumo do Módulo */}

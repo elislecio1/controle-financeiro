@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
 import { TrendingUp, Users, DollarSign, Activity, Database, Settings, RefreshCw, Calendar, Filter, Search, Plus, Download, Upload, CheckCircle, XCircle, Trash2, Edit } from 'lucide-react'
-import { SheetData, Categoria, Subcategoria, CentroCusto, Meta, Orcamento, Investimento, ContaBancaria, CartaoCredito } from './types'
+import { SheetData, Categoria, Subcategoria, CentroCusto, Meta, Orcamento, Investimento, ContaBancaria, CartaoCredito, Contato } from './types'
 import { supabaseService } from './services/supabase'
 import TransactionForm from './components/TransactionForm'
 import Module2 from './components/modules/Module2/Module2'
@@ -41,6 +41,7 @@ function App() {
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([])
   const [contas, setContas] = useState<ContaBancaria[]>([])
   const [cartoes, setCartoes] = useState<CartaoCredito[]>([])
+  const [contatos, setContatos] = useState<Contato[]>([])
 
   // Estados para Módulo 3
   const [investimentos, setInvestimentos] = useState<Investimento[]>([])
@@ -88,11 +89,13 @@ function App() {
       const subcategoriasData = await supabaseService.getSubcategorias()
       const contasData = await supabaseService.getContas()
       const cartoesData = await supabaseService.getCartoes()
+      const contatosData = await supabaseService.getContatos()
       
       setCategorias(categoriasData)
       setSubcategorias(subcategoriasData)
       setContas(contasData)
       setCartoes(cartoesData)
+      setContatos(contatosData)
       
       // Carregar dados do Módulo 3
       const investimentosData = await supabaseService.getInvestimentos()

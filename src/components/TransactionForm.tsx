@@ -3,6 +3,7 @@ import { Save, Trash2, AlertCircle, CheckCircle, X, Edit } from 'lucide-react'
 import { NewTransaction, Categoria, Subcategoria, ContaBancaria, SheetData } from '../types'
 import { supabaseService } from '../services/supabase'
 import { formatarMoeda, parsearValorBrasileiro, parsearDataBrasileira } from '../utils/formatters'
+import ContatoSelector from './ContatoSelector'
 
 interface TransactionFormProps {
   onTransactionSaved: () => void
@@ -30,6 +31,7 @@ export default function TransactionForm({
     conta: contas.length > 0 ? contas[0].nome : '',
     categoria: 'Outros',
     subcategoria: '',
+    contato: '',
     forma: 'Dinheiro',
     tipo: 'despesa',
     vencimento: '',
@@ -78,6 +80,7 @@ export default function TransactionForm({
         conta: transactionToEdit.conta || (contas.length > 0 ? contas[0].nome : ''),
         categoria: transactionToEdit.categoria || 'Outros',
         subcategoria: transactionToEdit.subcategoria || '',
+        contato: transactionToEdit.contato || '',
         forma: transactionToEdit.forma || 'Dinheiro',
         tipo: transactionToEdit.tipo || 'despesa',
         vencimento: converterDataParaISO(transactionToEdit.vencimento || ''),
@@ -274,6 +277,7 @@ export default function TransactionForm({
           conta: formData.conta,
           categoria: formData.categoria,
           subcategoria: formData.subcategoria,
+          contato: formData.contato,
           forma: formData.forma,
           tipo: formData.tipo,
           vencimento: formData.vencimento || formData.data,
@@ -303,6 +307,7 @@ export default function TransactionForm({
           conta: contas.length > 0 ? contas[0].nome : '',
           categoria: 'Outros',
           subcategoria: '',
+          contato: '',
           forma: 'Dinheiro',
           tipo: 'despesa',
           vencimento: '',
@@ -340,6 +345,7 @@ export default function TransactionForm({
       conta: contas.length > 0 ? contas[0].nome : '',
       categoria: 'Outros',
       subcategoria: '',
+      contato: '',
       forma: 'Dinheiro',
       tipo: 'despesa',
       vencimento: '',
@@ -589,6 +595,17 @@ export default function TransactionForm({
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cliente/Fornecedor
+              </label>
+              <ContatoSelector
+                value={formData.contato || ''}
+                onChange={(value) => handleInputChange('contato', value)}
+                placeholder="Selecione um contato"
+              />
             </div>
           </div>
 
