@@ -261,11 +261,18 @@ export default function TransactionForm({
       return
     }
 
+    if (formData.tipo === 'transferencia' && !formData.contaTransferencia) {
+      setMessage({ type: 'error', text: 'Para transferências, é obrigatório selecionar a conta de destino' })
+      return
+    }
+
     setLoading(true)
     setMessage(null)
 
     try {
-      const valorFinal = formData.tipo === 'despesa' ? -Math.abs(formData.valor) : Math.abs(formData.valor)
+      const valorFinal = formData.tipo === 'despesa' ? -Math.abs(formData.valor) : 
+                        formData.tipo === 'transferencia' ? Math.abs(formData.valor) : 
+                        Math.abs(formData.valor)
       
       if (isEditing && transactionToEdit) {
         // Atualizar transação existente
@@ -545,6 +552,7 @@ export default function TransactionForm({
               >
                 <option value="receita">Receita</option>
                 <option value="despesa">Despesa</option>
+                <option value="transferencia">Transferência</option>
               </select>
             </div>
           </div>
@@ -577,27 +585,29 @@ export default function TransactionForm({
             </div>
           </div>
 
-          {/* Sexta linha - Conta de Transferência */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Conta de Transferência
-              </label>
-              <select
-                value={formData.contaTransferencia}
-                onChange={(e) => handleInputChange('contaTransferencia', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
-              >
-                <option value="">Selecione uma conta</option>
-                {contas.map((conta) => (
-                  <option key={conta.nome} value={conta.nome}>
-                    {conta.nome}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Sexta linha - Conta de Transferência (apenas para transferências) */}
+          {formData.tipo === 'transferencia' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Conta de Destino *
+                </label>
+                <select
+                  value={formData.contaTransferencia}
+                  onChange={(e) => handleInputChange('contaTransferencia', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
+                  required
+                >
+                  <option value="">Selecione a conta de destino</option>
+                  {contas.filter(conta => conta.nome !== formData.conta).map((conta) => (
+                    <option key={conta.nome} value={conta.nome}>
+                      {conta.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
+              <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Cliente/Fornecedor
               </label>
