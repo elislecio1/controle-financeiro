@@ -451,6 +451,9 @@ class SupabaseServiceImpl implements SupabaseService {
         }
 
         // Salvar ambas as transações
+        console.log('🔄 Salvando transação de débito:', debitTransaction)
+        console.log('🔄 Salvando transação de crédito:', creditTransaction)
+        
         const { data: transferData, error: transferError } = await supabase
           .from(this.TABLE_NAME)
           .insert([debitTransaction, creditTransaction])
@@ -462,8 +465,11 @@ class SupabaseServiceImpl implements SupabaseService {
         }
 
         console.log('✅ Transferência salva com sucesso!')
+        console.log('📊 Dados retornados:', transferData)
         
         const savedData = transferData?.[0]
+        console.log('📋 Dados salvos (primeira transação):', savedData)
+        
         const sheetData: SheetData | undefined = savedData ? {
           id: savedData.id.toString(),
           data: this.formatDateForDisplay(savedData.data),
