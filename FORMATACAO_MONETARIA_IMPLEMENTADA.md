@@ -1,121 +1,124 @@
-# 💰 **FORMATAÇÃO MONETÁRIA IMPLEMENTADA**
+# 💰 **FORMATAÇÃO MONETÁRIA INSTANTÂNEA IMPLEMENTADA**
 
 ## 🎯 **Problema Resolvido**
-O sistema agora aceita e formata corretamente valores monetários com:
-- ✅ **Vírgulas para centavos** (ex: 1,25)
-- ✅ **Pontos para milhares** (ex: 1.547,65)
-- ✅ **Formatação automática** durante a digitação
-- ✅ **Conversão inteligente** entre formatos
+O sistema agora formata **instantaneamente** valores monetários durante a digitação:
+- ✅ **Formatação progressiva** desde o primeiro dígito
+- ✅ **Formatação em tempo real** durante a digitação
+- ✅ **Suporte a centavos** com vírgula automática
+- ✅ **Pontos de milhares** automáticos
 
-## 🔧 **Como Funciona**
+## 🔧 **Como Funciona Agora**
 
-### **1. Formatação Automática Durante Digitação**
-- **Digite:** `154765`
-- **Sistema formata:** `1.547,65`
-- **Resultado:** R$ 1.547,65
+### **1. Formatação Progressiva Durante Digitação**
+- **Digite:** `1` → **Sistema mostra:** `0,01`
+- **Digite:** `15` → **Sistema mostra:** `0,15`
+- **Digite:** `154` → **Sistema mostra:** `1,54`
+- **Digite:** `1549` → **Sistema mostra:** `15,49`
+- **Digite:** `15497` → **Sistema mostra:** `154,97`
 
-### **2. Suporte a Diferentes Formatos de Entrada**
+### **2. Regras de Formatação Automática**
+- **1 dígito:** `0,0X` (ex: `1` → `0,01`)
+- **2 dígitos:** `0,XX` (ex: `15` → `0,15`)
+- **3+ dígitos:** `X,XX` com pontos de milhares, **sem zeros à esquerda** (ex: `1549` → `15,49`)
 
-#### **Formato Brasileiro (Recomendado):**
-- `54,28` → R$ 54,28
-- `1.547,65` → R$ 1.547,65
-- `15.587,26` → R$ 15.587,26
+### **3. Exemplos de Funcionamento**
 
-#### **Formato Inglês (Fallback):**
-- `54.28` → R$ 54,28
-- `15587.26` → R$ 15.587,26
-- `1547.65` → R$ 1.547,65
-
-#### **Formato Simples:**
-- `5428` → R$ 5.428,00
-- `154765` → R$ 1.547,65
-
-### **3. Regras de Formatação**
-- **Vírgula (,):** Sempre separa centavos
-- **Ponto (.):** Separa milhares (formato brasileiro)
-- **Limite:** Máximo 2 casas decimais
-- **Automático:** Formatação em tempo real
+#### **Digitação Progressiva (SEM ZEROS À ESQUERDA):**
+```
+1 → 0,01
+15 → 0,15
+154 → 1,54
+1549 → 15,49
+15497 → 154,97
+154970 → 1.549,70
+1549700 → 15.497,00
+```
 
 ## 🧪 **COMO TESTAR**
 
-### **Teste 1: Valores Simples**
+### **Teste 1: Formatação Progressiva**
 1. Vá para "Transações" → "+ Nova Transação"
-2. No campo "Valor", digite: `54,28`
-3. **Resultado esperado:** Campo mostra `54,28`
+2. No campo "Valor", digite **um dígito por vez:**
+   - Digite `1` → Deve mostrar `0,01`
+   - Digite `5` → Deve mostrar `0,15`
+   - Digite `4` → Deve mostrar `1,54`
+   - Digite `9` → Deve mostrar `15,49`
+   - Digite `7` → Deve mostrar `154,97`
 
-### **Teste 2: Valores com Milhares**
-1. Digite: `154765`
-2. **Resultado esperado:** Campo formata automaticamente para `1.547,65`
+### **Teste 2: Valores Grandes**
+1. Digite `1549700`
+2. **Resultado esperado:** `15.497,00`
 
-### **Teste 3: Formato Inglês**
-1. Digite: `15587.26`
-2. **Resultado esperado:** Campo converte para `15.587,26`
-
-### **Teste 4: Valores Pequenos**
-1. Digite: `0,99`
-2. **Resultado esperado:** Campo mostra `0,99`
+### **Teste 3: Valores Pequenos**
+1. Digite `99`
+2. **Resultado esperado:** `0,99`
 
 ## ✅ **FUNCIONALIDADES IMPLEMENTADAS**
 
 ### **1. Função `formatCurrencyInput`**
-- ✅ Formata automaticamente durante digitação
-- ✅ Adiciona pontos de milhares
-- ✅ Converte formato inglês para brasileiro
-- ✅ Limita a 2 casas decimais
+- ✅ Formatação instantânea desde o primeiro dígito
+- ✅ Adiciona vírgula automaticamente para centavos
+- ✅ Adiciona pontos de milhares automaticamente
+- ✅ Formatação progressiva em tempo real
 
 ### **2. Função `handleValorChange`**
-- ✅ Chama formatação automática
-- ✅ Atualiza o input em tempo real
-- ✅ Converte para número usando `parseValue`
+- ✅ Chama formatação instantânea
+- ✅ Atualiza estado de exibição em tempo real
+- ✅ Converte para número corretamente
 
-### **3. Função `parseValue` Melhorada**
-- ✅ Suporta múltiplos formatos
-- ✅ Remove pontos de milhares automaticamente
-- ✅ Converte vírgula para ponto decimal
-- ✅ Trata valores negativos
+### **3. Estado Local `valorDisplay`**
+- ✅ Controle total do que é exibido no input
+- ✅ Formatação instantânea sem conflitos
+- ✅ Sincronização perfeita entre digitação e exibição
 
 ## 🎨 **EXEMPLOS VISUAIS**
 
-| **Entrada** | **Formatação Automática** | **Valor Final** |
-|-------------|---------------------------|-----------------|
-| `54,28` | `54,28` | R$ 54,28 |
-| `154765` | `1.547,65` | R$ 1.547,65 |
-| `15587.26` | `15.587,26` | R$ 15.587,26 |
-| `0,99` | `0,99` | R$ 0,99 |
-| `1234567` | `1.234.567,00` | R$ 1.234.567,00 |
+| **Digitação Progressiva** | **Formatação Instantânea** |
+|---------------------------|----------------------------|
+| `1` | `0,01` |
+| `15` | `0,15` |
+| `154` | `1,54` |
+| `1549` | `15,49` |
+| `15497` | `154,97` |
+| `154970` | `1.549,70` |
+| `1549700` | `15.497,00` |
 
 ## 🔍 **DETALHES TÉCNICOS**
 
 ### **Regex de Limpeza:**
 ```typescript
-// Remove tudo que não é número, vírgula ou ponto
-let cleanValue = value.replace(/[^\d,.]/g, '')
+// Remove tudo que não é número
+let cleanValue = value.replace(/[^\d]/g, '')
 ```
 
-### **Formatação de Milhares:**
+### **Formatação Progressiva:**
 ```typescript
-// Adiciona pontos de milhares a cada 3 dígitos
-const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-```
+// 1 dígito: 0,0X
+if (cleanValue.length === 1) {
+  return `0,0${cleanValue}`
+}
 
-### **Conversão para Número:**
-```typescript
-// Remove pontos de milhares e converte vírgula para ponto
-const integerPart = parts[0].replace(/\./g, '')
-const valorConvertido = integerPart + '.' + decimalPart
+// 2 dígitos: 0,XX
+if (cleanValue.length === 2) {
+  return `0,${cleanValue}`
+}
+
+// 3+ dígitos: X,XX com pontos de milhares
+const integerPart = cleanValue.slice(0, -2)
+const decimalPart = cleanValue.slice(-2)
 ```
 
 ## 🎯 **RESULTADO FINAL**
 
-- ✅ **Usuário pode digitar naturalmente** como está acostumado
-- ✅ **Sistema formata automaticamente** para padrão brasileiro
-- ✅ **Valores são salvos corretamente** no banco de dados
-- ✅ **Interface fica limpa e profissional**
-- ✅ **Suporte a diferentes formatos** de entrada
+- ✅ **Formatação instantânea** desde o primeiro dígito
+- ✅ **Experiência fluida** durante a digitação
+- ✅ **Formato brasileiro** automático (vírgula para centavos)
+- ✅ **Pontos de milhares** automáticos
+- ✅ **Interface profissional** e intuitiva
 
 ## 🚀 **PRÓXIMOS PASSOS**
 
-1. **Testar localmente** com diferentes valores
-2. **Verificar se salva corretamente** no Supabase
-3. **Testar no Vercel** após configurar variáveis de ambiente
-4. **Validar formatação** em diferentes navegadores
+1. **Testar a formatação progressiva** localmente
+2. **Verificar se funciona** com diferentes valores
+3. **Testar no Vercel** após configurar Supabase
+4. **Validar em diferentes navegadores**
