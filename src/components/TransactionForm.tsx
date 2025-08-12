@@ -608,16 +608,17 @@ export default function TransactionForm({
               </div>
 
               <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cliente/Fornecedor
-              </label>
-              <ContatoSelector
-                value={formData.contato || ''}
-                onChange={(value) => handleInputChange('contato', value)}
-                placeholder="Selecione um contato"
-              />
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cliente/Fornecedor
+                </label>
+                <ContatoSelector
+                  value={formData.contato || ''}
+                  onChange={(value) => handleInputChange('contato', value)}
+                  placeholder="Selecione um contato"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Botões responsivos */}
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
