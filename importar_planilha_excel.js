@@ -188,6 +188,36 @@ function gerarUUIDUnico(descricao, valor, data, conta) {
   return `${hash.substring(0, 8)}-${hash.substring(8, 12)}-${hash.substring(12, 16)}-${hash.substring(16, 20)}-${hash.substring(20, 32)}`;
 }
 
+// Função para determinar forma de pagamento
+function determinarForma(status, conta, tipo) {
+  if (!status || status === 'pendente') {
+    return 'pendente';
+  }
+  
+  if (status === 'pago') {
+    // Verificar se é transferência
+    if (tipo === 'transferência' || tipo === 'transferencia') {
+      return 'transferência';
+    }
+    
+    // Verificar conta para determinar forma
+    const contaLower = conta.toLowerCase();
+    if (contaLower.includes('cartão') || contaLower.includes('cartao') || contaLower.includes('credito')) {
+      return 'cartão';
+    } else if (contaLower.includes('pix')) {
+      return 'pix';
+    } else if (contaLower.includes('boleto')) {
+      return 'boleto';
+    } else if (contaLower.includes('dinheiro') || contaLower.includes('caixa')) {
+      return 'dinheiro';
+    } else {
+      return 'transferência'; // Padrão para contas bancárias
+    }
+  }
+  
+  return 'pendente'; // Padrão
+}
+
 // Função principal
 function processarPlanilha() {
   try {
@@ -297,6 +327,7 @@ function processarPlanilha() {
               valor: tipoTransacao === 'despesa' ? -Math.abs(valorConvertido) : Math.abs(valorConvertido),
               tipo: tipoTransacao,
               status: status,
+              forma: determinarForma(status, conta, tipoTransacao),
               conta: conta,
               categoria: categoria,
               subcategoria: subcategoria,
@@ -334,32 +365,52 @@ function processarPlanilha() {
       }
     }
     
-    // Gerar SQL
-    if (todasTransacoes.length > 0) {
-      gerarSQL(todasTransacoes);
-    } else {
-      console.log('❌ Nenhuma transação válida encontrada para importar');
-    }
+    return todasTransacoes;
     
   } catch (error) {
     console.error('❌ Erro ao processar planilha:', error);
+    return [];
   }
 }
 
 // Função para gerar SQL
 function gerarSQL(transacoes) {
-  console.log('\n🔧 Gerando SQL...');
+  console.log('🔧 Gerando SQL...');
   
-  let sql = `-- =====================================================
--- SCRIPT DE IMPORTAÇÃO DE TRANSAÇÕES DO EXCEL
--- Gerado automaticamente em ${new Date().toLocaleString('pt-BR')}
--- Total de transações: ${transacoes.length}
+  if (!transacoes || transacoes.length === 0) {
+    console.log('❌ Nenhuma transação para gerar SQL');
+    return '';
+  }
+  
+  // Comando para limpar dados importados anteriormente
+  const deleteSQL = `
 -- =====================================================
+-- LIMPEZA DOS DADOS IMPORTADOS ANTERIORMENTE
+-- =====================================================
+-- Este comando remove todas as transações que foram importadas
+-- da planilha "PLANEJAMENTO FINANCEIRO 2025.xlsx"
+-- ⚠️ ATENÇÃO: Execute apenas se quiser limpar os dados antigos!
 
--- Primeiro, vamos verificar se já existem transações similares
--- para evitar duplicatas baseadas em descrição, valor, data e conta
+-- Opção 1: Remover TODAS as transações (mais seguro)
+DELETE FROM transactions WHERE created_at >= '2025-08-12';
 
--- Inserir transações únicas
+-- Opção 2: Remover apenas transações específicas (se souber os IDs)
+-- DELETE FROM transactions WHERE id IN (
+--   'fe0efab2-ffa9-4a32-a73a-4749d86dbf5a',
+--   'd7cb84a2-ac91-bb10-2e04-617226ad7a12',
+--   -- ... outros IDs
+-- );
+
+-- Verificar se a limpeza foi bem-sucedida
+SELECT COUNT(*) as total_apagado FROM transactions WHERE created_at >= '2025-08-12';
+
+-- =====================================================
+-- INSERÇÃO DAS NOVAS TRANSAÇÕES
+-- =====================================================
+`;
+
+  // SQL para inserção das transações
+  const insertSQL = `
 INSERT INTO transactions (
   id, data, valor, descricao, conta, tipo, status, forma, 
   categoria, subcategoria, contato, vencimento, 
@@ -367,26 +418,9 @@ INSERT INTO transactions (
 ) VALUES
 `;
 
-  transacoes.forEach((transacao, index) => {
-    const isLast = index === transacoes.length - 1;
-    
-    // Determinar forma de pagamento baseado no status
-    let forma = 'dinheiro';
-    if (transacao.status === 'pago') {
-      if (transacao.conta.toLowerCase().includes('cartão') || transacao.conta.toLowerCase().includes('cartao')) {
-        forma = 'cartão';
-      } else if (transacao.conta.toLowerCase().includes('pix') || transacao.conta.toLowerCase().includes('transferência')) {
-        forma = 'pix';
-      } else if (transacao.conta.toLowerCase().includes('boleto')) {
-        forma = 'boleto';
-      } else {
-        forma = 'transferência';
-      }
-    } else {
-      forma = 'pendente';
-    }
-    
-    sql += `(
+  // Construir valores das transações
+  const valores = transacoes.map((transacao, index) => {
+    const linha = `(
   '${transacao.id}',
   '${transacao.data}',
   ${transacao.valor},
@@ -394,60 +428,120 @@ INSERT INTO transactions (
   '${transacao.conta.replace(/'/g, "''")}',
   '${transacao.tipo}',
   '${transacao.status}',
-  '${forma}',
+  '${transacao.forma}',
   '${transacao.categoria.replace(/'/g, "''")}',
-  '${transacao.subcategoria.replace(/'/g, "''")}',
-  '${transacao.contato.replace(/'/g, "''")}',
+  '${transacao.subcategoria ? transacao.subcategoria.replace(/'/g, "''") : ''}',
+  '${transacao.contato ? transacao.contato.replace(/'/g, "''") : ''}',
   '${transacao.vencimento}',
   '${transacao.created_at}',
   '${transacao.updated_at}'
-)${isLast ? ';' : ','}\n`;
-  });
-  
-  sql += `
+)`;
+    
+    return linha + (index < transacoes.length - 1 ? ',' : ';');
+  }).join('\n');
 
--- Verificar se as inserções foram bem-sucedidas
-SELECT 
-  COUNT(*) as total_inseridas,
-  COUNT(CASE WHEN tipo = 'receita' THEN 1 END) as receitas,
-  COUNT(CASE WHEN tipo = 'despesa' THEN 1 END) as despesas,
-  COUNT(CASE WHEN status = 'pago' THEN 1 END) as pagas,
-  COUNT(CASE WHEN status = 'pendente' THEN 1 END) as pendentes,
-  COUNT(CASE WHEN status = 'vencido' THEN 1 END) as vencidas
-FROM transactions 
-WHERE created_at >= '${new Date().toISOString().split('T')[0]}';
+  // SQL para verificação
+  const verificacaoSQL = `
 
--- Mostrar algumas transações inseridas para verificação
+-- =====================================================
+-- VERIFICAÇÃO DA IMPORTAÇÃO
+-- =====================================================
+
+-- Total de transações importadas
+SELECT COUNT(*) as total_importado FROM transactions WHERE created_at >= '2025-08-12';
+
+-- Lista das transações importadas
 SELECT 
-  data, descricao, valor, tipo, status, conta, categoria, forma
+  data,
+  descricao,
+  valor,
+  tipo,
+  status,
+  categoria,
+  conta
 FROM transactions 
-WHERE created_at >= '${new Date().toISOString().split('T')[0]}'
-ORDER BY data DESC
-LIMIT 10;
+WHERE created_at >= '2025-08-12'
+ORDER BY data, descricao;
+
+-- Verificar valores por categoria
+SELECT 
+  categoria,
+  COUNT(*) as quantidade,
+  SUM(CASE WHEN tipo = 'receita' THEN valor ELSE 0 END) as total_receitas,
+  SUM(CASE WHEN tipo = 'despesa' THEN valor ELSE 0 END) as total_despesas
+FROM transactions 
+WHERE created_at >= '2025-08-12'
+GROUP BY categoria
+ORDER BY categoria;
+
+-- Verificar valores por tipo
+SELECT 
+  tipo,
+  COUNT(*) as quantidade,
+  SUM(valor) as valor_total
+FROM transactions 
+WHERE created_at >= '2025-08-12'
+GROUP BY tipo
+ORDER BY tipo;
 `;
 
-  // Salvar SQL em arquivo
-  const sqlPath = path.join(__dirname, 'importacao_transacoes.sql');
-  fs.writeFileSync(sqlPath, sql, 'utf8');
+  const sqlCompleto = deleteSQL + insertSQL + valores + verificacaoSQL;
   
-  console.log(`✅ SQL gerado com sucesso!`);
-  console.log(`📁 Arquivo salvo: ${sqlPath}`);
-  console.log(`📊 Total de transações no SQL: ${transacoes.length}`);
-  
-  // Mostrar algumas transações como exemplo
-  console.log('\n📋 Exemplos de transações que serão importadas:');
-  transacoes.slice(0, 5).forEach((transacao, index) => {
-    console.log(`${index + 1}. ${transacao.data} - ${transacao.descricao} - R$ ${transacao.valor} (${transacao.tipo})`);
-  });
-  
-  if (transacoes.length > 5) {
-    console.log(`... e mais ${transacoes.length - 5} transações`);
+  return sqlCompleto;
+}
+
+// Função principal
+function main() {
+  try {
+    console.log('🚀 Iniciando processamento da planilha...');
+    
+    // Processar planilha
+    const transacoes = processarPlanilha();
+    
+    if (transacoes.length === 0) {
+      console.log('❌ Nenhuma transação válida encontrada');
+      return;
+    }
+    
+    // Gerar SQL
+    const sql = gerarSQL(transacoes);
+    
+    if (!sql) {
+      console.log('❌ Erro ao gerar SQL');
+      return;
+    }
+    
+    // Salvar SQL em arquivo
+    const sqlPath = path.join(__dirname, 'importacao_transacoes.sql');
+    fs.writeFileSync(sqlPath, sql, 'utf8');
+    
+    console.log(`✅ SQL gerado com sucesso!`);
+    console.log(`📁 Arquivo salvo: ${sqlPath}`);
+    console.log(`📊 Total de transações no SQL: ${transacoes.length}`);
+    
+    // Mostrar algumas transações como exemplo
+    console.log('\n📋 Exemplos de transações que serão importadas:');
+    transacoes.slice(0, 5).forEach((transacao, index) => {
+      console.log(`${index + 1}. ${transacao.data} - ${transacao.descricao} - R$ ${transacao.valor} (${transacao.tipo})`);
+    });
+    
+    if (transacoes.length > 5) {
+      console.log(`... e mais ${transacoes.length - 5} transações`);
+    }
+    
+    console.log('\n⚠️  IMPORTANTE: O script SQL agora inclui:');
+    console.log('   1. DELETE para limpar dados anteriores');
+    console.log('   2. INSERT das novas transações');
+    console.log('   3. SELECTs para verificação');
+    
+  } catch (error) {
+    console.error('❌ Erro durante execução:', error.message);
   }
 }
 
-// Executar o script
+// Executar se chamado diretamente
 if (require.main === module) {
-  processarPlanilha();
+  main();
 }
 
 module.exports = { processarPlanilha, gerarSQL };
