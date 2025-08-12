@@ -1156,6 +1156,15 @@ function App() {
                                   <CheckCircle className="h-4 w-4" />
                                 </button>
                               )}
+                              {item.status === 'vencido' && (
+                                <button
+                                  onClick={() => handleConfirmPayment(item)}
+                                  className="text-green-600 hover:text-green-900 p-1"
+                                  title="Marcar como pago"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </button>
+                              )}
                               {item.status === 'pago' && (
                                 <button
                                   onClick={() => handleUnmarkAsPaid(item)}
