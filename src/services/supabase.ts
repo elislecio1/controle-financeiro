@@ -60,35 +60,35 @@ const mockData: SheetData[] = [
 // Mock data para categorias
 const mockCategorias: Categoria[] = [
   {
-    id: '1',
+    id: '550e8400-e29b-41d4-a716-446655440001',
     nome: 'Alimentação',
     tipo: 'despesa',
     cor: '#EF4444',
     ativo: true
   },
   {
-    id: '2',
+    id: '550e8400-e29b-41d4-a716-446655440002',
     nome: 'Transporte',
     tipo: 'despesa',
     cor: '#F59E0B',
     ativo: true
   },
   {
-    id: '3',
+    id: '550e8400-e29b-41d4-a716-446655440003',
     nome: 'Moradia',
     tipo: 'despesa',
     cor: '#10B981',
     ativo: true
   },
   {
-    id: '4',
+    id: '550e8400-e29b-41d4-a716-446655440004',
     nome: 'Receitas',
     tipo: 'receita',
     cor: '#3B82F6',
     ativo: true
   },
   {
-    id: '5',
+    id: '550e8400-e29b-41d4-a716-446655440005',
     nome: 'Serviços',
     tipo: 'despesa',
     cor: '#8B5CF6',
@@ -99,39 +99,39 @@ const mockCategorias: Categoria[] = [
 // Mock data para subcategorias
 const mockSubcategorias: Subcategoria[] = [
   {
-    id: '1',
+    id: '660e8400-e29b-41d4-a716-446655440001',
     nome: 'Restaurantes',
-    categoriaId: '1',
+    categoriaId: '550e8400-e29b-41d4-a716-446655440001',
     ativo: true
   },
   {
-    id: '2',
+    id: '660e8400-e29b-41d4-a716-446655440002',
     nome: 'Supermercado',
-    categoriaId: '1',
+    categoriaId: '550e8400-e29b-41d4-a716-446655440001',
     ativo: true
   },
   {
-    id: '3',
+    id: '660e8400-e29b-41d4-a716-446655440003',
     nome: 'Combustível',
-    categoriaId: '2',
+    categoriaId: '550e8400-e29b-41d4-a716-446655440002',
     ativo: true
   },
   {
-    id: '4',
+    id: '660e8400-e29b-41d4-a716-446655440004',
     nome: 'Uber/Táxi',
-    categoriaId: '2',
+    categoriaId: '550e8400-e29b-41d4-a716-446655440002',
     ativo: true
   },
   {
-    id: '5',
+    id: '660e8400-e29b-41d4-a716-446655440005',
     nome: 'Aluguel',
-    categoriaId: '3',
+    categoriaId: '550e8400-e29b-41d4-a716-446655440003',
     ativo: true
   },
   {
-    id: '6',
+    id: '660e8400-e29b-41d4-a716-446655440006',
     nome: 'Salário',
-    categoriaId: '4',
+    categoriaId: '550e8400-e29b-41d4-a716-446655440004',
     ativo: true
   }
 ]
@@ -139,7 +139,7 @@ const mockSubcategorias: Subcategoria[] = [
 // Mock data para investimentos
 const mockInvestimentos: Investimento[] = [
   {
-    id: '1',
+    id: '770e8400-e29b-41d4-a716-446655440001',
     nome: 'PETR4',
     tipo: 'acao',
     valor: 5000,
@@ -152,7 +152,7 @@ const mockInvestimentos: Investimento[] = [
     dataCriacao: '2024-01-15T10:00:00Z'
   },
   {
-    id: '2',
+    id: '770e8400-e29b-41d4-a716-446655440002',
     nome: 'ITUB4',
     tipo: 'acao',
     valor: 3000,
@@ -165,7 +165,7 @@ const mockInvestimentos: Investimento[] = [
     dataCriacao: '2024-02-01T14:30:00Z'
   },
   {
-    id: '3',
+    id: '770e8400-e29b-41d4-a716-446655440003',
     nome: 'CDB 110% CDI',
     tipo: 'cdb',
     valor: 10000,
@@ -182,7 +182,7 @@ const mockInvestimentos: Investimento[] = [
 // Mock data para contas bancárias
 const mockContas: ContaBancaria[] = [
   {
-    id: '1',
+    id: '880e8400-e29b-41d4-a716-446655440001',
     nome: 'Conta Corrente Principal',
     tipo: 'conta_corrente',
     banco: 'Banco do Brasil',
@@ -193,7 +193,7 @@ const mockContas: ContaBancaria[] = [
     ativo: true
   },
   {
-    id: '2',
+    id: '880e8400-e29b-41d4-a716-446655440002',
     nome: 'Conta Poupança',
     tipo: 'poupanca',
     banco: 'Itaú',
@@ -204,7 +204,7 @@ const mockContas: ContaBancaria[] = [
     ativo: true
   },
   {
-    id: '3',
+    id: '880e8400-e29b-41d4-a716-446655440003',
     nome: 'Carteira',
     tipo: 'investimento',
     banco: '',
@@ -219,21 +219,21 @@ const mockContas: ContaBancaria[] = [
 // Mock data para cartões de crédito
 const mockCartoes: CartaoCredito[] = [
   {
-    id: '1',
+    id: '990e8400-e29b-41d4-a716-446655440001',
     nome: 'Cartão Nubank',
     banco: 'Nubank',
     limite: 5000,
     vencimento: 15,
-    contaId: '1',
+    contaId: '880e8400-e29b-41d4-a716-446655440001',
     ativo: true
   },
   {
-    id: '2',
+    id: '990e8400-e29b-41d4-a716-446655440002',
     nome: 'Cartão Itaú',
     banco: 'Itaú',
     limite: 3000,
     vencimento: 20,
-    contaId: '2',
+    contaId: '880e8400-e29b-41d4-a716-446655440002',
     ativo: true
   }
 ]
