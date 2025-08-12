@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
 import { FileText, TrendingUp, DollarSign, PieChart as PieChartIcon, BarChart3, Download, Filter, Calendar } from 'lucide-react'
 
@@ -10,17 +10,70 @@ interface RelatoriosGerenciaisProps {
 
 export default function RelatoriosGerenciais({ data, categorias, centrosCusto }: RelatoriosGerenciaisProps) {
   const [activeReport, setActiveReport] = useState<'dre' | 'balanco' | 'fluxo' | 'categoria' | 'centro'>('dre')
-  const [periodo, setPeriodo] = useState('2024')
-  const [mes, setMes] = useState('12')
+  
+  // Calcular anos disponíveis baseado nas movimentações existentes
+  const calcularAnosDisponiveis = () => {
+    if (!data || data.length === 0) return []
+    
+    const anos = new Set<string>()
+    
+    data.forEach(item => {
+      // Extrair ano da data de vencimento ou data
+      const ano = item.vencimento?.split('/')[2] || item.data?.split('/')[2]
+      if (ano) {
+        anos.add(ano)
+      }
+    })
+    
+    // Converter para array e ordenar decrescente (mais recente primeiro)
+    return Array.from(anos).sort((a, b) => parseInt(b) - parseInt(a))
+  }
+  
+  const anosDisponiveis = calcularAnosDisponiveis()
+  const [periodo, setPeriodo] = useState(anosDisponiveis.length > 0 ? anosDisponiveis[0] : '2024')
+  
+  // Calcular meses disponíveis para o ano selecionado
+  const calcularMesesDisponiveis = (anoSelecionado: string) => {
+    if (!data || data.length === 0) return []
+    
+    const meses = new Set<number>()
+    
+    data.forEach(item => {
+      const ano = item.vencimento?.split('/')[2] || item.data?.split('/')[2]
+      if (ano === anoSelecionado) {
+        const mes = parseInt(item.vencimento?.split('/')[1] || item.data?.split('/')[1])
+        if (mes && mes >= 1 && mes <= 12) {
+          meses.add(mes)
+        }
+      }
+    })
+    
+    // Converter para array e ordenar crescente
+    return Array.from(meses).sort((a, b) => a - b)
+  }
+  
+  const mesesDisponiveis = calcularMesesDisponiveis(periodo)
+  const [mes, setMes] = useState(mesesDisponiveis.length > 0 ? mesesDisponiveis[0].toString() : '12')
+
+  // Atualizar mês quando ano for alterado
+  useEffect(() => {
+    const novosMeses = calcularMesesDisponiveis(periodo)
+    if (novosMeses.length > 0) {
+      setMes(novosMeses[0].toString())
+    } else {
+      setMes('12')
+    }
+  }, [periodo, data])
 
   // Calcular dados reais baseados nas transações
   const calcularDadosReais = () => {
     if (!data || data.length === 0) return { dre: [], balanco: [], fluxo: [], categoria: [], centro: [] }
 
-    // Filtrar dados por período
+    // Filtrar dados por período (ano e mês)
     const dadosPeriodo = data.filter(item => {
       const ano = item.vencimento?.split('/')[2] || item.data?.split('/')[2]
-      return ano === periodo
+      const mes = item.vencimento?.split('/')[1] || item.data?.split('/')[1]
+      return ano === periodo && mes === mes
     })
 
     // DRE - Demonstrativo de Resultados
@@ -55,13 +108,14 @@ export default function RelatoriosGerenciais({ data, categorias, centrosCusto }:
       { conta: 'Patrimônio Líquido', valor: patrimonioLiquido, tipo: 'patrimonio' }
     ]
 
-    // Fluxo de Caixa por mês
+    // Fluxo de Caixa por mês (para o ano selecionado)
     const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
     const fluxoCaixaData = meses.map((nomeMes, index) => {
       const mesNum = index + 1
-      const dadosMes = dadosPeriodo.filter(item => {
+      const dadosMes = data.filter(item => {
+        const anoItem = item.vencimento?.split('/')[2] || item.data?.split('/')[2]
         const mesItem = parseInt(item.vencimento?.split('/')[1] || item.data?.split('/')[1])
-        return mesItem === mesNum
+        return anoItem === periodo && mesItem === mesNum
       })
       
       const entradas = dadosMes.filter(item => item.tipo === 'receita' && item.status === 'pago')
@@ -78,7 +132,7 @@ export default function RelatoriosGerenciais({ data, categorias, centrosCusto }:
       }
     })
 
-    // Análise por Categoria
+    // Análise por Categoria (para o período selecionado)
     const categoriaData = categorias.map(cat => {
       const valor = dadosPeriodo.filter(item => 
         item.categoria === cat.nome && item.status === 'pago'
@@ -93,7 +147,7 @@ export default function RelatoriosGerenciais({ data, categorias, centrosCusto }:
       }
     }).filter(item => item.valor > 0).sort((a, b) => b.valor - a.valor)
 
-    // Análise por Centro de Custo
+    // Análise por Centro de Custo (para o período selecionado)
     const centroCustoData = centrosCusto.map(centro => {
       const valor = dadosPeriodo.filter(item => 
         item.centro === centro.nome && item.status === 'pago'
@@ -112,6 +166,9 @@ export default function RelatoriosGerenciais({ data, categorias, centrosCusto }:
   }
 
   const { dre: dreData, balanco: balancoData, fluxo: fluxoCaixaData, categoria: categoriaData, centro: centroCustoData } = calcularDadosReais()
+
+  // Verificar se há dados para o período selecionado
+  const temDadosParaPeriodo = data && data.length > 0 && anosDisponiveis.length > 0 && mesesDisponiveis.length > 0
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658']
 
@@ -356,9 +413,9 @@ export default function RelatoriosGerenciais({ data, categorias, centrosCusto }:
               onChange={(e) => setPeriodo(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="2024">2024</option>
-              <option value="2023">2023</option>
-              <option value="2022">2022</option>
+              {anosDisponiveis.map(ano => (
+                <option key={ano} value={ano}>{ano}</option>
+              ))}
             </select>
           </div>
           <div>
@@ -368,18 +425,9 @@ export default function RelatoriosGerenciais({ data, categorias, centrosCusto }:
               onChange={(e) => setMes(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="12">Dezembro</option>
-              <option value="11">Novembro</option>
-              <option value="10">Outubro</option>
-              <option value="09">Setembro</option>
-              <option value="08">Agosto</option>
-              <option value="07">Julho</option>
-              <option value="06">Junho</option>
-              <option value="05">Maio</option>
-              <option value="04">Abril</option>
-              <option value="03">Março</option>
-              <option value="02">Fevereiro</option>
-              <option value="01">Janeiro</option>
+              {mesesDisponiveis.map(mesNum => (
+                <option key={mesNum} value={mesNum}>{`${mesNum} - ${['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][mesNum - 1]}`}</option>
+              ))}
             </select>
           </div>
           <div className="flex items-end">
@@ -418,7 +466,12 @@ export default function RelatoriosGerenciais({ data, categorias, centrosCusto }:
 
       {/* Conteúdo do Relatório */}
       <div className="bg-gray-50 rounded-lg p-6">
-        {renderReport()}
+        {temDadosParaPeriodo ? renderReport() : (
+          <div className="text-center py-12">
+            <p className="text-lg text-gray-600">Não há dados disponíveis para o período selecionado.</p>
+            <p className="text-sm text-gray-500">Por favor, selecione um período diferente ou verifique os dados.</p>
+          </div>
+        )}
       </div>
     </div>
   )
