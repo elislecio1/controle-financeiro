@@ -1437,7 +1437,21 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       console.log('✅ Contatos carregados:', data?.length || 0, 'registros')
-      return data || mockContatos
+      
+      // Mapear campos snake_case para camelCase
+      const contatosMapeados = (data || []).map(item => ({
+        id: item.id,
+        nome: item.nome,
+        tipo: item.tipo,
+        email: item.email,
+        telefone: item.telefone,
+        cpfCnpj: item.cpf_cnpj,
+        endereco: item.endereco,
+        observacoes: item.observacoes,
+        ativo: item.ativo
+      }))
+      
+      return contatosMapeados || mockContatos
     } catch (error) {
       console.error('❌ Erro ao buscar contatos:', error)
       return mockContatos
@@ -1448,9 +1462,21 @@ class SupabaseServiceImpl implements SupabaseService {
     try {
       console.log('💾 Salvando contato no Supabase...')
       
+      // Mapear campos camelCase para snake_case
+      const contatoData = {
+        nome: contato.nome,
+        tipo: contato.tipo,
+        email: contato.email,
+        telefone: contato.telefone,
+        cpf_cnpj: contato.cpfCnpj,
+        endereco: contato.endereco,
+        observacoes: contato.observacoes,
+        ativo: contato.ativo
+      }
+      
       const { data, error } = await supabase
         .from('contatos')
-        .insert([contato])
+        .insert([contatoData])
         .select()
         .single()
 
@@ -1479,9 +1505,20 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async updateContato(id: string, data: Partial<Contato>): Promise<{ success: boolean; message: string }> {
     try {
+      // Mapear campos camelCase para snake_case
+      const updateData: any = {}
+      if (data.nome !== undefined) updateData.nome = data.nome
+      if (data.tipo !== undefined) updateData.tipo = data.tipo
+      if (data.email !== undefined) updateData.email = data.email
+      if (data.telefone !== undefined) updateData.telefone = data.telefone
+      if (data.cpfCnpj !== undefined) updateData.cpf_cnpj = data.cpfCnpj
+      if (data.endereco !== undefined) updateData.endereco = data.endereco
+      if (data.observacoes !== undefined) updateData.observacoes = data.observacoes
+      if (data.ativo !== undefined) updateData.ativo = data.ativo
+
       const { error } = await supabase
         .from('contatos')
-        .update(data)
+        .update(updateData)
         .eq('id', id)
 
       if (error) {
