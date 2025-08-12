@@ -61,8 +61,18 @@ export default function TransactionForm({
   // Carregar dados da transação para edição
   useEffect(() => {
     if (transactionToEdit && isEditing) {
+      // Converter data do formato DD/MM/AAAA para YYYY-MM-DD
+      const converterDataParaISO = (dataStr: string): string => {
+        if (!dataStr) return ''
+        const data = parsearDataBrasileira(dataStr)
+        if (data) {
+          return data.toISOString().split('T')[0] // Retorna YYYY-MM-DD
+        }
+        return dataStr
+      }
+
       setFormData({
-        data: transactionToEdit.data || '',
+        data: converterDataParaISO(transactionToEdit.data || ''),
         valor: Math.abs(transactionToEdit.valor),
         descricao: transactionToEdit.descricao || '',
         conta: transactionToEdit.conta || (contas.length > 0 ? contas[0].nome : ''),
@@ -70,7 +80,7 @@ export default function TransactionForm({
         subcategoria: transactionToEdit.subcategoria || '',
         forma: transactionToEdit.forma || 'Dinheiro',
         tipo: transactionToEdit.tipo || 'despesa',
-        vencimento: transactionToEdit.vencimento || '',
+        vencimento: converterDataParaISO(transactionToEdit.vencimento || ''),
         parcelas: typeof transactionToEdit.parcela === 'number' ? transactionToEdit.parcela : 1,
         contaTransferencia: transactionToEdit.contaTransferencia || ''
       })
