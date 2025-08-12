@@ -276,6 +276,7 @@ const mockContatos: Contato[] = [
 ]
 
 export interface SupabaseService {
+  readonly supabase: any
   getData(): Promise<SheetData[]>
   saveTransaction(transaction: NewTransaction): Promise<{ success: boolean; message: string; data?: SheetData }>
   updateTransaction(id: string, data: Partial<SheetData>): Promise<{ success: boolean; message: string }>
@@ -319,6 +320,10 @@ export interface SupabaseService {
 
 class SupabaseServiceImpl implements SupabaseService {
   private readonly TABLE_NAME = 'transactions'
+  
+  get supabase() {
+    return supabase
+  }
 
   async getData(): Promise<SheetData[]> {
     try {
