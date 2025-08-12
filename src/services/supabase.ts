@@ -903,7 +903,16 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       console.log('✅ Subcategorias carregadas:', data?.length || 0, 'registros')
-      return data || mockSubcategorias
+      
+      // Mapear categoria_id para categoriaId (formato TypeScript)
+      const mappedData: Subcategoria[] = (data || []).map(item => ({
+        id: item.id,
+        nome: item.nome,
+        categoriaId: item.categoria_id,
+        ativo: item.ativo
+      }))
+      
+      return mappedData.length > 0 ? mappedData : mockSubcategorias
     } catch (error) {
       console.error('❌ Erro ao buscar subcategorias:', error)
       return mockSubcategorias
@@ -914,9 +923,16 @@ class SupabaseServiceImpl implements SupabaseService {
     try {
       console.log('💾 Salvando subcategoria no Supabase...')
       
+      // Mapear categoriaId para categoria_id (schema do banco)
+      const subcategoriaData = {
+        nome: subcategoria.nome,
+        categoria_id: subcategoria.categoriaId,
+        ativo: subcategoria.ativo
+      }
+      
       const { data, error } = await supabase
         .from('subcategorias')
-        .insert([subcategoria])
+        .insert([subcategoriaData])
         .select()
         .single()
 
@@ -929,10 +945,19 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       console.log('✅ Subcategoria salva com sucesso')
+      
+      // Mapear de volta para o formato TypeScript
+      const mappedData: Subcategoria = {
+        id: data.id,
+        nome: data.nome,
+        categoriaId: data.categoria_id,
+        ativo: data.ativo
+      }
+      
       return {
         success: true,
         message: 'Subcategoria salva com sucesso!',
-        data: data
+        data: mappedData
       }
     } catch (error: any) {
       console.error('❌ Erro ao salvar subcategoria:', error)
@@ -945,9 +970,15 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async updateSubcategoria(id: string, data: Partial<Subcategoria>): Promise<{ success: boolean; message: string }> {
     try {
+      // Mapear categoriaId para categoria_id se presente
+      const updateData: any = {}
+      if (data.nome !== undefined) updateData.nome = data.nome
+      if (data.categoriaId !== undefined) updateData.categoria_id = data.categoriaId
+      if (data.ativo !== undefined) updateData.ativo = data.ativo
+      
       const { error } = await supabase
         .from('subcategorias')
-        .update(data)
+        .update(updateData)
         .eq('id', id)
 
       if (error) {
