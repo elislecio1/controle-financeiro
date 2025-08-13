@@ -409,20 +409,38 @@ class AlertasServiceImpl implements AlertasService {
         return { success: false, message: 'Configuração não encontrada' }
       }
 
+      // Mapear campos para o formato do banco (camelCase -> snake_case)
+      const updateData: any = {}
+      if (data.tipo !== undefined) updateData.tipo = data.tipo
+      if (data.ativo !== undefined) updateData.ativo = data.ativo
+      if (data.diasAntes !== undefined) updateData.dias_antes = data.diasAntes
+      if (data.valorMinimo !== undefined) updateData.valor_minimo = data.valorMinimo
+      if (data.percentualMeta !== undefined) updateData.percentual_meta = data.percentualMeta
+      if (data.categorias !== undefined) updateData.categorias = data.categorias
+      if (data.contas !== undefined) updateData.contas = data.contas
+      if (data.horarioNotificacao !== undefined) updateData.horario_notificacao = data.horarioNotificacao
+      if (data.frequencia !== undefined) updateData.frequencia = data.frequencia
+      if (data.canais !== undefined) updateData.canais = data.canais
+
+      console.log('🔄 Atualizando configuração:', { id, updateData })
+
       const { error } = await supabase
         .from(this.TABLE_CONFIGURACOES)
-        .update(data)
+        .update(updateData)
         .eq('id', id)
 
       if (error) {
+        console.error('❌ Erro ao atualizar configuração:', error)
         return {
           success: false,
           message: 'Erro ao atualizar configuração: ' + error.message
         }
       }
 
+      console.log('✅ Configuração atualizada com sucesso')
       return { success: true, message: 'Configuração atualizada com sucesso!' }
     } catch (error: any) {
+      console.error('❌ Erro geral ao atualizar configuração:', error)
       return {
         success: false,
         message: 'Erro ao atualizar configuração: ' + error.message
@@ -475,6 +493,8 @@ class AlertasServiceImpl implements AlertasService {
       // Se não há configuração, usar padrão de 3 dias
       const diasAntes = configVencimento?.diasAntes || 3
 
+      console.log('🔍 Verificando vencimentos - dias antes:', diasAntes)
+
       // Buscar transações pendentes do banco de dados
       const { data: transacoes, error } = await supabase
         .from('transactions')
@@ -488,19 +508,24 @@ class AlertasServiceImpl implements AlertasService {
       }
 
       if (!transacoes || transacoes.length === 0) {
+        console.log('📊 Nenhuma transação pendente encontrada')
         return []
       }
+
+      console.log('📊 Transações pendentes encontradas:', transacoes.length)
 
       for (const transacao of transacoes) {
         const dataVencimento = this.parseBrazilianDate(transacao.vencimento)
         if (dataVencimento) {
           const diasAteVencimento = Math.ceil((dataVencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
           
+          console.log(`📅 ${transacao.descricao}: vence em ${diasAteVencimento} dias`)
+          
           // Criar alerta se vence nos próximos X dias (incluindo hoje)
           if (diasAteVencimento <= diasAntes && diasAteVencimento >= 0) {
             const prioridade = diasAteVencimento === 0 ? 'critica' : diasAteVencimento === 1 ? 'alta' : 'media'
             
-            alertas.push({
+            const alerta = {
               id: `venc_${transacao.id}`,
               tipo: 'vencimento',
               titulo: `${transacao.descricao} vence ${diasAteVencimento === 0 ? 'hoje' : `em ${diasAteVencimento} dia(s)`}!`,
@@ -516,11 +541,15 @@ class AlertasServiceImpl implements AlertasService {
                 descricao: transacao.descricao,
                 diasAteVencimento
               }
-            })
+            }
+            
+            alertas.push(alerta)
+            console.log(`🚨 Alerta criado: ${alerta.titulo}`)
           }
         }
       }
 
+      console.log(`✅ Total de alertas de vencimento criados: ${alertas.length}`)
       return alertas
     } catch (error) {
       console.error('Erro ao verificar vencimentos:', error)
