@@ -102,7 +102,7 @@ export default function ToastNotification({
   if (!isVisible) return null
 
   return (
-    <div className={`fixed top-4 right-4 z-50 max-w-sm w-full animate-slide-in`}>
+    <div className={`max-w-sm w-full animate-slide-in`}>
       <div className={`${getCorFundo()} border ${getCorBorda()} rounded-lg shadow-lg overflow-hidden`}>
         {/* Barra de progresso */}
         {autoClose && (
@@ -190,15 +190,23 @@ interface ToastContainerProps {
 
 export function ToastContainer({ alertas, onClose }: ToastContainerProps) {
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
-      {alertas.map((alerta) => (
-        <ToastNotification
+    <div className="fixed top-4 right-4 z-50 flex flex-col space-y-3 max-h-[80vh] overflow-y-auto pr-4">
+      {alertas.map((alerta, index) => (
+        <div 
           key={alerta.id}
-          alerta={alerta}
-          onClose={() => onClose(alerta.id)}
-          autoClose={alerta.prioridade !== 'critica'} // Alertas críticos não fecham automaticamente
-          duration={alerta.prioridade === 'critica' ? 0 : 8000} // Alertas críticos ficam mais tempo
-        />
+          className="animate-toast-stack"
+          style={{ 
+            animationDelay: `${index * 150}ms`,
+            zIndex: 1000 - index
+          }}
+        >
+          <ToastNotification
+            alerta={alerta}
+            onClose={() => onClose(alerta.id)}
+            autoClose={alerta.prioridade !== 'critica'} // Alertas críticos não fecham automaticamente
+            duration={alerta.prioridade === 'critica' ? 0 : 15000} // Aumentado o tempo para 15 segundos
+          />
+        </div>
       ))}
     </div>
   )

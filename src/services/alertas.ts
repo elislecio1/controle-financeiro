@@ -12,17 +12,17 @@ const mockAlertas: Alerta[] = [
   {
     id: '1',
     tipo: 'vencimento',
-    titulo: 'Conta de Luz vence hoje!',
-    mensagem: 'A conta de luz no valor de R$ 150,00 vence hoje. Evite multas e juros.',
-    prioridade: 'alta',
+    titulo: 'Internet vence hoje!',
+    mensagem: 'A conta de internet no valor de R$ 89,90 vence hoje. Evite multas e juros.',
+    prioridade: 'critica',
     status: 'ativo',
     categoria: 'Serviços',
     dataCriacao: new Date().toISOString(),
     dataVencimento: new Date().toISOString(),
     dadosRelacionados: {
-      transacaoId: '3',
-      valor: 150,
-      descricao: 'Conta de Luz'
+      transacaoId: '2',
+      valor: 89.90,
+      descricao: 'Internet'
     }
   },
   {
@@ -54,6 +54,37 @@ const mockAlertas: Alerta[] = [
       contaId: '1',
       saldoAtual: 500,
       saldoMinimo: 1000
+    }
+  },
+  {
+    id: '4',
+    tipo: 'vencimento',
+    titulo: 'Conta de Luz vence amanhã!',
+    mensagem: 'A conta de luz no valor de R$ 150,00 vence amanhã. Programe o pagamento.',
+    prioridade: 'alta',
+    status: 'ativo',
+    categoria: 'Serviços',
+    dataCriacao: new Date().toISOString(),
+    dadosRelacionados: {
+      transacaoId: '1',
+      valor: 150,
+      descricao: 'Conta de Luz'
+    }
+  },
+  {
+    id: '5',
+    tipo: 'orcamento',
+    titulo: 'Orçamento de Alimentação Próximo do Limite',
+    mensagem: 'O orçamento de alimentação está 95% utilizado. Controle seus gastos.',
+    prioridade: 'media',
+    status: 'ativo',
+    categoria: 'Alimentação',
+    dataCriacao: new Date().toISOString(),
+    dadosRelacionados: {
+      orcamentoId: '1',
+      valorPrevisto: 500,
+      valorRealizado: 475,
+      percentual: 95
     }
   }
 ]
@@ -414,22 +445,53 @@ class AlertasServiceImpl implements AlertasService {
       const hoje = new Date()
       const alertas: Alerta[] = []
 
-      // Simular verificação (em produção, buscar do banco)
-      const transacoesVencendo = [
-        {
-          id: '1',
-          descricao: 'Conta de Luz',
-          valor: 150,
-          vencimento: '25/12/2024',
-          categoria: 'Serviços'
+      // Buscar dados reais do sistema
+      let transacoesVencendo: any[] = []
+      
+      if (this.isSupabaseConfigured()) {
+        // Buscar do Supabase
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('status', 'pendente')
+          .not('vencimento', 'is', null)
+        
+        if (!error && data) {
+          transacoesVencendo = data
         }
-      ]
+      } else {
+        // Em desenvolvimento, usar dados mockados mais realistas
+        const hojeStr = hoje.toLocaleDateString('pt-BR')
+        const amanha = new Date(hoje)
+        amanha.setDate(hoje.getDate() + 1)
+        const amanhaStr = amanha.toLocaleDateString('pt-BR')
+        
+        transacoesVencendo = [
+          {
+            id: '1',
+            descricao: 'Conta de Luz',
+            valor: 150,
+            vencimento: amanhaStr, // Vence amanhã, não hoje
+            categoria: 'Serviços',
+            status: 'pendente'
+          },
+          {
+            id: '2',
+            descricao: 'Internet',
+            valor: 89.90,
+            vencimento: hojeStr, // Vence hoje
+            categoria: 'Serviços',
+            status: 'pendente'
+          }
+        ]
+      }
 
       for (const transacao of transacoesVencendo) {
         const dataVencimento = this.parseBrazilianDate(transacao.vencimento)
         if (dataVencimento) {
           const diasAteVencimento = Math.ceil((dataVencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
           
+          // Só criar alerta se realmente vence nos próximos 3 dias
           if (diasAteVencimento <= 3 && diasAteVencimento >= 0) {
             const prioridade = diasAteVencimento === 0 ? 'critica' : diasAteVencimento === 1 ? 'alta' : 'media'
             
