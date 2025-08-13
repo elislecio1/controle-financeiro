@@ -396,7 +396,7 @@
                         <div class="stat-header">
                             <div class="stat-icon red">🚨</div>
                             <div>
-                                <div class="stat-label">Vencido Hoje</div>
+                                <div class="stat-label">Vencendo Hoje</div>
                                 <div class="stat-value" id="total-vencido-hoje">R$ 0,00</div>
                             </div>
                         </div>
@@ -699,8 +699,8 @@
             const totalPendente = sheetData.filter(item => item.status === 'pendente').reduce((sum, item) => sum + item.valor, 0);
             const totalVencido = sheetData.filter(item => item.status === 'vencido').reduce((sum, item) => sum + item.valor, 0);
             
-            // Calcula total vencido hoje
-            const totalVencidoHoje = sheetData.filter(item => {
+            // Calcula total vencendo hoje (transações que vencem hoje e ainda não foram pagas)
+            const totalVencendoHoje = sheetData.filter(item => {
                 if (item.status === 'pago') return false; // Não conta pagos
                 const vencimento = new Date(item.vencimento.split('/').reverse().join('-'));
                 return vencimento.toDateString() === hoje.toDateString();
@@ -711,18 +711,18 @@
             document.getElementById('total-pago').textContent = `R$ ${totalPago.toLocaleString()}`;
             document.getElementById('total-pendente').textContent = `R$ ${totalPendente.toLocaleString()}`;
             document.getElementById('total-vencido').textContent = `R$ ${totalVencido.toLocaleString()}`;
-            document.getElementById('total-vencido-hoje').textContent = `R$ ${totalVencidoHoje.toLocaleString()}`;
+            document.getElementById('total-vencido-hoje').textContent = `R$ ${totalVencendoHoje.toLocaleString()}`;
             document.getElementById('total-geral').textContent = `R$ ${totalGeral.toLocaleString()}`;
             
-            // Adiciona destaque visual se há valores vencidos hoje
-            const vencidoHojeElement = document.getElementById('total-vencido-hoje');
-            if (totalVencidoHoje > 0) {
-                vencidoHojeElement.style.color = '#dc2626';
-                vencidoHojeElement.style.fontWeight = 'bold';
-                showAlert(`🚨 ATENÇÃO: R$ ${totalVencidoHoje.toLocaleString()} vencem hoje!`, 'error');
+            // Adiciona destaque visual se há valores vencendo hoje
+            const vencendoHojeElement = document.getElementById('total-vencido-hoje');
+            if (totalVencendoHoje > 0) {
+                vencendoHojeElement.style.color = '#dc2626';
+                vencendoHojeElement.style.fontWeight = 'bold';
+                showAlert(`🚨 ATENÇÃO: R$ ${totalVencendoHoje.toLocaleString()} vencem hoje!`, 'error');
             } else {
-                vencidoHojeElement.style.color = '#1f2937';
-                vencidoHojeElement.style.fontWeight = 'normal';
+                vencendoHojeElement.style.color = '#1f2937';
+                vencendoHojeElement.style.fontWeight = 'normal';
             }
         }
 

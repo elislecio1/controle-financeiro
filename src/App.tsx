@@ -351,9 +351,9 @@ function App() {
         case 'pago_hoje':
           const hoje = new Date().toLocaleDateString('pt-BR')
           return item.dataPagamento === hoje
-        case 'vencido_hoje':
+        case 'vencendo_hoje':
           const hojeStr = new Date().toLocaleDateString('pt-BR')
-          return item.vencimento === hojeStr && item.status === 'vencido'
+          return item.vencimento === hojeStr && item.status !== 'pago'
         default:
           return true
       }
@@ -632,6 +632,17 @@ function App() {
   const totalPago = filteredData.filter(item => item.status === 'pago').reduce((sum, item) => sum + Math.abs(item.valor), 0)
   const totalPendente = filteredData.filter(item => item.status === 'pendente').reduce((sum, item) => sum + Math.abs(item.valor), 0)
   const totalVencido = filteredData.filter(item => item.status === 'vencido').reduce((sum, item) => sum + Math.abs(item.valor), 0)
+  
+  // Cálculo para "Pago Hoje" - transações pagas hoje
+  const hoje = new Date().toLocaleDateString('pt-BR')
+  const totalPagoHoje = filteredData.filter(item => 
+    item.status === 'pago' && item.dataPagamento === hoje
+  ).reduce((sum, item) => sum + Math.abs(item.valor), 0)
+  
+  // Cálculo para "Vencendo Hoje" - transações que vencem hoje e ainda não foram pagas
+  const totalVencendoHoje = filteredData.filter(item => 
+    item.vencimento === hoje && item.status !== 'pago'
+  ).reduce((sum, item) => sum + Math.abs(item.valor), 0)
 
   // Dados para gráficos
   const chartData = filteredData.reduce((acc: any[], item) => {
@@ -847,8 +858,8 @@ function App() {
                 { label: 'Total Pago', value: totalPago, color: 'green', filter: 'pago' },
                 { label: 'Total Pendente', value: totalPendente, color: 'yellow', filter: 'pendente' },
                 { label: 'Total Vencido', value: totalVencido, color: 'red', filter: 'vencido' },
-                { label: 'Pago Hoje', value: 0, color: 'blue', filter: 'pago_hoje' },
-                { label: 'Vencido Hoje', value: 0, color: 'orange', filter: 'vencido_hoje' }
+                { label: 'Pago Hoje', value: totalPagoHoje, color: 'blue', filter: 'pago_hoje' },
+                { label: 'Vencendo Hoje', value: totalVencendoHoje, color: 'orange', filter: 'vencendo_hoje' }
               ].map((card) => (
                 <button
                   key={card.filter}

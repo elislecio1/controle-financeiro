@@ -18,7 +18,7 @@ Este é um dashboard financeiro completo desenvolvido em HTML puro, JavaScript e
 - **Total Pendente**: Filtra registros com status "pendente"
 - **Total Vencido**: Filtra registros com status "vencido"
 - **Pago Hoje**: Mostra pagamentos realizados hoje
-- **Vencido Hoje**: Mostra itens que vencem hoje
+- **Vencendo Hoje**: Mostra itens que vencem hoje e ainda não foram pagos
 
 ### 📊 Gráficos Interativos
 - **Gráfico de Linha**: Evolução por status ao longo do tempo
@@ -116,7 +116,7 @@ Considera todos os itens com data de vencimento anterior à data atual.
 ### Pago Hoje
 Considera movimentações com data de pagamento igual à data atual.
 
-### Vencido Hoje
+### Vencendo Hoje
 Considera itens com data de vencimento igual à data atual.
 
 ## 🚀 Pronto para Produção

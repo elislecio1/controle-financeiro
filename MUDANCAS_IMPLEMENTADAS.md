@@ -4,12 +4,12 @@
 
 Implementei todas as correções solicitadas mantendo a estrutura e layout do dashboard, com foco na lógica de cálculo e exibição dos dados financeiros.
 
-## 1. ✅ Correção do Card "Vencido Hoje"
+## 1. ✅ Correção do Card "Vencendo Hoje"
 
 **Mudança:** Renomeado para "Vencendo Hoje" e alterada a lógica de cálculo.
 
 **Antes:**
-- Nome: "Vencido Hoje"
+- Nome: "Vencendo Hoje"
 - Lógica: Contabilizava todos os itens que vencem hoje
 
 **Depois:**
