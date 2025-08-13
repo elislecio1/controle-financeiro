@@ -2,92 +2,13 @@ import { createClient } from '@supabase/supabase-js'
 import { Alerta, ConfiguracaoAlerta, Notificacao, SheetData, Meta, Orcamento, ContaBancaria } from '../types'
 
 // Configurações do Supabase
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co'
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key'
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://eshaahpcddqkeevxpgfk.supabase.co'
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaGFhaHBjZGRxa2VldnhwZ2ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NzI4MDAsImV4cCI6MjA1MDU0ODgwMH0.REAL_KEY_HERE'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// Dados mock para desenvolvimento
-const mockAlertas: Alerta[] = [
-  {
-    id: '1',
-    tipo: 'vencimento',
-    titulo: 'Internet vence hoje!',
-    mensagem: 'A conta de internet no valor de R$ 89,90 vence hoje. Evite multas e juros.',
-    prioridade: 'critica',
-    status: 'ativo',
-    categoria: 'Serviços',
-    dataCriacao: new Date().toISOString(),
-    dataVencimento: new Date().toISOString(),
-    dadosRelacionados: {
-      transacaoId: '2',
-      valor: 89.90,
-      descricao: 'Internet'
-    }
-  },
-  {
-    id: '2',
-    tipo: 'meta',
-    titulo: 'Meta de Economia em Risco',
-    mensagem: 'Você está 20% abaixo da meta mensal de economia. Revise seus gastos.',
-    prioridade: 'media',
-    status: 'ativo',
-    categoria: 'Metas',
-    dataCriacao: new Date().toISOString(),
-    dadosRelacionados: {
-      metaId: '1',
-      valorAtual: 800,
-      valorMeta: 1000,
-      percentual: 80
-    }
-  },
-  {
-    id: '3',
-    tipo: 'saldo',
-    titulo: 'Saldo Baixo na Conta Principal',
-    mensagem: 'O saldo da conta principal está abaixo do limite mínimo configurado.',
-    prioridade: 'critica',
-    status: 'ativo',
-    categoria: 'Contas',
-    dataCriacao: new Date().toISOString(),
-    dadosRelacionados: {
-      contaId: '1',
-      saldoAtual: 500,
-      saldoMinimo: 1000
-    }
-  },
-  {
-    id: '4',
-    tipo: 'vencimento',
-    titulo: 'Conta de Luz vence amanhã!',
-    mensagem: 'A conta de luz no valor de R$ 150,00 vence amanhã. Programe o pagamento.',
-    prioridade: 'alta',
-    status: 'ativo',
-    categoria: 'Serviços',
-    dataCriacao: new Date().toISOString(),
-    dadosRelacionados: {
-      transacaoId: '1',
-      valor: 150,
-      descricao: 'Conta de Luz'
-    }
-  },
-  {
-    id: '5',
-    tipo: 'orcamento',
-    titulo: 'Orçamento de Alimentação Próximo do Limite',
-    mensagem: 'O orçamento de alimentação está 95% utilizado. Controle seus gastos.',
-    prioridade: 'media',
-    status: 'ativo',
-    categoria: 'Alimentação',
-    dataCriacao: new Date().toISOString(),
-    dadosRelacionados: {
-      orcamentoId: '1',
-      valorPrevisto: 500,
-      valorRealizado: 475,
-      percentual: 95
-    }
-  }
-]
+// Array vazio - não usaremos dados mockados
+const mockAlertas: Alerta[] = []
 
 const mockConfiguracoes: ConfiguracaoAlerta[] = [
   {
@@ -179,8 +100,22 @@ class AlertasServiceImpl implements AlertasService {
 
   async getAlertasAtivos(): Promise<Alerta[]> {
     try {
-      const alertas = await this.getAlertas()
-      return alertas.filter(alerta => alerta.status === 'ativo')
+      // Gerar alertas dinamicamente baseados nos dados reais
+      const alertasVencimento = await this.verificarVencimentos()
+      const alertasSaldo = await this.verificarSaldos()
+      const alertasMeta = await this.verificarMetas()
+      const alertasOrcamento = await this.verificarOrcamentos()
+      
+      // Combinar todos os alertas
+      const todosAlertas = [
+        ...alertasVencimento,
+        ...alertasSaldo,
+        ...alertasMeta,
+        ...alertasOrcamento
+      ]
+      
+      // Filtrar apenas alertas ativos
+      return todosAlertas.filter(alerta => alerta.status === 'ativo')
     } catch (error) {
       console.error('Erro ao buscar alertas ativos:', error)
       return []
@@ -441,52 +376,26 @@ class AlertasServiceImpl implements AlertasService {
   // ===== VERIFICAÇÕES AUTOMÁTICAS =====
   async verificarVencimentos(): Promise<Alerta[]> {
     try {
-      // Buscar transações pendentes próximas do vencimento
       const hoje = new Date()
       const alertas: Alerta[] = []
 
-      // Buscar dados reais do sistema
-      let transacoesVencendo: any[] = []
-      
-      if (this.isSupabaseConfigured()) {
-        // Buscar do Supabase
-        const { data, error } = await supabase
-          .from('transactions')
-          .select('*')
-          .eq('status', 'pendente')
-          .not('vencimento', 'is', null)
-        
-        if (!error && data) {
-          transacoesVencendo = data
-        }
-      } else {
-        // Em desenvolvimento, usar dados mockados mais realistas
-        const hojeStr = hoje.toLocaleDateString('pt-BR')
-        const amanha = new Date(hoje)
-        amanha.setDate(hoje.getDate() + 1)
-        const amanhaStr = amanha.toLocaleDateString('pt-BR')
-        
-        transacoesVencendo = [
-          {
-            id: '1',
-            descricao: 'Conta de Luz',
-            valor: 150,
-            vencimento: amanhaStr, // Vence amanhã, não hoje
-            categoria: 'Serviços',
-            status: 'pendente'
-          },
-          {
-            id: '2',
-            descricao: 'Internet',
-            valor: 89.90,
-            vencimento: hojeStr, // Vence hoje
-            categoria: 'Serviços',
-            status: 'pendente'
-          }
-        ]
+      // Buscar transações pendentes do banco de dados
+      const { data: transacoes, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('status', 'pendente')
+        .not('vencimento', 'is', null)
+
+      if (error) {
+        console.error('Erro ao buscar transações:', error)
+        return []
       }
 
-      for (const transacao of transacoesVencendo) {
+      if (!transacoes || transacoes.length === 0) {
+        return []
+      }
+
+      for (const transacao of transacoes) {
         const dataVencimento = this.parseBrazilianDate(transacao.vencimento)
         if (dataVencimento) {
           const diasAteVencimento = Math.ceil((dataVencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
@@ -528,34 +437,38 @@ class AlertasServiceImpl implements AlertasService {
       const alertas: Alerta[] = []
       const hoje = new Date()
 
-      // Simular verificação de metas (em produção, buscar do banco)
-      const metas = [
-        {
-          id: '1',
-          nome: 'Economia Mensal',
-          valorMeta: 1000,
-          valorAtual: 800,
-          categoria: 'Economia'
-        }
-      ]
+      // Buscar metas do banco de dados
+      const { data: metas, error } = await supabase
+        .from('metas')
+        .select('*')
+        .eq('ativo', true)
+
+      if (error) {
+        console.error('Erro ao buscar metas:', error)
+        return []
+      }
+
+      if (!metas || metas.length === 0) {
+        return []
+      }
 
       for (const meta of metas) {
-        const percentual = (meta.valorAtual / meta.valorMeta) * 100
+        const percentual = (meta.valor_atual / meta.valor_meta) * 100
         
         if (percentual < 80) {
           alertas.push({
             id: `meta_${meta.id}`,
             tipo: 'meta',
-            titulo: 'Meta de Economia em Risco',
-            mensagem: `Você está ${(100 - percentual).toFixed(0)}% abaixo da meta mensal de economia. Revise seus gastos para atingir o objetivo.`,
+            titulo: `Meta "${meta.nome}" em Risco`,
+            mensagem: `Você está ${(100 - percentual).toFixed(0)}% abaixo da meta "${meta.nome}". Revise seus gastos para atingir o objetivo.`,
             prioridade: percentual < 50 ? 'alta' : 'media',
             status: 'ativo',
-            categoria: meta.categoria,
+            categoria: meta.categoria || 'Metas',
             dataCriacao: hoje.toISOString(),
             dadosRelacionados: {
               metaId: meta.id,
-              valorAtual: meta.valorAtual,
-              valorMeta: meta.valorMeta,
+              valorAtual: meta.valor_atual,
+              valorMeta: meta.valor_meta,
               percentual
             }
           })
@@ -574,24 +487,29 @@ class AlertasServiceImpl implements AlertasService {
       const alertas: Alerta[] = []
       const hoje = new Date()
 
-      // Simular verificação de orçamentos (em produção, buscar do banco)
-      const orcamentos = [
-        {
-          id: '1',
-          categoria: 'Alimentação',
-          valorPrevisto: 500,
-          valorRealizado: 450
-        }
-      ]
+      // Buscar orçamentos do banco de dados
+      const { data: orcamentos, error } = await supabase
+        .from('orcamentos')
+        .select('*')
+        .eq('ativo', true)
+
+      if (error) {
+        console.error('Erro ao buscar orçamentos:', error)
+        return []
+      }
+
+      if (!orcamentos || orcamentos.length === 0) {
+        return []
+      }
 
       for (const orcamento of orcamentos) {
-        const percentual = (orcamento.valorRealizado / orcamento.valorPrevisto) * 100
+        const percentual = (orcamento.valor_realizado / orcamento.valor_previsto) * 100
         
         if (percentual > 90) {
           alertas.push({
             id: `orc_${orcamento.id}`,
             tipo: 'orcamento',
-            titulo: 'Orçamento Próximo do Limite',
+            titulo: `Orçamento "${orcamento.categoria}" Próximo do Limite`,
             mensagem: `O orçamento de ${orcamento.categoria} está ${percentual.toFixed(0)}% utilizado. Controle seus gastos para não ultrapassar o limite.`,
             prioridade: percentual > 95 ? 'alta' : 'media',
             status: 'ativo',
@@ -599,8 +517,8 @@ class AlertasServiceImpl implements AlertasService {
             dataCriacao: hoje.toISOString(),
             dadosRelacionados: {
               orcamentoId: orcamento.id,
-              valorPrevisto: orcamento.valorPrevisto,
-              valorRealizado: orcamento.valorRealizado,
+              valorPrevisto: orcamento.valor_previsto,
+              valorRealizado: orcamento.valor_realizado,
               percentual
             }
           })
@@ -619,31 +537,39 @@ class AlertasServiceImpl implements AlertasService {
       const alertas: Alerta[] = []
       const hoje = new Date()
 
-      // Simular verificação de saldos (em produção, buscar do banco)
-      const contas = [
-        {
-          id: '1',
-          nome: 'Conta Corrente Principal',
-          saldo: 500,
-          saldoMinimo: 1000
-        }
-      ]
+      // Buscar contas bancárias do banco de dados
+      const { data: contas, error } = await supabase
+        .from('contas_bancarias')
+        .select('*')
+        .eq('ativo', true)
+
+      if (error) {
+        console.error('Erro ao buscar contas:', error)
+        return []
+      }
+
+      if (!contas || contas.length === 0) {
+        return []
+      }
 
       for (const conta of contas) {
-        if (conta.saldo < conta.saldoMinimo) {
+        // Definir saldo mínimo padrão se não configurado
+        const saldoMinimo = conta.saldo_minimo || 1000
+        
+        if (conta.saldo < saldoMinimo) {
           alertas.push({
             id: `saldo_${conta.id}`,
             tipo: 'saldo',
-            titulo: 'Saldo Baixo na Conta',
-            mensagem: `O saldo da ${conta.nome} está R$ ${(conta.saldoMinimo - conta.saldo).toFixed(2)} abaixo do limite mínimo configurado.`,
-            prioridade: conta.saldo < conta.saldoMinimo * 0.5 ? 'critica' : 'alta',
+            titulo: `Saldo Baixo na ${conta.nome}`,
+            mensagem: `O saldo da ${conta.nome} está R$ ${(saldoMinimo - conta.saldo).toFixed(2)} abaixo do limite mínimo configurado.`,
+            prioridade: conta.saldo < saldoMinimo * 0.5 ? 'critica' : 'alta',
             status: 'ativo',
             categoria: 'Contas',
             dataCriacao: hoje.toISOString(),
             dadosRelacionados: {
               contaId: conta.id,
               saldoAtual: conta.saldo,
-              saldoMinimo: conta.saldoMinimo
+              saldoMinimo: saldoMinimo
             }
           })
         }
@@ -698,7 +624,7 @@ class AlertasServiceImpl implements AlertasService {
 
   // ===== MÉTODOS AUXILIARES =====
   private isSupabaseConfigured(): boolean {
-    return SUPABASE_URL !== 'https://your-project.supabase.co' && SUPABASE_ANON_KEY !== 'your-anon-key'
+    return true // Sempre usar Supabase agora
   }
 
   private parseBrazilianDate(dateStr: string): Date | null {
