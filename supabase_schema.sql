@@ -299,6 +299,9 @@ ALTER TABLE orcamentos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE investimentos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE relatorios ENABLE ROW LEVEL SECURITY;
 ALTER TABLE configuracoes_sistema ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alertas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE configuracoes_alertas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notificacoes ENABLE ROW LEVEL SECURITY;
 
 -- Políticas básicas (permitir todas as operações para usuários autenticados)
 -- Nota: Estas políticas devem ser ajustadas conforme as necessidades de segurança
@@ -315,6 +318,9 @@ CREATE POLICY "Allow all operations for authenticated users" ON orcamentos FOR A
 CREATE POLICY "Allow all operations for authenticated users" ON investimentos FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Allow all operations for authenticated users" ON relatorios FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Allow all operations for authenticated users" ON configuracoes_sistema FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow all operations for authenticated users" ON alertas FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow all operations for authenticated users" ON configuracoes_alertas FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow all operations for authenticated users" ON notificacoes FOR ALL USING (auth.role() = 'authenticated');
 
 -- =====================================================
 -- SISTEMA DE ALERTAS

@@ -290,6 +290,8 @@ class AlertasServiceImpl implements AlertasService {
   async salvarConfiguracao(config: Omit<ConfiguracaoAlerta, 'id'>): Promise<{ success: boolean; message: string; data?: ConfiguracaoAlerta }> {
     try {
       console.log('🔧 Salvando configuração:', config)
+      console.log('🔧 Supabase configurado:', this.isSupabaseConfigured())
+      console.log('🔧 URL Supabase:', SUPABASE_URL)
       
       if (!this.isSupabaseConfigured()) {
         const novaConfig: ConfiguracaoAlerta = {
@@ -319,6 +321,7 @@ class AlertasServiceImpl implements AlertasService {
       }
 
       console.log('📊 Dados para inserção:', configData)
+      console.log('📊 Tabela:', this.TABLE_CONFIGURACOES)
 
       const { data, error } = await supabase
         .from(this.TABLE_CONFIGURACOES)
@@ -328,6 +331,9 @@ class AlertasServiceImpl implements AlertasService {
 
       if (error) {
         console.error('❌ Erro ao salvar configuração:', error)
+        console.error('❌ Código do erro:', error.code)
+        console.error('❌ Detalhes do erro:', error.details)
+        console.error('❌ Hint do erro:', error.hint)
         return {
           success: false,
           message: 'Erro ao salvar configuração: ' + error.message
@@ -358,6 +364,7 @@ class AlertasServiceImpl implements AlertasService {
       }
     } catch (error: any) {
       console.error('❌ Erro geral ao salvar configuração:', error)
+      console.error('❌ Stack trace:', error.stack)
       return {
         success: false,
         message: 'Erro ao salvar configuração: ' + error.message
