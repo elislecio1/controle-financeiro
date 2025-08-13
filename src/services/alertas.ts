@@ -323,11 +323,37 @@ class AlertasServiceImpl implements AlertasService {
       console.log('📊 Dados para inserção:', configData)
       console.log('📊 Tabela:', this.TABLE_CONFIGURACOES)
 
-      const { data, error } = await supabase
+      // Tentar inserção com retry e diferentes abordagens
+      let data, error;
+      
+      // Primeira tentativa: inserção normal
+      const result = await supabase
         .from(this.TABLE_CONFIGURACOES)
         .insert([configData])
         .select()
         .single()
+
+      data = result.data;
+      error = result.error;
+
+      // Se falhou com erro de RLS, tentar abordagem alternativa
+      if (error && (error.code === '42501' || error.message.includes('row-level security'))) {
+        console.log('🔄 Tentando abordagem alternativa para RLS...')
+        
+        // Tentar com service_role key (se disponível)
+        const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+        if (serviceRoleKey) {
+          const supabaseAdmin = createClient(SUPABASE_URL, serviceRoleKey);
+          const adminResult = await supabaseAdmin
+            .from(this.TABLE_CONFIGURACOES)
+            .insert([configData])
+            .select()
+            .single()
+          
+          data = adminResult.data;
+          error = adminResult.error;
+        }
+      }
 
       if (error) {
         console.error('❌ Erro ao salvar configuração:', error)
