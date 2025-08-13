@@ -176,6 +176,49 @@ export interface Relatorio {
   dados: any
 }
 
+// Sistema de Alertas
+export interface Alerta {
+  id: string
+  tipo: 'vencimento' | 'meta' | 'orcamento' | 'saldo' | 'personalizado'
+  titulo: string
+  mensagem: string
+  prioridade: 'baixa' | 'media' | 'alta' | 'critica'
+  status: 'ativo' | 'lido' | 'arquivado'
+  categoria?: string
+  dataCriacao: string
+  dataVencimento?: string
+  dataLeitura?: string
+  usuarioId?: string
+  configuracaoId?: string
+  dadosRelacionados?: any // Dados específicos do tipo de alerta
+}
+
+export interface ConfiguracaoAlerta {
+  id: string
+  tipo: 'vencimento' | 'meta' | 'orcamento' | 'saldo' | 'personalizado'
+  ativo: boolean
+  diasAntes?: number // Para alertas de vencimento
+  valorMinimo?: number // Para alertas de saldo
+  percentualMeta?: number // Para alertas de metas
+  categorias?: string[] // Categorias específicas
+  contas?: string[] // Contas específicas
+  horarioNotificacao?: string // HH:MM
+  frequencia: 'diario' | 'semanal' | 'mensal' | 'personalizado'
+  canais: ('email' | 'push' | 'sms' | 'dashboard')[]
+  usuarioId?: string
+}
+
+export interface Notificacao {
+  id: string
+  alertaId: string
+  tipo: 'email' | 'push' | 'sms' | 'dashboard'
+  status: 'pendente' | 'enviada' | 'falha'
+  dataEnvio?: string
+  dadosEnvio?: any
+  tentativas: number
+  maxTentativas: number
+}
+
 // Configurações do sistema
 export interface ConfiguracaoSistema {
   moeda: 'BRL'

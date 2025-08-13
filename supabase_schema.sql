@@ -317,6 +317,149 @@ CREATE POLICY "Allow all operations for authenticated users" ON relatorios FOR A
 CREATE POLICY "Allow all operations for authenticated users" ON configuracoes_sistema FOR ALL USING (auth.role() = 'authenticated');
 
 -- =====================================================
+-- SISTEMA DE ALERTAS
+-- =====================================================
+
+-- Tabela de alertas
+CREATE TABLE IF NOT EXISTS alertas (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('vencimento', 'meta', 'orcamento', 'saldo', 'personalizado')),
+    titulo VARCHAR(255) NOT NULL,
+    mensagem TEXT NOT NULL,
+    prioridade VARCHAR(20) NOT NULL CHECK (prioridade IN ('baixa', 'media', 'alta', 'critica')),
+    status VARCHAR(20) NOT NULL DEFAULT 'ativo' CHECK (status IN ('ativo', 'lido', 'arquivado')),
+    categoria VARCHAR(100),
+    data_criacao TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    data_vencimento VARCHAR(10), -- DD/MM/AAAA
+    data_leitura TIMESTAMP WITH TIME ZONE,
+    usuario_id UUID,
+    configuracao_id UUID,
+    dados_relacionados JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabela de configurações de alertas
+CREATE TABLE IF NOT EXISTS configuracoes_alertas (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('vencimento', 'meta', 'orcamento', 'saldo', 'personalizado')),
+    ativo BOOLEAN NOT NULL DEFAULT true,
+    dias_antes INTEGER CHECK (dias_antes >= 1 AND dias_antes <= 30),
+    valor_minimo DECIMAL(15,2),
+    percentual_meta INTEGER CHECK (percentual_meta >= 1 AND percentual_meta <= 100),
+    categorias TEXT[], -- Array de categorias
+    contas TEXT[], -- Array de contas
+    horario_notificacao TIME,
+    frequencia VARCHAR(20) NOT NULL CHECK (frequencia IN ('diario', 'semanal', 'mensal', 'personalizado')),
+    canais TEXT[] NOT NULL DEFAULT '{dashboard}' CHECK (array_length(canais, 1) > 0),
+    usuario_id UUID,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabela de notificações
+CREATE TABLE IF NOT EXISTS notificacoes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    alerta_id UUID NOT NULL REFERENCES alertas(id) ON DELETE CASCADE,
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('email', 'push', 'sms', 'dashboard')),
+    status VARCHAR(20) NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'enviada', 'falha')),
+    data_envio TIMESTAMP WITH TIME ZONE,
+    dados_envio JSONB,
+    tentativas INTEGER NOT NULL DEFAULT 1,
+    max_tentativas INTEGER NOT NULL DEFAULT 3,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Índices para melhor performance
+CREATE INDEX IF NOT EXISTS idx_alertas_tipo ON alertas(tipo);
+CREATE INDEX IF NOT EXISTS idx_alertas_status ON alertas(status);
+CREATE INDEX IF NOT EXISTS idx_alertas_prioridade ON alertas(prioridade);
+CREATE INDEX IF NOT EXISTS idx_alertas_data_criacao ON alertas(data_criacao);
+CREATE INDEX IF NOT EXISTS idx_alertas_usuario_id ON alertas(usuario_id);
+
+CREATE INDEX IF NOT EXISTS idx_configuracoes_tipo ON configuracoes_alertas(tipo);
+CREATE INDEX IF NOT EXISTS idx_configuracoes_ativo ON configuracoes_alertas(ativo);
+CREATE INDEX IF NOT EXISTS idx_configuracoes_usuario_id ON configuracoes_alertas(usuario_id);
+
+CREATE INDEX IF NOT EXISTS idx_notificacoes_alerta_id ON notificacoes(alerta_id);
+CREATE INDEX IF NOT EXISTS idx_notificacoes_status ON notificacoes(status);
+CREATE INDEX IF NOT EXISTS idx_notificacoes_tipo ON notificacoes(tipo);
+
+-- Triggers para atualizar updated_at
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_alertas_updated_at BEFORE UPDATE ON alertas
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_configuracoes_alertas_updated_at BEFORE UPDATE ON configuracoes_alertas
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_notificacoes_updated_at BEFORE UPDATE ON notificacoes
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Função para criar alertas automaticamente
+CREATE OR REPLACE FUNCTION criar_alerta_automatico()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Verificar se há configurações ativas para o tipo de transação
+    IF NEW.status = 'pendente' AND NEW.vencimento IS NOT NULL THEN
+        -- Criar alerta de vencimento se configurado
+        INSERT INTO alertas (
+            tipo, titulo, mensagem, prioridade, status, categoria,
+            data_vencimento, dados_relacionados
+        ) VALUES (
+            'vencimento',
+            NEW.descricao || ' vence em breve!',
+            'A transação ' || NEW.descricao || ' no valor de R$ ' || 
+            ABS(NEW.valor)::text || ' vence em ' || NEW.vencimento || '.',
+            CASE 
+                WHEN NEW.vencimento::date <= CURRENT_DATE THEN 'critica'
+                WHEN NEW.vencimento::date <= CURRENT_DATE + INTERVAL '1 day' THEN 'alta'
+                WHEN NEW.vencimento::date <= CURRENT_DATE + INTERVAL '3 days' THEN 'media'
+                ELSE 'baixa'
+            END,
+            'ativo',
+            NEW.categoria,
+            NEW.vencimento,
+            jsonb_build_object(
+                'transacaoId', NEW.id,
+                'valor', NEW.valor,
+                'descricao', NEW.descricao,
+                'vencimento', NEW.vencimento
+            )
+        );
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger para criar alertas automaticamente ao inserir/atualizar transações
+CREATE TRIGGER trigger_criar_alerta_transacao
+    AFTER INSERT OR UPDATE ON transactions
+    FOR EACH ROW EXECUTE FUNCTION criar_alerta_automatico();
+
+-- Função para limpar alertas antigos (mais de 30 dias)
+CREATE OR REPLACE FUNCTION limpar_alertas_antigos()
+RETURNS void AS $$
+BEGIN
+    DELETE FROM alertas 
+    WHERE data_criacao < CURRENT_DATE - INTERVAL '30 days'
+    AND status IN ('lido', 'arquivado');
+END;
+$$ LANGUAGE plpgsql;
+
+-- Agendar limpeza automática (executar diariamente às 02:00)
+-- SELECT cron.schedule('limpar-alertas-antigos', '0 2 * * *', 'SELECT limpar_alertas_antigos();');
+
+-- =====================================================
 -- COMENTÁRIOS DAS TABELAS
 -- =====================================================
 
@@ -332,3 +475,6 @@ COMMENT ON TABLE orcamentos IS 'Orçamentos mensais por categoria';
 COMMENT ON TABLE investimentos IS 'Carteira de investimentos';
 COMMENT ON TABLE relatorios IS 'Relatórios gerados pelo sistema';
 COMMENT ON TABLE configuracoes_sistema IS 'Configurações gerais do sistema'; 
+COMMENT ON TABLE alertas IS 'Sistema de alertas para notificações financeiras';
+COMMENT ON TABLE configuracoes_alertas IS 'Configurações para geração automática de alertas';
+COMMENT ON TABLE notificacoes IS 'Histórico de notificações enviadas'; 

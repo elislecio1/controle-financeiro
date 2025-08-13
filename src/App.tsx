@@ -8,6 +8,8 @@ import Module2 from './components/modules/Module2/Module2'
 import Module3 from './components/modules/Module3/Module3'
 import Module4 from './components/modules/Module4/Module4'
 import DataImport from './components/DataImport'
+import SistemaAlertas from './components/SistemaAlertas'
+import { ToastContainer } from './components/ToastNotification'
 import { formatarMoeda, formatarValorTabela, getClasseValor } from './utils/formatters'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
@@ -50,6 +52,10 @@ function App() {
   // Estados para Módulo 4
   const [relatorios, setRelatorios] = useState<any[]>([])
 
+  // Estados para Sistema de Alertas
+  const [showAlertasModal, setShowAlertasModal] = useState(false)
+  const [alertasAtivos, setAlertasAtivos] = useState<Alerta[]>([])
+
   // Estados para ordenação e confirmação de pagamento
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -74,6 +80,15 @@ function App() {
       const cloudData = await supabaseService.getData()
       console.log('✅ Dados carregados com sucesso:', cloudData.length, 'registros')
       setData(cloudData)
+      
+      // Carregar alertas ativos
+      try {
+        const { alertasService } = await import('./services/alertas')
+        const alertas = await alertasService.getAlertasAtivos()
+        setAlertasAtivos(alertas)
+      } catch (error) {
+        console.log('⚠️ Erro ao carregar alertas:', error)
+      }
       
       // Ordenar dados por data de vencimento por padrão
       const sortedData = [...cloudData].sort((a, b) => {
@@ -713,7 +728,8 @@ function App() {
             { id: 'module2', name: 'Organização e Planejamento', icon: Settings },
             { id: 'module3', name: 'Recursos Avançados', icon: TrendingUp },
             { id: 'module4', name: 'Relatórios e Análises', icon: BarChart },
-            { id: 'import', name: 'Importação de Dados', icon: Upload }
+            { id: 'import', name: 'Importação de Dados', icon: Upload },
+            { id: 'alertas', name: 'Sistema de Alertas', icon: Bell }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1288,6 +1304,18 @@ function App() {
         {activeTab === 'import' && (
           <DataImport />
         )}
+
+        {activeTab === 'alertas' && (
+          <SistemaAlertas />
+        )}
+
+        {/* Container de Notificações Toast */}
+        <ToastContainer 
+          alertas={alertasAtivos}
+          onClose={(id) => {
+            setAlertasAtivos(prev => prev.filter(a => a.id !== id))
+          }}
+        />
 
         {/* Modal de Edição de Transação */}
         {showEditModal && transactionToEdit && (
