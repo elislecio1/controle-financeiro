@@ -41,10 +41,10 @@ export default function SistemaAlertas({ onClose }: SistemaAlertasProps) {
   const [novaConfig, setNovaConfig] = useState<Omit<ConfiguracaoAlerta, 'id'>>({
     tipo: 'vencimento',
     ativo: true,
-    diasAntes: 3,
+    diasAntes: 0, // Padrão: alertar apenas vencimentos de hoje
     categorias: [],
     contas: [],
-    horarioNotificacao: '09:00',
+    horarioNotificacao: '',
     frequencia: 'diario',
     canais: ['dashboard']
   })
@@ -193,10 +193,10 @@ export default function SistemaAlertas({ onClose }: SistemaAlertasProps) {
     setNovaConfig({
       tipo: 'vencimento',
       ativo: true,
-      diasAntes: 3,
+      diasAntes: 0, // Padrão: alertar apenas vencimentos de hoje
       categorias: [],
       contas: [],
-      horarioNotificacao: '09:00',
+      horarioNotificacao: '',
       frequencia: 'diario',
       canais: ['dashboard']
     })
@@ -594,10 +594,7 @@ export default function SistemaAlertas({ onClose }: SistemaAlertasProps) {
                         <span className="font-medium">{config.frequencia}</span>
                       </div>
                       
-                      <div className="flex items-center justify-between">
-                        <span>Horário:</span>
-                        <span className="font-medium">{config.horarioNotificacao}</span>
-                      </div>
+
                     </div>
                   </div>
                 ))}
@@ -742,15 +739,7 @@ export default function SistemaAlertas({ onClose }: SistemaAlertasProps) {
                     </select>
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Horário</label>
-                    <input
-                      type="time"
-                      value={novaConfig.horarioNotificacao}
-                      onChange={(e) => setNovaConfig(prev => ({ ...prev, horarioNotificacao: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                  </div>
+
                 </div>
 
                 <div>

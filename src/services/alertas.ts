@@ -490,8 +490,8 @@ class AlertasServiceImpl implements AlertasService {
       const configuracoes = await this.getConfiguracoes()
       const configVencimento = configuracoes.find(c => c.tipo === 'vencimento' && c.ativo)
       
-      // Se não há configuração, usar padrão de 3 dias
-      const diasAntes = configVencimento?.diasAntes || 3
+      // Se não há configuração, sempre verificar vencimentos de hoje
+      const diasAntes = configVencimento?.diasAntes || 0
 
       console.log('🔍 Verificando vencimentos - dias antes:', diasAntes)
 
@@ -521,7 +521,7 @@ class AlertasServiceImpl implements AlertasService {
           
           console.log(`📅 ${transacao.descricao}: vence em ${diasAteVencimento} dias`)
           
-          // Criar alerta se vence nos próximos X dias (incluindo hoje)
+          // Criar alerta se vence hoje (diasAteVencimento === 0) ou nos próximos X dias configurados
           if (diasAteVencimento <= diasAntes && diasAteVencimento >= 0) {
             const prioridade = diasAteVencimento === 0 ? 'critica' : diasAteVencimento === 1 ? 'alta' : 'media'
             

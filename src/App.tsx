@@ -81,13 +81,27 @@ function App() {
       console.log('✅ Dados carregados com sucesso:', cloudData.length, 'registros')
       setData(cloudData)
       
-      // Carregar alertas ativos
+      // Carregar alertas ativos e executar verificações automáticas
       try {
         const { alertasService } = await import('./services/alertas')
-        const alertas = await alertasService.getAlertasAtivos()
-        setAlertasAtivos(alertas)
+        
+        // Executar verificações automáticas para gerar alertas
+        console.log('🔍 Executando verificações automáticas...')
+        const [vencimentos, metas, orcamentos, saldos] = await Promise.all([
+          alertasService.verificarVencimentos(),
+          alertasService.verificarMetas(),
+          alertasService.verificarOrcamentos(),
+          alertasService.verificarSaldos()
+        ])
+        
+        // Combinar todos os alertas gerados
+        const todosAlertas = [...vencimentos, ...metas, ...orcamentos, ...saldos]
+        console.log('✅ Verificações concluídas. Alertas gerados:', todosAlertas.length)
+        
+        // Atualizar alertas ativos
+        setAlertasAtivos(todosAlertas)
       } catch (error) {
-        console.log('⚠️ Erro ao carregar alertas:', error)
+        console.log('⚠️ Erro ao executar verificações:', error)
       }
       
       // Ordenar dados por data de vencimento por padrão
