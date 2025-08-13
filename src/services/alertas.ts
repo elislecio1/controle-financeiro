@@ -525,13 +525,13 @@ class AlertasServiceImpl implements AlertasService {
           if (diasAteVencimento <= diasAntes && diasAteVencimento >= 0) {
             const prioridade = diasAteVencimento === 0 ? 'critica' : diasAteVencimento === 1 ? 'alta' : 'media'
             
-            const alerta = {
+            const alerta: Alerta = {
               id: `venc_${transacao.id}`,
-              tipo: 'vencimento',
+              tipo: 'vencimento' as const,
               titulo: `${transacao.descricao} vence ${diasAteVencimento === 0 ? 'hoje' : `em ${diasAteVencimento} dia(s)`}!`,
               mensagem: `A ${transacao.descricao} no valor de ${this.formatarMoeda(transacao.valor)} vence ${diasAteVencimento === 0 ? 'hoje' : `em ${diasAteVencimento} dia(s)`}. Evite multas e juros.`,
-              prioridade,
-              status: 'ativo',
+              prioridade: prioridade as 'baixa' | 'media' | 'alta' | 'critica',
+              status: 'ativo' as const,
               categoria: transacao.categoria,
               dataCriacao: hoje.toISOString(),
               dataVencimento: transacao.vencimento,
@@ -562,6 +562,18 @@ class AlertasServiceImpl implements AlertasService {
       const alertas: Alerta[] = []
       const hoje = new Date()
 
+      // Buscar configurações de meta ativas
+      const configuracoes = await this.getConfiguracoes()
+      const configMeta = configuracoes.find(c => c.tipo === 'meta' && c.ativo)
+      
+      // Se não há configuração de meta ativa, não gerar alertas
+      if (!configMeta) {
+        console.log('🔍 Verificando metas - nenhuma configuração ativa encontrada')
+        return []
+      }
+
+      console.log('🔍 Verificando metas - configuração encontrada:', configMeta)
+
       // Buscar metas do banco de dados
       const { data: metas, error } = await supabase
         .from('metas')
@@ -574,20 +586,28 @@ class AlertasServiceImpl implements AlertasService {
       }
 
       if (!metas || metas.length === 0) {
+        console.log('📊 Nenhuma meta encontrada')
         return []
       }
+
+      console.log('📊 Metas encontradas:', metas.length)
 
       for (const meta of metas) {
         const percentual = (meta.valor_atual / meta.valor_meta) * 100
         
-        if (percentual < 80) {
-          alertas.push({
+        // Usar percentual da configuração ou padrão de 80%
+        const percentualMinimo = configMeta.percentualMeta || 80
+        
+        console.log(`📊 Verificando meta "${meta.nome}": ${percentual.toFixed(1)}% (mínimo: ${percentualMinimo}%)`)
+        
+        if (percentual < percentualMinimo) {
+          const alerta: Alerta = {
             id: `meta_${meta.id}`,
-            tipo: 'meta',
+            tipo: 'meta' as const,
             titulo: `Meta "${meta.nome}" em Risco`,
             mensagem: `Você está ${(100 - percentual).toFixed(0)}% abaixo da meta "${meta.nome}". Revise seus gastos para atingir o objetivo.`,
             prioridade: percentual < 50 ? 'alta' : 'media',
-            status: 'ativo',
+            status: 'ativo' as const,
             categoria: meta.categoria || 'Metas',
             dataCriacao: hoje.toISOString(),
             dadosRelacionados: {
@@ -596,10 +616,14 @@ class AlertasServiceImpl implements AlertasService {
               valorMeta: meta.valor_meta,
               percentual
             }
-          })
+          }
+          
+          alertas.push(alerta)
+          console.log(`🚨 Alerta de meta criado: ${alerta.titulo}`)
         }
       }
 
+      console.log(`✅ Total de alertas de meta criados: ${alertas.length}`)
       return alertas
     } catch (error) {
       console.error('Erro ao verificar metas:', error)
@@ -611,6 +635,18 @@ class AlertasServiceImpl implements AlertasService {
     try {
       const alertas: Alerta[] = []
       const hoje = new Date()
+
+      // Buscar configurações de orçamento ativas
+      const configuracoes = await this.getConfiguracoes()
+      const configOrcamento = configuracoes.find(c => c.tipo === 'orcamento' && c.ativo)
+      
+      // Se não há configuração de orçamento ativa, não gerar alertas
+      if (!configOrcamento) {
+        console.log('🔍 Verificando orçamentos - nenhuma configuração ativa encontrada')
+        return []
+      }
+
+      console.log('🔍 Verificando orçamentos - configuração encontrada:', configOrcamento)
 
       // Buscar orçamentos do banco de dados
       const { data: orcamentos, error } = await supabase
@@ -624,20 +660,28 @@ class AlertasServiceImpl implements AlertasService {
       }
 
       if (!orcamentos || orcamentos.length === 0) {
+        console.log('📊 Nenhum orçamento encontrado')
         return []
       }
+
+      console.log('📊 Orçamentos encontrados:', orcamentos.length)
 
       for (const orcamento of orcamentos) {
         const percentual = (orcamento.valor_realizado / orcamento.valor_previsto) * 100
         
-        if (percentual > 90) {
-          alertas.push({
+        // Usar percentual da configuração ou padrão de 90%
+        const percentualLimite = configOrcamento.percentualMeta || 90
+        
+        console.log(`📊 Verificando orçamento "${orcamento.categoria}": ${percentual.toFixed(1)}% (limite: ${percentualLimite}%)`)
+        
+        if (percentual > percentualLimite) {
+          const alerta: Alerta = {
             id: `orc_${orcamento.id}`,
-            tipo: 'orcamento',
+            tipo: 'orcamento' as const,
             titulo: `Orçamento "${orcamento.categoria}" Próximo do Limite`,
             mensagem: `O orçamento de ${orcamento.categoria} está ${percentual.toFixed(0)}% utilizado. Controle seus gastos para não ultrapassar o limite.`,
             prioridade: percentual > 95 ? 'alta' : 'media',
-            status: 'ativo',
+            status: 'ativo' as const,
             categoria: orcamento.categoria,
             dataCriacao: hoje.toISOString(),
             dadosRelacionados: {
@@ -646,10 +690,14 @@ class AlertasServiceImpl implements AlertasService {
               valorRealizado: orcamento.valor_realizado,
               percentual
             }
-          })
+          }
+          
+          alertas.push(alerta)
+          console.log(`🚨 Alerta de orçamento criado: ${alerta.titulo}`)
         }
       }
 
+      console.log(`✅ Total de alertas de orçamento criados: ${alertas.length}`)
       return alertas
     } catch (error) {
       console.error('Erro ao verificar orçamentos:', error)
@@ -661,6 +709,18 @@ class AlertasServiceImpl implements AlertasService {
     try {
       const alertas: Alerta[] = []
       const hoje = new Date()
+
+      // Buscar configurações de saldo ativas
+      const configuracoes = await this.getConfiguracoes()
+      const configSaldo = configuracoes.find(c => c.tipo === 'saldo' && c.ativo)
+      
+      // Se não há configuração de saldo ativa, não gerar alertas
+      if (!configSaldo) {
+        console.log('🔍 Verificando saldos - nenhuma configuração ativa encontrada')
+        return []
+      }
+
+      console.log('🔍 Verificando saldos - configuração encontrada:', configSaldo)
 
       // Buscar contas bancárias do banco de dados
       const { data: contas, error } = await supabase
@@ -674,21 +734,34 @@ class AlertasServiceImpl implements AlertasService {
       }
 
       if (!contas || contas.length === 0) {
+        console.log('📊 Nenhuma conta bancária encontrada')
         return []
       }
 
+      console.log('📊 Contas bancárias encontradas:', contas.length)
+
       for (const conta of contas) {
-        // Definir saldo mínimo padrão se não configurado
-        const saldoMinimo = conta.saldo_minimo || 1000
+        // Verificar se a conta está na lista de contas configuradas (se especificada)
+        if (configSaldo.contas && configSaldo.contas.length > 0) {
+          if (!configSaldo.contas.includes(conta.nome)) {
+            console.log(`📊 Conta ${conta.nome} não está na lista de contas configuradas`)
+            continue
+          }
+        }
+
+        // Usar valor mínimo da configuração ou da conta
+        const saldoMinimo = configSaldo.valorMinimo || conta.saldo_minimo || 1000
+        
+        console.log(`📊 Verificando ${conta.nome}: saldo atual ${conta.saldo}, mínimo ${saldoMinimo}`)
         
         if (conta.saldo < saldoMinimo) {
-          alertas.push({
+          const alerta: Alerta = {
             id: `saldo_${conta.id}`,
-            tipo: 'saldo',
+            tipo: 'saldo' as const,
             titulo: `Saldo Baixo na ${conta.nome}`,
             mensagem: `O saldo da ${conta.nome} está R$ ${(saldoMinimo - conta.saldo).toFixed(2)} abaixo do limite mínimo configurado.`,
             prioridade: conta.saldo < saldoMinimo * 0.5 ? 'critica' : 'alta',
-            status: 'ativo',
+            status: 'ativo' as const,
             categoria: 'Contas',
             dataCriacao: hoje.toISOString(),
             dadosRelacionados: {
@@ -696,10 +769,14 @@ class AlertasServiceImpl implements AlertasService {
               saldoAtual: conta.saldo,
               saldoMinimo: saldoMinimo
             }
-          })
+          }
+          
+          alertas.push(alerta)
+          console.log(`🚨 Alerta de saldo criado: ${alerta.titulo}`)
         }
       }
 
+      console.log(`✅ Total de alertas de saldo criados: ${alertas.length}`)
       return alertas
     } catch (error) {
       console.error('Erro ao verificar saldos:', error)
