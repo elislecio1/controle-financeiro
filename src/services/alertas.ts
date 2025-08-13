@@ -261,7 +261,26 @@ class AlertasServiceImpl implements AlertasService {
         return mockConfiguracoes
       }
 
-      return data || mockConfiguracoes
+      if (!data) {
+        return mockConfiguracoes
+      }
+
+      // Mapear dados do banco para o formato da aplicação
+      const configuracoes: ConfiguracaoAlerta[] = data.map(item => ({
+        id: item.id,
+        tipo: item.tipo,
+        ativo: item.ativo,
+        diasAntes: item.dias_antes,
+        valorMinimo: item.valor_minimo,
+        percentualMeta: item.percentual_meta,
+        categorias: item.categorias || [],
+        contas: item.contas || [],
+        horarioNotificacao: item.horario_notificacao,
+        frequencia: item.frequencia,
+        canais: item.canais
+      }))
+
+      return configuracoes
     } catch (error) {
       console.error('Erro ao buscar configurações:', error)
       return mockConfiguracoes
@@ -270,6 +289,8 @@ class AlertasServiceImpl implements AlertasService {
 
   async salvarConfiguracao(config: Omit<ConfiguracaoAlerta, 'id'>): Promise<{ success: boolean; message: string; data?: ConfiguracaoAlerta }> {
     try {
+      console.log('🔧 Salvando configuração:', config)
+      
       if (!this.isSupabaseConfigured()) {
         const novaConfig: ConfiguracaoAlerta = {
           ...config,
@@ -283,25 +304,60 @@ class AlertasServiceImpl implements AlertasService {
         }
       }
 
+      // Mapear campos para o formato do banco
+      const configData = {
+        tipo: config.tipo,
+        ativo: config.ativo,
+        dias_antes: config.diasAntes,
+        valor_minimo: config.valorMinimo,
+        percentual_meta: config.percentualMeta,
+        categorias: config.categorias,
+        contas: config.contas,
+        horario_notificacao: config.horarioNotificacao,
+        frequencia: config.frequencia,
+        canais: config.canais
+      }
+
+      console.log('📊 Dados para inserção:', configData)
+
       const { data, error } = await supabase
         .from(this.TABLE_CONFIGURACOES)
-        .insert([config])
+        .insert([configData])
         .select()
         .single()
 
       if (error) {
+        console.error('❌ Erro ao salvar configuração:', error)
         return {
           success: false,
           message: 'Erro ao salvar configuração: ' + error.message
         }
       }
 
+      console.log('✅ Configuração salva com sucesso:', data)
+
+      // Converter de volta para o formato da aplicação
+      const configSalva: ConfiguracaoAlerta = {
+        id: data.id,
+        tipo: data.tipo,
+        ativo: data.ativo,
+        diasAntes: data.dias_antes,
+        valorMinimo: data.valor_minimo,
+        percentualMeta: data.percentual_meta,
+        categorias: data.categorias || [],
+        contas: data.contas || [],
+        horarioNotificacao: data.horario_notificacao,
+        frequencia: data.frequencia,
+        canais: data.canais
+      }
+
       return {
         success: true,
         message: 'Configuração salva com sucesso!',
-        data: data
+        data: configSalva
       }
     } catch (error: any) {
+      console.error('❌ Erro geral ao salvar configuração:', error)
       return {
         success: false,
         message: 'Erro ao salvar configuração: ' + error.message
@@ -379,6 +435,13 @@ class AlertasServiceImpl implements AlertasService {
       const hoje = new Date()
       const alertas: Alerta[] = []
 
+      // Buscar configurações de vencimento
+      const configuracoes = await this.getConfiguracoes()
+      const configVencimento = configuracoes.find(c => c.tipo === 'vencimento' && c.ativo)
+      
+      // Se não há configuração, usar padrão de 3 dias
+      const diasAntes = configVencimento?.diasAntes || 3
+
       // Buscar transações pendentes do banco de dados
       const { data: transacoes, error } = await supabase
         .from('transactions')
@@ -400,8 +463,8 @@ class AlertasServiceImpl implements AlertasService {
         if (dataVencimento) {
           const diasAteVencimento = Math.ceil((dataVencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
           
-          // Só criar alerta se realmente vence nos próximos 3 dias
-          if (diasAteVencimento <= 3 && diasAteVencimento >= 0) {
+          // Criar alerta se vence nos próximos X dias (incluindo hoje)
+          if (diasAteVencimento <= diasAntes && diasAteVencimento >= 0) {
             const prioridade = diasAteVencimento === 0 ? 'critica' : diasAteVencimento === 1 ? 'alta' : 'media'
             
             alertas.push({

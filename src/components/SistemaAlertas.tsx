@@ -35,6 +35,7 @@ export default function SistemaAlertas({ onClose }: SistemaAlertasProps) {
   const [configToEdit, setConfigToEdit] = useState<ConfiguracaoAlerta | null>(null)
   const [showVerificacaoModal, setShowVerificacaoModal] = useState(false)
   const [verificacaoResultado, setVerificacaoResultado] = useState<Alerta[]>([])
+  const [mensagemFeedback, setMensagemFeedback] = useState<{ tipo: 'sucesso' | 'erro', texto: string } | null>(null)
 
   // Estados para nova configuração
   const [novaConfig, setNovaConfig] = useState<Omit<ConfiguracaoAlerta, 'id'>>({
@@ -135,6 +136,9 @@ export default function SistemaAlertas({ onClose }: SistemaAlertasProps) {
           setShowConfigModal(false)
           setConfigToEdit(null)
           resetarFormulario()
+          setMensagemFeedback({ tipo: 'sucesso', texto: 'Configuração atualizada com sucesso!' })
+        } else {
+          setMensagemFeedback({ tipo: 'erro', texto: resultado.message })
         }
       } else {
         const resultado = await alertasService.salvarConfiguracao(novaConfig)
@@ -142,10 +146,18 @@ export default function SistemaAlertas({ onClose }: SistemaAlertasProps) {
           setConfiguracoes(prev => [...prev, resultado.data!])
           setShowConfigModal(false)
           resetarFormulario()
+          setMensagemFeedback({ tipo: 'sucesso', texto: 'Configuração salva com sucesso!' })
+        } else {
+          setMensagemFeedback({ tipo: 'erro', texto: resultado.message })
         }
       }
+      
+      // Limpar mensagem após 3 segundos
+      setTimeout(() => setMensagemFeedback(null), 3000)
     } catch (error) {
       console.error('Erro ao salvar configuração:', error)
+      setMensagemFeedback({ tipo: 'erro', texto: 'Erro ao salvar configuração' })
+      setTimeout(() => setMensagemFeedback(null), 3000)
     }
   }
 
@@ -284,6 +296,24 @@ export default function SistemaAlertas({ onClose }: SistemaAlertasProps) {
               </button>
             )}
           </div>
+
+          {/* Mensagem de Feedback */}
+          {mensagemFeedback && (
+            <div className={`mb-4 p-4 rounded-md ${
+              mensagemFeedback.tipo === 'sucesso' 
+                ? 'bg-green-50 border border-green-200 text-green-800' 
+                : 'bg-red-50 border border-red-200 text-red-800'
+            }`}>
+              <div className="flex items-center">
+                {mensagemFeedback.tipo === 'sucesso' ? (
+                  <CheckCircle className="h-5 w-5 mr-2" />
+                ) : (
+                  <AlertTriangle className="h-5 w-5 mr-2" />
+                )}
+                <span className="text-sm font-medium">{mensagemFeedback.texto}</span>
+              </div>
+            </div>
+          )}
 
           {/* Estatísticas */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
