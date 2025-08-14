@@ -69,6 +69,9 @@ export default function IntegracoesBancarias() {
         integracoesService.getTransacoesImportadas()
       ]);
 
+      console.log('Bancos carregados:', bancosData); // Debug
+      console.log('Banco Inter encontrado:', bancosData.find(b => b.codigo === '077')); // Debug
+
       setIntegracoes(integracoesData);
       setBancos(bancosData);
       setLogs(logsData);
