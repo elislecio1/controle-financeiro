@@ -81,6 +81,7 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       suporteAPI: true,
       suporteWebhook: false,
       suporteCSV: true,
+      documentacao: 'https://developers.bb.com.br/',
       status: 'ativo'
     },
     {
@@ -92,6 +93,7 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       suporteAPI: true,
       suporteWebhook: false,
       suporteCSV: true,
+      documentacao: 'https://developers.caixa.gov.br/',
       status: 'ativo'
     },
     {
@@ -103,6 +105,7 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       suporteAPI: true,
       suporteWebhook: true,
       suporteCSV: true,
+      documentacao: 'https://developers.santander.com.br/',
       status: 'ativo'
     },
     {
@@ -114,6 +117,7 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       suporteAPI: true,
       suporteWebhook: true,
       suporteCSV: true,
+      documentacao: 'https://developers.itau.com.br/',
       status: 'ativo'
     },
     {
@@ -125,6 +129,7 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       suporteAPI: true,
       suporteWebhook: false,
       suporteCSV: true,
+      documentacao: 'https://developers.bradesco.com.br/',
       status: 'ativo'
     },
     {
@@ -136,6 +141,7 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       suporteAPI: false,
       suporteWebhook: false,
       suporteCSV: true,
+      documentacao: 'https://www.sicoob.com.br/',
       status: 'ativo'
     }
   ];

@@ -278,11 +278,19 @@ export default function IntegracoesBancarias() {
             >
               <option value="">Selecione um banco</option>
               {bancos.map(banco => (
-                <option key={banco.codigo} value={banco.codigo}>
+                <option 
+                  key={banco.codigo} 
+                  value={banco.codigo}
+                  className={banco.codigo === '077' ? 'font-bold text-blue-600' : ''}
+                >
                   {banco.codigo} - {banco.nome}
+                  {banco.codigo === '077' ? ' (Recomendado)' : ''}
                 </option>
               ))}
             </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Banco Inter (077) é nossa integração principal com suporte completo
+            </p>
           </div>
 
           {/* Tipo de Integração */}
