@@ -49,7 +49,11 @@ export default function IntegracoesBancarias() {
     status: 'inativo' as const,
     configuracao: {
       nomeInstituicao: '',
-      ambiente: 'homologacao' as const
+      ambiente: 'homologacao' as const,
+      tipoCertificado: 'pfx' as const,
+      senhaCertificado: '',
+      certificadoArquivo: undefined,
+      chavePrivadaArquivo: undefined
     },
     frequenciaSincronizacao: 24,
     ativo: false
@@ -208,7 +212,11 @@ export default function IntegracoesBancarias() {
       status: 'inativo' as const,
       configuracao: {
         nomeInstituicao: '',
-        ambiente: 'homologacao' as const
+        ambiente: 'homologacao' as const,
+        tipoCertificado: 'pfx' as const,
+        senhaCertificado: '',
+        certificadoArquivo: undefined,
+        chavePrivadaArquivo: undefined
       },
       frequenciaSincronizacao: 24,
       ativo: false
@@ -457,7 +465,9 @@ export default function IntegracoesBancarias() {
 
             {/* Seção específica para certificados digitais */}
             <div className="mt-6 border-t pt-4">
-              <h5 className="text-sm font-medium text-gray-700 mb-3">Certificado Digital (Obrigatório para Banco Inter)</h5>
+              <h5 className="text-sm font-medium text-gray-700 mb-3">
+                Certificado Digital {formData.banco === '077' ? '(Obrigatório para Banco Inter)' : '(Opcional)'}
+              </h5>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
