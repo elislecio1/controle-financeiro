@@ -9,8 +9,23 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-k
 // Verificar se as credenciais estão configuradas
 const isSupabaseConfigured = SUPABASE_URL !== 'https://your-project.supabase.co' && SUPABASE_ANON_KEY !== 'your-anon-key'
 
+// Cliente Supabase - Instância única para evitar múltiplas instâncias
+let supabaseInstance: ReturnType<typeof createClient> | null = null
+
+const getSupabaseClient = () => {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        storageKey: 'controle-financeiro-auth'
+      }
+    })
+  }
+  return supabaseInstance
+}
+
 // Cliente Supabase
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+const supabase = getSupabaseClient()
 
 // Dados mock para quando não há conexão
 const mockData: SheetData[] = [
