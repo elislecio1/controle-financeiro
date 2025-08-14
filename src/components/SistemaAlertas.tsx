@@ -687,12 +687,14 @@ export default function SistemaAlertas({ onClose }: SistemaAlertasProps) {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Dias antes do vencimento</label>
                     <input
                       type="number"
-                      min="1"
+                      min="0"
                       max="30"
-                      value={novaConfig.diasAntes || 3}
-                      onChange={(e) => setNovaConfig(prev => ({ ...prev, diasAntes: parseInt(e.target.value) }))}
+                      value={novaConfig.diasAntes}
+                      onChange={(e) => setNovaConfig(prev => ({ ...prev, diasAntes: parseInt(e.target.value) || 0 }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      placeholder="0 = vencimentos de hoje"
                     />
+                    <p className="text-xs text-gray-500 mt-1">0 = alertar apenas vencimentos de hoje</p>
                   </div>
                 )}
 
@@ -749,17 +751,17 @@ export default function SistemaAlertas({ onClose }: SistemaAlertasProps) {
                       <label key={canal} className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={novaConfig.canais.includes(canal as any)}
+                          checked={novaConfig.canais?.includes(canal as any) || false}
                           onChange={(e) => {
                             if (e.target.checked) {
                               setNovaConfig(prev => ({
                                 ...prev,
-                                canais: [...prev.canais, canal as any]
+                                canais: [...(prev.canais || []), canal as any]
                               }))
                             } else {
                               setNovaConfig(prev => ({
                                 ...prev,
-                                canais: prev.canais.filter(c => c !== canal)
+                                canais: (prev.canais || []).filter(c => c !== canal)
                               }))
                             }
                           }}

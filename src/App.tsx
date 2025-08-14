@@ -9,6 +9,7 @@ import Module3 from './components/modules/Module3/Module3'
 import Module4 from './components/modules/Module4/Module4'
 import DataImport from './components/DataImport'
 import SistemaAlertas from './components/SistemaAlertas'
+import IntegracoesBancarias from './components/IntegracoesBancarias'
 import { ToastContainer } from './components/ToastNotification'
 import { formatarMoeda, formatarValorTabela, getClasseValor } from './utils/formatters'
 
@@ -281,8 +282,10 @@ function App() {
     }
   }
 
-  // Função para parsear data brasileira
+  // Função para parsear data brasileira (DD/MM/YYYY)
   const parseBrazilianDate = (dateStr: string): Date | null => {
+    if (!dateStr) return null
+    
     const parts = dateStr.split('/')
     if (parts.length !== 3) return null
     
@@ -292,7 +295,12 @@ function App() {
     
     if (isNaN(day) || isNaN(month) || isNaN(year)) return null
     
-    return new Date(year, month, day)
+    const data = new Date(year, month, day)
+    if (data.getFullYear() === year && data.getMonth() === month && data.getDate() === day) {
+      return data
+    }
+    
+    return null
   }
 
   // Função para verificar se uma data está em um período
@@ -363,11 +371,20 @@ function App() {
         case 'vencido':
           return item.status === 'vencido'
         case 'pago_hoje':
-          const hoje = new Date().toLocaleDateString('pt-BR')
-          return item.dataPagamento === hoje
+          const hojePago = new Date().toLocaleDateString('pt-BR')
+          return item.dataPagamento === hojePago
         case 'vencendo_hoje':
-          const hojeStr = new Date().toLocaleDateString('pt-BR')
-          return item.vencimento === hojeStr && item.status !== 'pago'
+          if (item.status === 'pago') return false
+          
+          // Usar a mesma lógica inteligente do sistema de alertas
+          const dataVencimento = parseBrazilianDate(item.vencimento)
+          if (!dataVencimento) return false
+          
+          const hojeVenc = new Date()
+          const hojeStr = hojeVenc.toLocaleDateString('pt-BR')
+          const vencimentoStr = dataVencimento.toLocaleDateString('pt-BR')
+          
+          return vencimentoStr === hojeStr
         default:
           return true
       }
@@ -654,9 +671,19 @@ function App() {
   ).reduce((sum, item) => sum + Math.abs(item.valor), 0)
   
   // Cálculo para "Vencendo Hoje" - transações que vencem hoje e ainda não foram pagas
-  const totalVencendoHoje = filteredData.filter(item => 
-    item.vencimento === hoje && item.status !== 'pago'
-  ).reduce((sum, item) => sum + Math.abs(item.valor), 0)
+  const totalVencendoHoje = filteredData.filter(item => {
+    if (item.status === 'pago') return false
+    
+    // Usar a mesma lógica inteligente do sistema de alertas
+    const dataVencimento = parseBrazilianDate(item.vencimento)
+    if (!dataVencimento) return false
+    
+    const hoje = new Date()
+    const hojeStr = hoje.toLocaleDateString('pt-BR')
+    const vencimentoStr = dataVencimento.toLocaleDateString('pt-BR')
+    
+    return vencimentoStr === hojeStr
+  }).reduce((sum, item) => sum + Math.abs(item.valor), 0)
 
   // Dados para gráficos
   const chartData = filteredData.reduce((acc: any[], item) => {
@@ -754,7 +781,8 @@ function App() {
             { id: 'module3', name: 'Recursos Avançados', icon: TrendingUp },
             { id: 'module4', name: 'Relatórios e Análises', icon: BarChart },
             { id: 'import', name: 'Importação de Dados', icon: Upload },
-            { id: 'alertas', name: 'Sistema de Alertas', icon: Bell }
+            { id: 'alertas', name: 'Sistema de Alertas', icon: Bell },
+            { id: 'integracoes', name: 'Integrações', icon: Database }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1123,6 +1151,10 @@ function App() {
                           <span className="sm:hidden">Cat.</span>
                         </th>
                         <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <span className="hidden sm:inline">Cliente/Fornecedor</span>
+                          <span className="sm:hidden">Contato</span>
+                        </th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           <span className="hidden sm:inline">Banco</span>
                           <span className="sm:hidden">Banco</span>
                         </th>
@@ -1159,6 +1191,9 @@ function App() {
                           </td>
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                             {item.categoria}
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                            {item.contato || '-'}
                           </td>
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                             {getBancoConta(item.conta)}
@@ -1332,6 +1367,10 @@ function App() {
 
         {activeTab === 'alertas' && (
           <SistemaAlertas />
+        )}
+
+        {activeTab === 'integracoes' && (
+          <IntegracoesBancarias />
         )}
 
         {/* Container de Notificações Toast */}

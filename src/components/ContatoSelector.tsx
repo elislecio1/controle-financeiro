@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Search, Plus, X, Check, AlertCircle } from 'lucide-react'
+import { Search, Plus, X, Check, AlertCircle, User, Building } from 'lucide-react'
 import { Contato } from '../types'
 import { supabaseService } from '../services/supabase'
 
@@ -133,6 +133,30 @@ export default function ContatoSelector({ value, onChange, placeholder = "Seleci
   // Obter contato selecionado
   const selectedContato = contatos.find(c => c.nome === value)
 
+  // Função para obter ícone baseado no tipo
+  const getTipoIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'cliente':
+        return <User className="h-4 w-4 text-blue-600" />
+      case 'fornecedor':
+        return <Building className="h-4 w-4 text-green-600" />
+      default:
+        return <User className="h-4 w-4 text-gray-600" />
+    }
+  }
+
+  // Função para obter cor baseada no tipo
+  const getTipoColor = (tipo: string) => {
+    switch (tipo) {
+      case 'cliente':
+        return 'bg-blue-100 text-blue-800'
+      case 'fornecedor':
+        return 'bg-green-100 text-green-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Campo de entrada */}
@@ -198,11 +222,16 @@ export default function ContatoSelector({ value, onChange, placeholder = "Seleci
                   onClick={() => handleSelectContato(contato)}
                   className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
                 >
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">{contato.nome}</div>
-                    <div className="text-sm text-gray-500">
-                      {contato.email && `${contato.email} • `}
-                      {contato.tipo}
+                  <div className="flex-1 flex items-center gap-3">
+                    {getTipoIcon(contato.tipo)}
+                    <div>
+                      <div className="font-medium text-gray-900">{contato.nome}</div>
+                      <div className="text-sm text-gray-500 flex items-center gap-2">
+                        {contato.email && <span>{contato.email}</span>}
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTipoColor(contato.tipo)}`}>
+                          {contato.tipo}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   {selectedContato?.id === contato.id && (

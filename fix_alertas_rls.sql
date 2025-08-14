@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS configuracoes_alertas (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('vencimento', 'meta', 'orcamento', 'saldo', 'personalizado')),
     ativo BOOLEAN NOT NULL DEFAULT true,
-    dias_antes INTEGER CHECK (dias_antes >= 1 AND dias_antes <= 30),
+    dias_antes INTEGER CHECK (dias_antes >= 0 AND dias_antes <= 30),
     valor_minimo DECIMAL(15,2),
     percentual_meta INTEGER CHECK (percentual_meta >= 1 AND percentual_meta <= 100),
     categorias TEXT[], -- Array de categorias

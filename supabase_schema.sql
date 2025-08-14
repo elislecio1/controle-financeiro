@@ -184,6 +184,90 @@ CREATE TABLE IF NOT EXISTS relatorios (
 );
 
 -- =====================================================
+-- SISTEMA DE INTEGRAÇÕES EXTERNAS
+-- =====================================================
+
+-- Tabela de configurações de integração bancária
+CREATE TABLE IF NOT EXISTS integracoes_bancarias (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nome VARCHAR(100) NOT NULL,
+    banco VARCHAR(100) NOT NULL,
+    tipo_integracao VARCHAR(50) NOT NULL CHECK (tipo_integracao IN ('api_oficial', 'open_banking', 'webhook', 'arquivo_csv')),
+    status VARCHAR(20) NOT NULL DEFAULT 'inativo' CHECK (status IN ('ativo', 'inativo', 'erro', 'sincronizando')),
+    configuracao JSONB NOT NULL, -- Credenciais e configurações específicas
+    ultima_sincronizacao TIMESTAMP WITH TIME ZONE,
+    proxima_sincronizacao TIMESTAMP WITH TIME ZONE,
+    frequencia_sincronizacao INTEGER DEFAULT 24, -- Horas
+    conta_bancaria_id UUID REFERENCES contas_bancarias(id),
+    ativo BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabela de logs de sincronização
+CREATE TABLE IF NOT EXISTS logs_sincronizacao (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    integracao_id UUID REFERENCES integracoes_bancarias(id),
+    tipo_operacao VARCHAR(50) NOT NULL CHECK (tipo_operacao IN ('importacao', 'exportacao', 'erro', 'info')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('sucesso', 'erro', 'parcial')),
+    mensagem TEXT,
+    dados_processados INTEGER DEFAULT 0,
+    transacoes_importadas INTEGER DEFAULT 0,
+    transacoes_atualizadas INTEGER DEFAULT 0,
+    transacoes_erro INTEGER DEFAULT 0,
+    tempo_execucao_ms INTEGER,
+    detalhes_erro JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabela de transações importadas (para conciliação)
+CREATE TABLE IF NOT EXISTS transacoes_importadas (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    integracao_id UUID REFERENCES integracoes_bancarias(id),
+    id_externo VARCHAR(100), -- ID da transação no banco
+    data_transacao VARCHAR(10) NOT NULL, -- DD/MM/AAAA
+    valor DECIMAL(15,2) NOT NULL,
+    descricao VARCHAR(255) NOT NULL,
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('credito', 'debito', 'transferencia')),
+    categoria_banco VARCHAR(100), -- Categoria fornecida pelo banco
+    conta_origem VARCHAR(100),
+    conta_destino VARCHAR(100),
+    hash_transacao VARCHAR(255), -- Para evitar duplicatas
+    status_conciliação VARCHAR(20) DEFAULT 'pendente' CHECK (status_conciliação IN ('pendente', 'conciliada', 'ignorada')),
+    transacao_id UUID REFERENCES transactions(id), -- Se foi conciliada
+    dados_originais JSONB, -- Dados completos da transação original
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabela de configurações de notificações
+CREATE TABLE IF NOT EXISTS configuracoes_notificacoes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tipo VARCHAR(50) NOT NULL CHECK (tipo IN ('email', 'push', 'sms', 'webhook')),
+    nome VARCHAR(100) NOT NULL,
+    configuracao JSONB NOT NULL, -- Configurações específicas do tipo
+    ativo BOOLEAN NOT NULL DEFAULT true,
+    frequencia VARCHAR(20) DEFAULT 'imediato' CHECK (frequencia IN ('imediato', 'diario', 'semanal', 'mensal')),
+    horario_envio TIME, -- Para notificações agendadas
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabela de histórico de notificações
+CREATE TABLE IF NOT EXISTS historico_notificacoes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    configuracao_id UUID REFERENCES configuracoes_notificacoes(id),
+    tipo_notificacao VARCHAR(50) NOT NULL,
+    destinatario VARCHAR(255) NOT NULL,
+    assunto VARCHAR(255),
+    conteudo TEXT,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('enviado', 'erro', 'pendente')),
+    data_envio TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    detalhes_erro TEXT,
+    dados_adicional JSONB
+);
+
+-- =====================================================
 -- CONFIGURAÇÕES DO SISTEMA
 -- =====================================================
 
@@ -232,11 +316,37 @@ CREATE INDEX IF NOT EXISTS idx_metas_ativo ON metas(ativo);
 CREATE INDEX IF NOT EXISTS idx_orcamentos_mes ON orcamentos(mes);
 CREATE INDEX IF NOT EXISTS idx_orcamentos_categoria_id ON orcamentos(categoria_id);
 
+-- Índices para integrações bancárias
+CREATE INDEX IF NOT EXISTS idx_integracoes_bancarias_banco ON integracoes_bancarias(banco);
+CREATE INDEX IF NOT EXISTS idx_integracoes_bancarias_status ON integracoes_bancarias(status);
+CREATE INDEX IF NOT EXISTS idx_integracoes_bancarias_conta_id ON integracoes_bancarias(conta_bancaria_id);
+CREATE INDEX IF NOT EXISTS idx_integracoes_bancarias_ativo ON integracoes_bancarias(ativo);
+
+-- Índices para logs de sincronização
+CREATE INDEX IF NOT EXISTS idx_logs_sincronizacao_integracao_id ON logs_sincronizacao(integracao_id);
+CREATE INDEX IF NOT EXISTS idx_logs_sincronizacao_status ON logs_sincronizacao(status);
+CREATE INDEX IF NOT EXISTS idx_logs_sincronizacao_created_at ON logs_sincronizacao(created_at);
+
+-- Índices para transações importadas
+CREATE INDEX IF NOT EXISTS idx_transacoes_importadas_integracao_id ON transacoes_importadas(integracao_id);
+CREATE INDEX IF NOT EXISTS idx_transacoes_importadas_hash ON transacoes_importadas(hash_transacao);
+CREATE INDEX IF NOT EXISTS idx_transacoes_importadas_status_conciliação ON transacoes_importadas(status_conciliação);
+CREATE INDEX IF NOT EXISTS idx_transacoes_importadas_data ON transacoes_importadas(data_transacao);
+
+-- Índices para configurações de notificações
+CREATE INDEX IF NOT EXISTS idx_config_notificacoes_tipo ON configuracoes_notificacoes(tipo);
+CREATE INDEX IF NOT EXISTS idx_config_notificacoes_ativo ON configuracoes_notificacoes(ativo);
+
+-- Índices para histórico de notificações
+CREATE INDEX IF NOT EXISTS idx_historico_notificacoes_config_id ON historico_notificacoes(configuracao_id);
+CREATE INDEX IF NOT EXISTS idx_historico_notificacoes_status ON historico_notificacoes(status);
+CREATE INDEX IF NOT EXISTS idx_historico_notificacoes_data_envio ON historico_notificacoes(data_envio);
+
 -- =====================================================
--- TRIGGERS PARA ATUALIZAÇÃO AUTOMÁTICA
+-- TRIGGERS AUTOMÁTICOS
 -- =====================================================
 
--- Função para atualizar updated_at
+-- Trigger para atualizar updated_at em todas as tabelas
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -258,6 +368,40 @@ CREATE TRIGGER update_orcamentos_updated_at BEFORE UPDATE ON orcamentos FOR EACH
 CREATE TRIGGER update_investimentos_updated_at BEFORE UPDATE ON investimentos FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_relatorios_updated_at BEFORE UPDATE ON relatorios FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_configuracoes_sistema_updated_at BEFORE UPDATE ON configuracoes_sistema FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Triggers para novas tabelas de integração
+CREATE TRIGGER update_integracoes_bancarias_updated_at BEFORE UPDATE ON integracoes_bancarias FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_transacoes_importadas_updated_at BEFORE UPDATE ON transacoes_importadas FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_configuracoes_notificacoes_updated_at BEFORE UPDATE ON configuracoes_notificacoes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
+-- FUNÇÕES AUTOMÁTICAS
+-- =====================================================
+
+-- Função para criar alerta automático quando transação é criada/atualizada
+CREATE OR REPLACE FUNCTION criar_alerta_automatico()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Lógica para criar alertas automáticos baseados em transações
+    -- Será implementada posteriormente
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Trigger para criar alertas automáticos
+CREATE TRIGGER trigger_criar_alerta_transacao
+    AFTER INSERT OR UPDATE ON transactions
+    FOR EACH ROW
+    EXECUTE FUNCTION criar_alerta_automatico();
+
+-- Função para limpar alertas antigos
+CREATE OR REPLACE FUNCTION limpar_alertas_antigos()
+RETURNS void AS $$
+BEGIN
+    -- Lógica para limpar alertas antigos
+    -- Será implementada posteriormente
+END;
+$$ language 'plpgsql';
 
 -- =====================================================
 -- DADOS INICIAIS (OPCIONAL)
@@ -350,7 +494,7 @@ CREATE TABLE IF NOT EXISTS configuracoes_alertas (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('vencimento', 'meta', 'orcamento', 'saldo', 'personalizado')),
     ativo BOOLEAN NOT NULL DEFAULT true,
-    dias_antes INTEGER CHECK (dias_antes >= 1 AND dias_antes <= 30),
+    dias_antes INTEGER CHECK (dias_antes >= 0 AND dias_antes <= 30),
     valor_minimo DECIMAL(15,2),
     percentual_meta INTEGER CHECK (percentual_meta >= 1 AND percentual_meta <= 100),
     categorias TEXT[], -- Array de categorias
@@ -476,11 +620,31 @@ COMMENT ON TABLE categorias IS 'Categorias de receitas e despesas';
 COMMENT ON TABLE subcategorias IS 'Subcategorias dependentes das categorias';
 COMMENT ON TABLE centros_custo IS 'Centros de custo e lucro';
 COMMENT ON TABLE contatos IS 'Contatos, clientes e fornecedores';
-COMMENT ON TABLE metas IS 'Metas financeiras';
+COMMENT ON TABLE metas IS 'Metas financeiras e objetivos';
 COMMENT ON TABLE orcamentos IS 'Orçamentos mensais por categoria';
 COMMENT ON TABLE investimentos IS 'Carteira de investimentos';
 COMMENT ON TABLE relatorios IS 'Relatórios gerados pelo sistema';
-COMMENT ON TABLE configuracoes_sistema IS 'Configurações gerais do sistema'; 
+COMMENT ON TABLE configuracoes_sistema IS 'Configurações gerais do sistema';
 COMMENT ON TABLE alertas IS 'Sistema de alertas para notificações financeiras';
 COMMENT ON TABLE configuracoes_alertas IS 'Configurações para geração automática de alertas';
-COMMENT ON TABLE notificacoes IS 'Histórico de notificações enviadas'; 
+COMMENT ON TABLE notificacoes IS 'Histórico de notificações enviadas';
+
+-- Comentários para tabelas de integração
+COMMENT ON TABLE integracoes_bancarias IS 'Configurações de integração com bancos e instituições financeiras';
+COMMENT ON TABLE logs_sincronizacao IS 'Logs de todas as operações de sincronização bancária';
+COMMENT ON TABLE transacoes_importadas IS 'Transações importadas dos bancos para conciliação';
+COMMENT ON TABLE configuracoes_notificacoes IS 'Configurações de notificações por email, push, SMS e webhooks';
+COMMENT ON TABLE historico_notificacoes IS 'Histórico de todas as notificações enviadas pelo sistema';
+
+-- Comentários para colunas específicas
+COMMENT ON COLUMN integracoes_bancarias.tipo_integracao IS 'Tipo de integração: API oficial, Open Banking, Webhook ou arquivo CSV';
+COMMENT ON COLUMN integracoes_bancarias.configuracao IS 'Configurações específicas da integração (credenciais, URLs, etc.)';
+COMMENT ON COLUMN integracoes_bancarias.frequencia_sincronizacao IS 'Frequência de sincronização em horas';
+COMMENT ON COLUMN transacoes_importadas.hash_transacao IS 'Hash único da transação para evitar duplicatas';
+COMMENT ON COLUMN transacoes_importadas.status_conciliação IS 'Status da conciliação: pendente, conciliada ou ignorada';
+COMMENT ON COLUMN configuracoes_notificacoes.frequencia IS 'Frequência de envio: imediato, diário, semanal ou mensal';
+COMMENT ON COLUMN configuracoes_notificacoes.horario_envio IS 'Horário específico para envio de notificações agendadas';
+
+-- =====================================================
+-- FIM DO SCHEMA
+-- ===================================================== 

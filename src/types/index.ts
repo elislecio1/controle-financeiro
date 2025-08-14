@@ -197,35 +197,222 @@ export interface ConfiguracaoAlerta {
   id: string
   tipo: 'vencimento' | 'meta' | 'orcamento' | 'saldo' | 'personalizado'
   ativo: boolean
-  diasAntes?: number // Para alertas de vencimento
-  valorMinimo?: number // Para alertas de saldo
-  percentualMeta?: number // Para alertas de metas
-  categorias?: string[] // Categorias específicas
-  contas?: string[] // Contas específicas
-  horarioNotificacao?: string // HH:MM
-  frequencia: 'diario' | 'semanal' | 'mensal' | 'personalizado'
-  canais: ('email' | 'push' | 'sms' | 'dashboard')[]
-  usuarioId?: string
+  diasAntes?: number
+  valorMinimo?: number
+  percentualMeta?: number
+  categorias?: string[]
+  contas?: string[]
+  frequencia?: string
+  canais?: string[]
+  horarioNotificacao?: string
 }
 
 export interface Notificacao {
   id: string
-  alertaId: string
-  tipo: 'email' | 'push' | 'sms' | 'dashboard'
-  status: 'pendente' | 'enviada' | 'falha'
-  dataEnvio?: string
-  dadosEnvio?: any
-  tentativas: number
-  maxTentativas: number
+  tipo: 'dashboard' | 'email' | 'push' | 'sms'
+  titulo: string
+  mensagem: string
+  dataEnvio: string
+  status: 'enviado' | 'erro' | 'pendente'
+  destinatario?: string
+  dadosAdicional?: any
 }
 
-// Configurações do sistema
-export interface ConfiguracaoSistema {
-  moeda: 'BRL'
-  formatoData: 'DD/MM/AAAA'
-  formatoMoeda: 'R$ #,##0.00'
-  regimeContabil: 'caixa' | 'competencia'
-  alertasVencimento: number // Dias antes do vencimento
-  backupAutomatico: boolean
-  tema: 'claro' | 'escuro'
-} 
+// Sistema de Integrações Externas
+export interface IntegracaoBancaria {
+  id: string
+  nome: string
+  banco: string
+  tipoIntegracao: 'api_oficial' | 'open_banking' | 'webhook' | 'arquivo_csv'
+  status: 'ativo' | 'inativo' | 'erro' | 'sincronizando'
+  configuracao: IntegracaoConfig
+  ultimaSincronizacao?: string
+  proximaSincronizacao?: string
+  frequenciaSincronizacao: number // em horas
+  contaBancariaId?: string
+  ativo: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface IntegracaoConfig {
+  // Configurações comuns
+  nomeInstituicao: string
+  ambiente: 'producao' | 'homologacao' | 'desenvolvimento'
+  
+  // Para APIs oficiais
+  apiKey?: string
+  apiSecret?: string
+  clientId?: string
+  clientSecret?: string
+  baseUrl?: string
+  endpoints?: {
+    transacoes: string
+    saldo: string
+    contas: string
+  }
+  
+  // Para Open Banking
+  certificadoDigital?: string
+  chavePrivada?: string
+  
+  // Para Webhooks
+  webhookUrl?: string
+  webhookSecret?: string
+  
+  // Para arquivos CSV
+  formatoArquivo?: 'csv' | 'ofx' | 'qif'
+  separador?: string
+  encoding?: string
+  mapeamentoCampos?: {
+    data: string
+    valor: string
+    descricao: string
+    categoria: string
+    conta: string
+  }
+  
+  // Configurações de segurança
+  timeout?: number
+  retryAttempts?: number
+  retryDelay?: number
+}
+
+export interface LogSincronizacao {
+  id: string
+  integracaoId: string
+  tipoOperacao: 'importacao' | 'exportacao' | 'erro' | 'info'
+  status: 'sucesso' | 'erro' | 'parcial'
+  mensagem?: string
+  dadosProcessados: number
+  transacoesImportadas: number
+  transacoesAtualizadas: number
+  transacoesErro: number
+  tempoExecucaoMs?: number
+  detalhesErro?: any
+  createdAt: string
+}
+
+export interface TransacaoImportada {
+  id: string
+  integracaoId: string
+  idExterno?: string
+  dataTransacao: string
+  valor: number
+  descricao: string
+  tipo: 'credito' | 'debito' | 'transferencia'
+  categoriaBanco?: string
+  contaOrigem?: string
+  contaDestino?: string
+  hashTransacao: string
+  statusConciliacao: 'pendente' | 'conciliada' | 'ignorada'
+  transacaoId?: string
+  dadosOriginais: any
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ConfiguracaoNotificacao {
+  id: string
+  tipo: 'email' | 'push' | 'sms' | 'webhook'
+  nome: string
+  configuracao: NotificacaoConfig
+  ativo: boolean
+  frequencia: 'imediato' | 'diario' | 'semanal' | 'mensal'
+  horarioEnvio?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface NotificacaoConfig {
+  // Configurações de Email
+  email?: {
+    servidor: string
+    porta: number
+    usuario: string
+    senha: string
+    ssl: boolean
+    remetente: string
+    nomeRemetente: string
+  }
+  
+  // Configurações de Push
+  push?: {
+    vapidPublicKey: string
+    vapidPrivateKey: string
+    subject: string
+  }
+  
+  // Configurações de SMS
+  sms?: {
+    provedor: 'twilio' | 'aws_sns' | 'custom'
+    accountSid?: string
+    authToken?: string
+    numeroOrigem?: string
+    apiKey?: string
+    apiSecret?: string
+  }
+  
+  // Configurações de Webhook
+  webhook?: {
+    url: string
+    metodo: 'GET' | 'POST' | 'PUT'
+    headers?: Record<string, string>
+    timeout?: number
+    retryAttempts?: number
+  }
+  
+  // Configurações de template
+  template?: {
+    assunto: string
+    corpo: string
+    variaveis?: string[]
+  }
+}
+
+export interface HistoricoNotificacao {
+  id: string
+  configuracaoId: string
+  tipoNotificacao: string
+  destinatario: string
+  assunto?: string
+  conteudo?: string
+  status: 'enviado' | 'erro' | 'pendente'
+  dataEnvio: string
+  detalhesErro?: string
+  dadosAdicional?: any
+}
+
+// Tipos auxiliares para integrações
+export interface BancoInfo {
+  codigo: string
+  nome: string
+  nomeCompleto: string
+  tipo: 'publico' | 'privado' | 'cooperativo'
+  suporteOpenBanking: boolean
+  suporteAPI: boolean
+  suporteWebhook: boolean
+  suporteCSV: boolean
+  documentacao?: string
+  status: 'ativo' | 'inativo' | 'beta'
+}
+
+export interface ResultadoSincronizacao {
+  sucesso: boolean
+  mensagem: string
+  transacoesImportadas: number
+  transacoesAtualizadas: number
+  transacoesErro: number
+  tempoExecucao: number
+  detalhes?: any
+}
+
+export interface DadosConciliacao {
+  transacaoImportada: TransacaoImportada
+  transacaoSistema?: SheetData
+  scoreConciliacao: number // 0-100
+  sugestoes?: string[]
+  automatica: boolean
+}
+
+export default {} 

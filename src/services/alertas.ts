@@ -306,19 +306,23 @@ class AlertasServiceImpl implements AlertasService {
         }
       }
 
-      // Mapear campos para o formato do banco
-      const configData = {
-        tipo: config.tipo,
-        ativo: config.ativo,
-        dias_antes: config.diasAntes,
-        valor_minimo: config.valorMinimo,
-        percentual_meta: config.percentualMeta,
-        categorias: config.categorias,
-        contas: config.contas,
-        horario_notificacao: config.horarioNotificacao,
-        frequencia: config.frequencia,
-        canais: config.canais
-      }
+             // Mapear campos para o formato do banco
+       const configData: any = {
+         tipo: config.tipo,
+         ativo: config.ativo,
+         dias_antes: config.diasAntes,
+         valor_minimo: config.valorMinimo,
+         percentual_meta: config.percentualMeta,
+         categorias: config.categorias,
+         contas: config.contas,
+         frequencia: config.frequencia,
+         canais: config.canais
+       }
+       
+       // Só incluir horario_notificacao se não estiver vazio
+       if (config.horarioNotificacao && config.horarioNotificacao.trim() !== '') {
+         configData.horario_notificacao = config.horarioNotificacao
+       }
 
       console.log('📊 Dados para inserção:', configData)
       console.log('📊 Tabela:', this.TABLE_CONFIGURACOES)
@@ -409,18 +413,22 @@ class AlertasServiceImpl implements AlertasService {
         return { success: false, message: 'Configuração não encontrada' }
       }
 
-      // Mapear campos para o formato do banco (camelCase -> snake_case)
-      const updateData: any = {}
-      if (data.tipo !== undefined) updateData.tipo = data.tipo
-      if (data.ativo !== undefined) updateData.ativo = data.ativo
-      if (data.diasAntes !== undefined) updateData.dias_antes = data.diasAntes
-      if (data.valorMinimo !== undefined) updateData.valor_minimo = data.valorMinimo
-      if (data.percentualMeta !== undefined) updateData.percentual_meta = data.percentualMeta
-      if (data.categorias !== undefined) updateData.categorias = data.categorias
-      if (data.contas !== undefined) updateData.contas = data.contas
-      if (data.horarioNotificacao !== undefined) updateData.horario_notificacao = data.horarioNotificacao
-      if (data.frequencia !== undefined) updateData.frequencia = data.frequencia
-      if (data.canais !== undefined) updateData.canais = data.canais
+             // Mapear campos para o formato do banco (camelCase -> snake_case)
+       const updateData: any = {}
+       if (data.tipo !== undefined) updateData.tipo = data.tipo
+       if (data.ativo !== undefined) updateData.ativo = data.ativo
+       if (data.diasAntes !== undefined) updateData.dias_antes = data.diasAntes
+       if (data.valorMinimo !== undefined) updateData.valor_minimo = data.valorMinimo
+       if (data.percentualMeta !== undefined) updateData.percentual_meta = data.percentualMeta
+       if (data.categorias !== undefined) updateData.categorias = data.categorias
+       if (data.contas !== undefined) updateData.contas = data.contas
+       if (data.frequencia !== undefined) updateData.frequencia = data.frequencia
+       if (data.canais !== undefined) updateData.canais = data.canais
+       
+       // Só incluir horario_notificacao se não estiver vazio
+       if (data.horarioNotificacao !== undefined && data.horarioNotificacao && data.horarioNotificacao.trim() !== '') {
+         updateData.horario_notificacao = data.horarioNotificacao
+       }
 
       console.log('🔄 Atualizando configuração:', { id, updateData })
 
@@ -486,21 +494,27 @@ class AlertasServiceImpl implements AlertasService {
       const hoje = new Date()
       const alertas: Alerta[] = []
 
+      console.log('🔍 Iniciando verificação de vencimentos...')
+      console.log('📅 Data atual:', hoje.toLocaleDateString('pt-BR'))
+
       // Buscar configurações de vencimento
       const configuracoes = await this.getConfiguracoes()
+      console.log('⚙️ Configurações encontradas:', configuracoes.length)
+      
       const configVencimento = configuracoes.find(c => c.tipo === 'vencimento' && c.ativo)
+      console.log('⚙️ Configuração de vencimento:', configVencimento)
       
       // Se não há configuração, sempre verificar vencimentos de hoje
       const diasAntes = configVencimento?.diasAntes || 0
-
       console.log('🔍 Verificando vencimentos - dias antes:', diasAntes)
 
-      // Buscar transações pendentes do banco de dados
+      // Buscar transações pendentes do banco de dados (excluindo transações de teste)
       const { data: transacoes, error } = await supabase
         .from('transactions')
         .select('*')
         .eq('status', 'pendente')
         .not('vencimento', 'is', null)
+        .not('descricao', 'ilike', '%teste%')
 
       if (error) {
         console.error('Erro ao buscar transações:', error)
@@ -513,16 +527,25 @@ class AlertasServiceImpl implements AlertasService {
       }
 
       console.log('📊 Transações pendentes encontradas:', transacoes.length)
+      
+      // Listar todas as transações encontradas
+      transacoes.forEach((t, index) => {
+        console.log(`📋 Transação ${index + 1}: ${t.descricao} - R$ ${t.valor} - Vence: ${t.vencimento}`)
+      })
 
       for (const transacao of transacoes) {
+        console.log(`🔍 Analisando transação: ${transacao.descricao} - Vencimento: ${transacao.vencimento}`)
+        
         const dataVencimento = this.parseBrazilianDate(transacao.vencimento)
         if (dataVencimento) {
           const diasAteVencimento = Math.ceil((dataVencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
           
-          console.log(`📅 ${transacao.descricao}: vence em ${diasAteVencimento} dias`)
+          console.log(`📅 ${transacao.descricao}: vence em ${diasAteVencimento} dias (data: ${dataVencimento.toLocaleDateString('pt-BR')})`)
           
           // Criar alerta se vence hoje (diasAteVencimento === 0) ou nos próximos X dias configurados
           if (diasAteVencimento <= diasAntes && diasAteVencimento >= 0) {
+            console.log(`✅ Condição atendida: diasAteVencimento (${diasAteVencimento}) <= diasAntes (${diasAntes})`)
+            
             const prioridade = diasAteVencimento === 0 ? 'critica' : diasAteVencimento === 1 ? 'alta' : 'media'
             
             const alerta: Alerta = {
@@ -545,7 +568,11 @@ class AlertasServiceImpl implements AlertasService {
             
             alertas.push(alerta)
             console.log(`🚨 Alerta criado: ${alerta.titulo}`)
+          } else {
+            console.log(`❌ Condição não atendida: diasAteVencimento (${diasAteVencimento}) > diasAntes (${diasAntes}) ou diasAteVencimento < 0`)
           }
+        } else {
+          console.log(`⚠️ Não foi possível parsear a data de vencimento: ${transacao.vencimento}`)
         }
       }
 
@@ -789,8 +816,7 @@ class AlertasServiceImpl implements AlertasService {
     try {
       const notificacaoCompleta: Notificacao = {
         ...notificacao,
-        id: Date.now().toString(),
-        tentativas: 1
+        id: Date.now().toString()
       }
 
       // Simular envio de notificação
@@ -832,16 +858,40 @@ class AlertasServiceImpl implements AlertasService {
   private parseBrazilianDate(dateStr: string): Date | null {
     if (!dateStr) return null
     
-    const partes = dateStr.split('/')
-    if (partes.length !== 3) return null
+    console.log(`🔍 Parseando data: "${dateStr}"`)
     
-    const dia = parseInt(partes[0])
-    const mes = parseInt(partes[1]) - 1
-    const ano = parseInt(partes[2])
+    // Tentar formato brasileiro (DD/MM/YYYY)
+    if (dateStr.includes('/')) {
+      const partes = dateStr.split('/')
+      if (partes.length === 3) {
+        // Garantir que dia e mês tenham 2 dígitos
+        const dia = parseInt(partes[0].padStart(2, '0'))
+        const mes = parseInt(partes[1].padStart(2, '0')) - 1
+        const ano = parseInt(partes[2])
+        
+        console.log(`📅 Formato brasileiro - Partes: dia=${dia}, mes=${mes + 1}, ano=${ano}`)
+        
+        if (!isNaN(dia) && !isNaN(mes) && !isNaN(ano)) {
+          const data = new Date(ano, mes, dia)
+          if (data.getFullYear() === ano && data.getMonth() === mes && data.getDate() === dia) {
+            console.log(`✅ Data brasileira parseada: ${data.toLocaleDateString('pt-BR')}`)
+            return data
+          }
+        }
+      }
+    }
     
-    if (isNaN(dia) || isNaN(mes) || isNaN(ano)) return null
+    // Tentar formato ISO (YYYY-MM-DD)
+    if (dateStr.includes('-')) {
+      const data = new Date(dateStr)
+      if (!isNaN(data.getTime())) {
+        console.log(`✅ Data ISO parseada: ${data.toLocaleDateString('pt-BR')}`)
+        return data
+      }
+    }
     
-    return new Date(ano, mes, dia)
+    console.log(`❌ Formato de data não reconhecido: ${dateStr}`)
+    return null
   }
 
   private formatarMoeda(valor: number): string {
@@ -854,13 +904,13 @@ class AlertasServiceImpl implements AlertasService {
   private async simularEnvioEmail(notificacao: Notificacao): Promise<void> {
     // Simular delay de envio
     await new Promise(resolve => setTimeout(resolve, 1000))
-    console.log('📧 Email enviado para:', notificacao.dadosEnvio?.email || 'usuário@exemplo.com')
+    console.log('📧 Email enviado para:', notificacao.destinatario || 'usuário@exemplo.com')
   }
 
   private async simularEnvioPush(notificacao: Notificacao): Promise<void> {
     // Simular delay de envio
     await new Promise(resolve => setTimeout(resolve, 500))
-    console.log('📱 Push notification enviado para:', notificacao.dadosEnvio?.deviceId || 'device-123')
+    console.log('📱 Push notification enviado para:', notificacao.destinatario || 'device-123')
   }
 }
 
