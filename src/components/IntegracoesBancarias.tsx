@@ -100,6 +100,10 @@ export default function IntegracoesBancarias() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log('🚀 Iniciando salvamento da integração...');
+      console.log('📋 Dados do formulário:', formData);
+      console.log('📋 Configuração:', formData.configuracao);
+      
       setLoading(true);
       
       // Garantir que os campos obrigatórios estejam preenchidos
@@ -138,20 +142,37 @@ export default function IntegracoesBancarias() {
       resetForm();
       loadData();
     } catch (error) {
-      console.error('Erro ao salvar integração:', error);
+      console.error('❌ Erro completo ao salvar integração:', error);
       
       // Mensagem de erro mais específica
       let errorMessage = 'Erro ao salvar integração';
       if (error instanceof Error) {
+        console.log('🔍 Tipo de erro:', error.constructor.name);
+        console.log('🔍 Mensagem do erro:', error.message);
+        console.log('🔍 Stack trace:', error.stack);
+        
         if (error.message.includes('duplicate key')) {
           errorMessage = 'Já existe uma integração com este nome';
         } else if (error.message.includes('foreign key')) {
           errorMessage = 'Conta bancária selecionada não existe';
         } else if (error.message.includes('not null')) {
           errorMessage = 'Preencha todos os campos obrigatórios';
+        } else if (error.message.includes('Nome da integração é obrigatório')) {
+          errorMessage = 'Nome da integração é obrigatório';
+        } else if (error.message.includes('Banco é obrigatório')) {
+          errorMessage = 'Banco é obrigatório';
+        } else if (error.message.includes('Tipo de integração é obrigatório')) {
+          errorMessage = 'Tipo de integração é obrigatório';
+        } else if (error.message.includes('Configuração é obrigatória')) {
+          errorMessage = 'Configuração é obrigatória';
+        } else if (error.message.includes('Configuração deve ser um objeto válido')) {
+          errorMessage = 'Configuração deve ser um objeto válido';
         } else {
           errorMessage = `Erro: ${error.message}`;
         }
+      } else {
+        console.log('🔍 Erro não é uma instância de Error:', typeof error, error);
+        errorMessage = `Erro desconhecido: ${String(error)}`;
       }
       
       setMessage(errorMessage);
