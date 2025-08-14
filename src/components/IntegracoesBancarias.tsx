@@ -101,7 +101,11 @@ export default function IntegracoesBancarias() {
           webhookUrl: formData.configuracao?.webhookUrl,
           webhookSecret: formData.configuracao?.webhookSecret,
           formatoArquivo: formData.configuracao?.formatoArquivo,
-          separador: formData.configuracao?.separador
+          separador: formData.configuracao?.separador,
+          tipoCertificado: formData.configuracao?.tipoCertificado,
+          senhaCertificado: formData.configuracao?.senhaCertificado,
+          certificadoArquivo: formData.configuracao?.certificadoArquivo,
+          chavePrivadaArquivo: formData.configuracao?.chavePrivadaArquivo
         }
       };
       
@@ -445,6 +449,192 @@ export default function IntegracoesBancarias() {
                   min="1000"
                   max="120000"
                 />
+              </div>
+            </div>
+
+            {/* Seção específica para certificados digitais */}
+            <div className="mt-6 border-t pt-4">
+              <h5 className="text-sm font-medium text-gray-700 mb-3">Certificado Digital (Obrigatório para Banco Inter)</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo de Certificado
+                  </label>
+                  <select
+                    value={formData.configuracao?.tipoCertificado || 'pfx'}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      configuracao: {
+                        ...formData.configuracao,
+                        tipoCertificado: e.target.value as 'pfx' | 'pem' | 'p12' | 'crt'
+                      }
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="pfx">PFX/P12 (Recomendado)</option>
+                    <option value="pem">PEM</option>
+                    <option value="p12">P12</option>
+                    <option value="crt">CRT</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Senha do Certificado
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.configuracao?.senhaCertificado || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      configuracao: {
+                        ...formData.configuracao,
+                        senhaCertificado: e.target.value
+                      }
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Senha do certificado (se houver)"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Certificado Digital (.pfx, .p12, .pem, .crt)
+                  </label>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                    <div className="space-y-1 text-center">
+                      <svg
+                        className="mx-auto h-12 w-12 text-gray-400"
+                        stroke="currentColor"
+                        fill="none"
+                        viewBox="0 0 48 48"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <div className="flex text-sm text-gray-600">
+                        <label
+                          htmlFor="certificado-upload"
+                          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                        >
+                          <span>Fazer upload do certificado</span>
+                          <input
+                            id="certificado-upload"
+                            name="certificado-upload"
+                            type="file"
+                            accept=".pfx,.p12,.pem,.crt"
+                            className="sr-only"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setFormData({
+                                  ...formData,
+                                  configuracao: {
+                                    ...formData.configuracao,
+                                    certificadoArquivo: file
+                                  }
+                                });
+                              }
+                            }}
+                          />
+                        </label>
+                        <p className="pl-1">ou arraste e solte</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        PFX, P12, PEM ou CRT até 10MB
+                      </p>
+                      {formData.configuracao?.certificadoArquivo && (
+                        <p className="text-sm text-green-600">
+                          ✓ Certificado selecionado: {(formData.configuracao.certificadoArquivo as File).name}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Chave Privada (se separada do certificado)
+                  </label>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                    <div className="space-y-1 text-center">
+                      <svg
+                        className="mx-auto h-12 w-12 text-gray-400"
+                        stroke="currentColor"
+                        fill="none"
+                        viewBox="0 0 48 48"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <div className="flex text-sm text-gray-600">
+                        <label
+                          htmlFor="chave-upload"
+                          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                        >
+                          <span>Fazer upload da chave privada</span>
+                          <input
+                            id="chave-upload"
+                            name="chave-upload"
+                            type="file"
+                            accept=".key,.pem"
+                            className="sr-only"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setFormData({
+                                  ...formData,
+                                  configuracao: {
+                                    ...formData.configuracao,
+                                    chavePrivadaArquivo: file
+                                  }
+                                });
+                              }
+                            }}
+                          />
+                        </label>
+                        <p className="pl-1">ou arraste e solte</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        KEY ou PEM até 10MB (opcional)
+                      </p>
+                      {formData.configuracao?.chavePrivadaArquivo && (
+                        <p className="text-sm text-green-600">
+                          ✓ Chave privada selecionada: {(formData.configuracao.chavePrivadaArquivo as File).name}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Informações sobre certificados */}
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800">
+                      Sobre Certificados Digitais
+                    </h3>
+                    <div className="mt-2 text-sm text-blue-700">
+                      <p>• O Banco Inter utiliza certificados digitais para autenticação segura</p>
+                      <p>• Baixe o certificado no portal do desenvolvedor do Inter</p>
+                      <p>• Formatos aceitos: PFX, P12, PEM, CRT</p>
+                      <p>• Mantenha a senha do certificado em local seguro</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

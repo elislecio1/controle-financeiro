@@ -67,9 +67,35 @@ Este guia explica como configurar e implementar a integração bancária com o *
     "baseUrl": "https://cdp.inter.com.br",
     "timeout": 30000,
     "retryAttempts": 3,
-    "retryDelay": 1000
+    "retryDelay": 1000,
+    "tipoCertificado": "pfx",
+    "senhaCertificado": "senha_do_certificado",
+    "certificadoArquivo": "arquivo_certificado.pfx"
   }
 }
+```
+
+#### 2.3 Certificado Digital (Obrigatório)
+O Banco Inter utiliza **certificados digitais** para autenticação segura da API:
+
+**Formatos Aceitos:**
+- ✅ **PFX/P12** (Recomendado)
+- ✅ **PEM** 
+- ✅ **CRT**
+
+**Como Obter o Certificado:**
+1. Acesse o [Portal do Desenvolvedor Inter](https://developers.inter.co/docs/category/introdução)
+2. Faça login no Internet Banking
+3. Acesse "Soluções para sua empresa"
+4. Clique em "Nova Integração"
+5. Baixe o certificado digital fornecido
+6. Anote a senha do certificado (se houver)
+
+**Configuração no Sistema:**
+1. **Tipo de Certificado**: Selecione o formato (PFX/P12 recomendado)
+2. **Senha**: Digite a senha do certificado (se aplicável)
+3. **Upload**: Faça upload do arquivo do certificado
+4. **Chave Privada**: Upload separado (se necessário)
 ```
 
 #### 2.3 Endpoints Principais

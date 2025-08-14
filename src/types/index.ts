@@ -256,6 +256,12 @@ export interface IntegracaoConfig {
   certificadoDigital?: string
   chavePrivada?: string
   
+  // Para certificados digitais (Banco Inter e outros)
+  certificadoArquivo?: File | string // File para upload, string para armazenamento
+  chavePrivadaArquivo?: File | string
+  senhaCertificado?: string
+  tipoCertificado?: 'pfx' | 'pem' | 'p12' | 'crt'
+  
   // Para Webhooks
   webhookUrl?: string
   webhookSecret?: string
