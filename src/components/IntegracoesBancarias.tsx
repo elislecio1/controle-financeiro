@@ -86,11 +86,30 @@ export default function IntegracoesBancarias() {
     try {
       setLoading(true);
       
+      // Garantir que os campos obrigatórios estejam preenchidos
+      const integracaoData = {
+        ...formData,
+        configuracao: {
+          nomeInstituicao: formData.configuracao?.nomeInstituicao || '',
+          ambiente: (formData.configuracao?.ambiente || 'homologacao') as 'producao' | 'homologacao' | 'desenvolvimento',
+          apiKey: formData.configuracao?.apiKey,
+          apiSecret: formData.configuracao?.apiSecret,
+          clientId: formData.configuracao?.clientId,
+          clientSecret: formData.configuracao?.clientSecret,
+          baseUrl: formData.configuracao?.baseUrl,
+          timeout: formData.configuracao?.timeout,
+          webhookUrl: formData.configuracao?.webhookUrl,
+          webhookSecret: formData.configuracao?.webhookSecret,
+          formatoArquivo: formData.configuracao?.formatoArquivo,
+          separador: formData.configuracao?.separador
+        }
+      };
+      
       if (editingId) {
-        await integracoesService.atualizarIntegracao(editingId, formData);
+        await integracoesService.atualizarIntegracao(editingId, integracaoData);
         setMessage('Integração atualizada com sucesso!');
       } else {
-        await integracoesService.salvarIntegracao(formData);
+        await integracoesService.salvarIntegracao(integracaoData);
         setMessage('Integração criada com sucesso!');
       }
       
