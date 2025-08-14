@@ -36,6 +36,7 @@ export default function IntegracoesBancarias() {
   const [bancos, setBancos] = useState<BancoInfo[]>([]);
   const [logs, setLogs] = useState<LogSincronizacao[]>([]);
   const [transacoesImportadas, setTransacoesImportadas] = useState<TransacaoImportada[]>([]);
+  const [contasBancarias, setContasBancarias] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -56,7 +57,8 @@ export default function IntegracoesBancarias() {
       chavePrivadaArquivo: undefined
     },
     frequenciaSincronizacao: 24,
-    ativo: false
+    ativo: false,
+    contaBancariaId: undefined
   });
 
   useEffect(() => {
@@ -66,20 +68,27 @@ export default function IntegracoesBancarias() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [integracoesData, bancosData, logsData, transacoesData] = await Promise.all([
+      
+      // Importar o serviço do Supabase para carregar contas bancárias
+      const { supabaseService } = await import('../services/supabase');
+      
+      const [integracoesData, bancosData, logsData, transacoesData, contasData] = await Promise.all([
         integracoesService.getIntegracoes(),
         Promise.resolve(integracoesService.getBancosBrasileiros()),
         integracoesService.getLogsSincronizacao(),
-        integracoesService.getTransacoesImportadas()
+        integracoesService.getTransacoesImportadas(),
+        supabaseService.getContas()
       ]);
 
       console.log('Bancos carregados:', bancosData); // Debug
-      console.log('Banco Inter encontrado:', bancosData.find(b => b.codigo === '077')); // Debug
+      console.log('Banco Inter encontrado:', bancosData.find((b: any) => b.codigo === '077')); // Debug
+      console.log('Contas bancárias carregadas:', contasData); // Debug
 
       setIntegracoes(integracoesData);
       setBancos(bancosData);
       setLogs(logsData);
       setTransacoesImportadas(transacoesData);
+      setContasBancarias(contasData);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       setMessage('Erro ao carregar dados');
@@ -130,7 +139,22 @@ export default function IntegracoesBancarias() {
       loadData();
     } catch (error) {
       console.error('Erro ao salvar integração:', error);
-      setMessage('Erro ao salvar integração');
+      
+      // Mensagem de erro mais específica
+      let errorMessage = 'Erro ao salvar integração';
+      if (error instanceof Error) {
+        if (error.message.includes('duplicate key')) {
+          errorMessage = 'Já existe uma integração com este nome';
+        } else if (error.message.includes('foreign key')) {
+          errorMessage = 'Conta bancária selecionada não existe';
+        } else if (error.message.includes('not null')) {
+          errorMessage = 'Preencha todos os campos obrigatórios';
+        } else {
+          errorMessage = `Erro: ${error.message}`;
+        }
+      }
+      
+      setMessage(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -144,7 +168,8 @@ export default function IntegracoesBancarias() {
       status: integracao.status,
       configuracao: integracao.configuracao,
       frequenciaSincronizacao: integracao.frequenciaSincronizacao,
-      ativo: integracao.ativo
+      ativo: integracao.ativo,
+      contaBancariaId: integracao.contaBancariaId
     });
     setEditingId(integracao.id);
     setShowForm(true);
@@ -219,7 +244,8 @@ export default function IntegracoesBancarias() {
         chavePrivadaArquivo: undefined
       },
       frequenciaSincronizacao: 24,
-      ativo: false
+      ativo: false,
+      contaBancariaId: undefined
     });
   };
 
@@ -380,6 +406,31 @@ export default function IntegracoesBancarias() {
             <label htmlFor="ativo" className="ml-2 block text-sm text-gray-700">
               Integração Ativa
             </label>
+          </div>
+
+          {/* Conta Bancária */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Vincular à Conta Bancária
+            </label>
+            <select
+              value={formData.contaBancariaId || ''}
+              onChange={(e) => setFormData({
+                ...formData,
+                contaBancariaId: e.target.value || undefined
+              })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Selecione uma conta (opcional)</option>
+              {contasBancarias.map(conta => (
+                <option key={conta.id} value={conta.id}>
+                  {conta.nome} - {conta.banco}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Vincule esta integração a uma conta bancária cadastrada no sistema
+            </p>
           </div>
         </div>
 
