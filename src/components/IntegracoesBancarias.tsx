@@ -22,6 +22,7 @@ import {
   Zap
 } from 'lucide-react';
 import { integracoesService } from '../services/integracoes';
+import { ConciliacaoAvancada } from './ConciliacaoAvancada';
 import { 
   IntegracaoBancaria, 
   IntegracaoConfig, 
