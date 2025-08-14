@@ -42,7 +42,7 @@ export default function IntegracoesBancarias() {
   const [message, setMessage] = useState('');
 
   // Estado do formulário
-  const [formData, setFormData] = useState<Partial<IntegracaoBancaria>>({
+  const [formData, setFormData] = useState<Partial<IntegracaoBancaria> & { configuracao: IntegracaoConfig }>({
     nome: '',
     banco: '',
     tipoIntegracao: 'api_oficial' as const,
