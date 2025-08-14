@@ -19,6 +19,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const toSnakeCase = (obj: any): any => {
   const result: any = {};
   Object.keys(obj).forEach(key => {
+    // Ignorar valores undefined
+    if (obj[key] === undefined) return;
+    
     const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
     result[snakeKey] = obj[key];
   });
@@ -187,6 +190,19 @@ export class IntegracoesServiceImpl implements IntegracoesService {
 
   async salvarIntegracao(integracao: Partial<IntegracaoBancaria>): Promise<IntegracaoBancaria> {
     try {
+      console.log('🔍 Dados da integração recebidos:', integracao);
+      
+      // Validar campos obrigatórios
+      if (!integracao.nome) throw new Error('Nome da integração é obrigatório');
+      if (!integracao.banco) throw new Error('Banco é obrigatório');
+      if (!integracao.tipoIntegracao) throw new Error('Tipo de integração é obrigatório');
+      if (!integracao.configuracao) throw new Error('Configuração é obrigatória');
+      
+      // Garantir que configuracao seja um objeto válido
+      if (typeof integracao.configuracao !== 'object' || integracao.configuracao === null) {
+        throw new Error('Configuração deve ser um objeto válido');
+      }
+      
       const integracaoData = {
         ...toSnakeCase(integracao),
         id: integracao.id || crypto.randomUUID(),
@@ -194,16 +210,23 @@ export class IntegracoesServiceImpl implements IntegracoesService {
         updated_at: new Date().toISOString()
       };
 
+      console.log('🔍 Dados convertidos para snake_case:', integracaoData);
+
       const { data, error } = await supabase
         .from('integracoes_bancarias')
         .insert(integracaoData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro do Supabase:', error);
+        throw error;
+      }
+      
+      console.log('✅ Integração salva com sucesso:', data);
       return toCamelCase(data);
     } catch (error) {
-      console.error('Erro ao salvar integração:', error);
+      console.error('❌ Erro ao salvar integração:', error);
       throw error;
     }
   }
