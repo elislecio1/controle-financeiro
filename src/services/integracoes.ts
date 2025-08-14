@@ -427,59 +427,51 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       const config = integracao.configuracao;
       const startTime = Date.now();
       
-      console.log('🔄 Iniciando sincronização com Banco Inter...');
+      console.log('🔄 Iniciando sincronização REAL com Banco Inter...');
       
-      // Simular chamadas para os endpoints do Inter
-      const resultados = await Promise.all([
-        this.consultarExtratoInter(config),
-        this.consultarSaldosInter(config),
-        this.consultarPagamentosInter(config)
-      ]);
+      // Buscar dados reais da API do Inter
+      const transacoesReais = await this.buscarTransacoesReaisInter(config);
       
-      const totalImportadas = resultados.reduce((sum, r) => sum + r.transacoesImportadas, 0);
-      const totalAtualizadas = resultados.reduce((sum, r) => sum + r.transacoesAtualizadas, 0);
-      const totalErros = resultados.reduce((sum, r) => sum + r.transacoesErro, 0);
-      
-      // Salvar transações importadas no banco
-      await this.salvarTransacoesImportadas(integracao.id, totalImportadas);
+      // Salvar transações reais no banco
+      await this.salvarTransacoesReais(integracao.id, transacoesReais);
       
       // Registrar log de sincronização
       await this.registrarLogSincronizacao({
         integracaoId: integracao.id,
         tipoOperacao: 'importacao',
         status: 'sucesso',
-        mensagem: `Sincronização com Banco Inter: ${totalImportadas} transações importadas, ${totalAtualizadas} atualizadas`,
-        dadosProcessados: totalImportadas + totalAtualizadas,
-        transacoesImportadas: totalImportadas,
-        transacoesAtualizadas: totalAtualizadas,
-        transacoesErro: totalErros,
+        mensagem: `Sincronização REAL com Banco Inter: ${transacoesReais.length} transações importadas`,
+        dadosProcessados: transacoesReais.length,
+        transacoesImportadas: transacoesReais.length,
+        transacoesAtualizadas: 0,
+        transacoesErro: 0,
         tempoExecucaoMs: Date.now() - startTime
       });
       
-      console.log(`✅ Sincronização concluída: ${totalImportadas} importadas, ${totalAtualizadas} atualizadas`);
+      console.log(`✅ Sincronização REAL concluída: ${transacoesReais.length} transações reais importadas`);
       
       return {
         sucesso: true,
-        mensagem: 'Sincronização com Banco Inter realizada com sucesso',
-        transacoesImportadas: totalImportadas,
-        transacoesAtualizadas: totalAtualizadas,
-        transacoesErro: totalErros,
+        mensagem: 'Sincronização REAL com Banco Inter realizada com sucesso',
+        transacoesImportadas: transacoesReais.length,
+        transacoesAtualizadas: 0,
+        transacoesErro: 0,
         tempoExecucao: Date.now() - startTime,
         detalhes: {
           banco: 'Inter',
           ambiente: config.ambiente,
-          endpoints: config.endpoints
+          transacoesReais: true
         }
       };
     } catch (error) {
-      console.error('❌ Erro na sincronização com Inter:', error);
+      console.error('❌ Erro na sincronização REAL com Inter:', error);
       
       // Registrar log de erro
       await this.registrarLogSincronizacao({
         integracaoId: integracao.id,
         tipoOperacao: 'erro',
         status: 'erro',
-        mensagem: `Erro na sincronização: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+        mensagem: `Erro na sincronização REAL: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         dadosProcessados: 0,
         transacoesImportadas: 0,
         transacoesAtualizadas: 0,
@@ -488,7 +480,7 @@ export class IntegracoesServiceImpl implements IntegracoesService {
         detalhesErro: { error: error instanceof Error ? error.message : String(error) }
       });
       
-      throw new Error(`Erro na sincronização com Inter: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      throw new Error(`Erro na sincronização REAL com Inter: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
   }
 
@@ -829,6 +821,189 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       console.log(`✅ ${quantidade} transações importadas salvas com sucesso!`);
     } catch (error) {
       console.error('❌ Erro ao salvar transações importadas:', error);
+      throw error;
+    }
+  }
+
+  // Método para buscar transações reais da API do Inter
+  private async buscarTransacoesReaisInter(config: IntegracaoConfig): Promise<any[]> {
+    try {
+      console.log('🔍 Buscando transações REAIS da API do Inter...');
+      
+      // Verificar se temos as credenciais necessárias
+      if (!config.clientId || !config.clientSecret) {
+        throw new Error('Credenciais do Banco Inter não configuradas (ClientID e ClientSecret)');
+      }
+
+      // URL base da API do Inter
+      const baseUrl = config.ambiente === 'producao' 
+        ? 'https://cdp.inter.com.br' 
+        : 'https://cdp.inter.com.br'; // Mesma URL para ambos os ambientes
+
+      // 1. Obter token de acesso
+      const token = await this.obterTokenInter(config, baseUrl);
+      
+      // 2. Buscar extrato bancário
+      const extrato = await this.buscarExtratoInter(config, baseUrl, token);
+      
+      // 3. Converter para formato do sistema
+      const transacoes = this.converterTransacoesInter(extrato);
+      
+      console.log(`📊 Encontradas ${transacoes.length} transações reais do Inter`);
+      return transacoes;
+      
+    } catch (error) {
+      console.error('❌ Erro ao buscar transações reais:', error);
+      
+      // Se não conseguir conectar com a API real, retornar array vazio
+      // ou lançar erro para o usuário saber que precisa configurar
+      throw new Error(`Erro ao conectar com API do Inter: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    }
+  }
+
+  // Obter token de acesso do Inter
+  private async obterTokenInter(config: IntegracaoConfig, baseUrl: string): Promise<string> {
+    try {
+      console.log('🔑 Obtendo token de acesso do Inter...');
+      
+      // Simular obtenção de token (implementar com certificado real)
+      const response = await fetch(`${baseUrl}/oauth/v2/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'client_credentials',
+          client_id: config.clientId || '',
+          client_secret: config.clientSecret || '',
+          scope: 'extrato.read'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao obter token: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.access_token;
+      
+    } catch (error) {
+      console.error('❌ Erro ao obter token:', error);
+      throw error;
+    }
+  }
+
+  // Buscar extrato bancário do Inter
+  private async buscarExtratoInter(config: IntegracaoConfig, baseUrl: string, token: string): Promise<any[]> {
+    try {
+      console.log('📋 Buscando extrato bancário do Inter...');
+      
+      // Data de início (últimos 30 dias)
+      const dataInicio = new Date();
+      dataInicio.setDate(dataInicio.getDate() - 30);
+      
+      const response = await fetch(`${baseUrl}/banking/v2/extrato`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar extrato: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.transacoes || [];
+      
+    } catch (error) {
+      console.error('❌ Erro ao buscar extrato:', error);
+      throw error;
+    }
+  }
+
+  // Converter transações do formato Inter para formato do sistema
+  private converterTransacoesInter(extratoInter: any[]): any[] {
+    return extratoInter.map(transacao => ({
+      id: crypto.randomUUID(),
+      integracao_id: '', // Será preenchido depois
+      id_externo: transacao.id || transacao.transactionId,
+      data_transacao: this.formatarDataInter(transacao.dataTransacao || transacao.data),
+      valor: parseFloat(transacao.valor || transacao.amount),
+      descricao: transacao.descricao || transacao.description || transacao.tipoTransacao,
+      tipo: this.mapearTipoInter(transacao.tipo || transacao.type),
+      categoria_banco: transacao.categoria || transacao.category,
+      conta_origem: transacao.contaOrigem || 'Conta Corrente Inter',
+      conta_destino: transacao.contaDestino || '',
+      hash_transacao: transacao.hash || crypto.randomUUID(),
+      status_conciliacao: 'pendente',
+      dados_originais: transacao, // Dados completos da API
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }));
+  }
+
+  // Formatar data do Inter (YYYY-MM-DD para DD/MM/YYYY)
+  private formatarDataInter(dataInter: string): string {
+    if (!dataInter) return new Date().toLocaleDateString('pt-BR');
+    
+    // Se já está no formato brasileiro, retorna como está
+    if (dataInter.includes('/')) return dataInter;
+    
+    // Se está no formato ISO, converte
+    if (dataInter.includes('-')) {
+      const data = new Date(dataInter);
+      return data.toLocaleDateString('pt-BR');
+    }
+    
+    return new Date().toLocaleDateString('pt-BR');
+  }
+
+  // Mapear tipo de transação do Inter
+  private mapearTipoInter(tipoInter: string): 'credito' | 'debito' | 'transferencia' {
+    const tipo = tipoInter?.toLowerCase() || '';
+    
+    if (tipo.includes('credito') || tipo.includes('credit') || tipo.includes('receita')) {
+      return 'credito';
+    }
+    
+    if (tipo.includes('transferencia') || tipo.includes('transfer')) {
+      return 'transferencia';
+    }
+    
+    return 'debito'; // Padrão
+  }
+
+  // Método para salvar transações reais no banco
+  private async salvarTransacoesReais(integracaoId: string, transacoes: any[]): Promise<void> {
+    try {
+      console.log(`💾 Salvando ${transacoes.length} transações REAIS...`);
+      
+      if (transacoes.length === 0) {
+        console.log('ℹ️ Nenhuma transação real para salvar');
+        return;
+      }
+      
+      // Adicionar integracao_id a todas as transações
+      const transacoesComIntegracao = transacoes.map(t => ({
+        ...t,
+        integracao_id: integracaoId
+      }));
+      
+      // Inserir transações em lotes
+      const { error } = await supabase
+        .from('transacoes_importadas')
+        .insert(transacoesComIntegracao);
+      
+      if (error) {
+        console.error('❌ Erro ao salvar transações reais:', error);
+        throw error;
+      }
+      
+      console.log(`✅ ${transacoes.length} transações REAIS salvas com sucesso!`);
+    } catch (error) {
+      console.error('❌ Erro ao salvar transações reais:', error);
       throw error;
     }
   }
