@@ -704,8 +704,18 @@ function App() {
     const hojeStr = hoje.toLocaleDateString('pt-BR')
     const vencimentoStr = dataVencimento.toLocaleDateString('pt-BR')
     
-    return vencimentoStr === hojeStr
+    // Debug: Log para verificar as datas
+    console.log(`🔍 Verificando vencimento: ${item.descricao} - Vencimento: ${item.vencimento} (${vencimentoStr}) vs Hoje: ${hojeStr}`)
+    
+    const isVencendoHoje = vencimentoStr === hojeStr
+    if (isVencendoHoje) {
+      console.log(`✅ Encontrado vencendo hoje: ${item.descricao} - R$ ${Math.abs(item.valor)}`)
+    }
+    
+    return isVencendoHoje
   }).reduce((sum, item) => sum + Math.abs(item.valor), 0)
+  
+  console.log(`💰 Total vencendo hoje: R$ ${totalVencendoHoje}`)
 
   // Dados para gráficos
   const chartData = filteredData.reduce((acc: any[], item) => {
