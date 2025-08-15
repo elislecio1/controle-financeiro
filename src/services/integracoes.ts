@@ -871,20 +871,6 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       console.log('🔑 Obtendo token de acesso do Inter via API oficial...');
       console.log('🔗 Tentando conectar com:', `${baseUrl}/oauth/v2/token`);
       
-      // Verificar se estamos em desenvolvimento e simular resposta
-      if (baseUrl.includes('api.inter.com.br') || baseUrl.includes('api-hml.inter.com.br')) {
-        console.log('⚠️  Simulando resposta da API do Inter (desenvolvimento)...');
-        
-        // Simular delay de rede
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Simular token de acesso
-        const mockToken = `inter_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        console.log('✅ Token simulado obtido com sucesso');
-        return mockToken;
-      }
-      
-      // Implementação real para produção
       const response = await fetch(`${baseUrl}/oauth/v2/token`, {
         method: 'POST',
         headers: {
@@ -908,15 +894,6 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       
     } catch (error) {
       console.error('❌ Erro ao obter token via API oficial:', error);
-      
-      // Se for erro de rede, simular para desenvolvimento
-      if (error instanceof Error && (error.message.includes('Failed to fetch') || error.message.includes('ERR_NAME_NOT_RESOLVED'))) {
-        console.log('🔄 Erro de rede detectado - simulando resposta para desenvolvimento...');
-        const mockToken = `inter_token_dev_${Date.now()}`;
-        console.log('✅ Token simulado obtido (modo desenvolvimento)');
-        return mockToken;
-      }
-      
       throw error;
     }
   }
@@ -959,56 +936,6 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       console.log('📋 Buscando extrato bancário do Inter...');
       console.log('🔗 Tentando conectar com:', `${baseUrl}/banking/v2/extrato`);
       
-      // Verificar se estamos em desenvolvimento e simular resposta
-      if (baseUrl.includes('api.inter.com.br') || baseUrl.includes('api-hml.inter.com.br')) {
-        console.log('⚠️  Simulando extrato do Inter (desenvolvimento)...');
-        
-        // Simular delay de rede
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Gerar transações simuladas realistas
-        const transacoes = [];
-        const hoje = new Date();
-        
-        for (let i = 0; i < 15; i++) {
-          const data = new Date(hoje);
-          data.setDate(data.getDate() - Math.floor(Math.random() * 30));
-          
-          const tipos = ['PIX', 'TED', 'DOC', 'Boleto', 'Cartão de Crédito'];
-          const descricoes = [
-            'Pagamento PIX recebido',
-            'Transferência enviada',
-            'Pagamento de boleto',
-            'Compra no cartão',
-            'Depósito em dinheiro',
-            'Saque no caixa eletrônico',
-            'Pagamento de conta',
-            'Recebimento de cliente',
-            'Pagamento a fornecedor'
-          ];
-          
-          const valor = Math.random() > 0.5 ? 
-            (Math.random() * 5000 + 100) : 
-            -(Math.random() * 3000 + 50);
-          
-          transacoes.push({
-            id: `inter_${Date.now()}_${i}`,
-            dataTransacao: data.toISOString().split('T')[0],
-            descricao: descricoes[Math.floor(Math.random() * descricoes.length)],
-            valor: valor,
-            tipo: tipos[Math.floor(Math.random() * tipos.length)],
-            status: Math.random() > 0.1 ? 'confirmado' : 'pendente',
-            categoria: 'Transação Inter',
-            contaOrigem: 'Conta Corrente Inter',
-            hash: `hash_${Date.now()}_${i}`
-          });
-        }
-        
-        console.log(`✅ Extrato simulado obtido: ${transacoes.length} transações`);
-        return transacoes;
-      }
-      
-      // Implementação real para produção
       const dataInicio = new Date();
       dataInicio.setDate(dataInicio.getDate() - 30);
       
@@ -1025,34 +952,11 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       }
 
       const data = await response.json();
+      console.log('✅ Extrato real obtido com sucesso');
       return data.transacoes || [];
       
     } catch (error) {
       console.error('❌ Erro ao buscar extrato:', error);
-      
-      // Se for erro de rede, simular para desenvolvimento
-      if (error instanceof Error && (error.message.includes('Failed to fetch') || error.message.includes('ERR_NAME_NOT_RESOLVED'))) {
-        console.log('🔄 Erro de rede detectado - simulando extrato para desenvolvimento...');
-        
-        // Retornar transações simuladas
-        const transacoes = [];
-        for (let i = 0; i < 10; i++) {
-          transacoes.push({
-            id: `inter_dev_${Date.now()}_${i}`,
-            dataTransacao: new Date().toISOString().split('T')[0],
-            descricao: `Transação simulada ${i + 1}`,
-            valor: Math.random() * 1000 + 50,
-            tipo: 'PIX',
-            status: 'confirmado',
-            categoria: 'Simulado',
-            contaOrigem: 'Conta Corrente Inter'
-          });
-        }
-        
-        console.log(`✅ Extrato simulado obtido (modo desenvolvimento): ${transacoes.length} transações`);
-        return transacoes;
-      }
-      
       throw error;
     }
   }
