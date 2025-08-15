@@ -1284,8 +1284,22 @@ class SupabaseServiceImpl implements SupabaseService {
         return mockContas
       }
 
-      console.log('✅ Contas bancárias carregadas:', data?.length || 0, 'registros')
-      return data || mockContas
+             console.log('✅ Contas bancárias carregadas:', data?.length || 0, 'registros')
+       
+       // Converter dados unknown para ContaBancaria[]
+       const contasMapeadas: ContaBancaria[] = (data || []).map(item => ({
+         id: String(item.id),
+         nome: String(item.nome),
+         tipo: String(item.tipo) as 'conta_corrente' | 'poupanca' | 'investimento' | 'cartao_credito' | 'cartao_debito',
+         banco: String(item.banco),
+         agencia: String(item.agencia),
+         conta: String(item.conta),
+         saldo: Number(item.saldo),
+         limite: Number(item.limite),
+         ativo: Boolean(item.ativo)
+       }))
+       
+       return contasMapeadas.length > 0 ? contasMapeadas : mockContas
     } catch (error) {
       console.error('❌ Erro ao buscar contas bancárias:', error)
       return mockContas
