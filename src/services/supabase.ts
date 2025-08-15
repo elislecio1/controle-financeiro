@@ -794,10 +794,22 @@ class SupabaseServiceImpl implements SupabaseService {
   private convertToISODate(dateStr: string): string {
     if (!dateStr) return ''
     
+    // Se já está no formato brasileiro, retorna como está
+    if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+      return dateStr
+    }
+    
+    // Se está no formato ISO, converte para brasileiro
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const data = new Date(dateStr)
+      return data.toLocaleDateString('pt-BR')
+    }
+    
+    // Tenta converter usando parsearDataBrasileira
     const data = parsearDataBrasileira(dateStr)
     if (!data) return dateStr
     
-    return data.toISOString().split('T')[0]
+    return data.toLocaleDateString('pt-BR')
   }
 
   private async checkSimilarTransaction(transaction: NewTransaction): Promise<SheetData | null> {

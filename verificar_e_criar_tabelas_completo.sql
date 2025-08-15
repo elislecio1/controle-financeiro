@@ -22,7 +22,7 @@ BEGIN
     IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'transactions') THEN
         CREATE TABLE transactions (
             id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-            data DATE NOT NULL,
+            data VARCHAR(10) NOT NULL, -- DD/MM/YYYY
             valor DECIMAL(15,2) NOT NULL,
             descricao TEXT NOT NULL,
             conta VARCHAR(100),
@@ -36,12 +36,12 @@ BEGIN
             forma VARCHAR(50),
             numero_documento VARCHAR(100),
             observacoes TEXT,
-            data_competencia DATE,
+            data_competencia VARCHAR(10), -- DD/MM/YYYY
             tags JSONB,
             tipo VARCHAR(20) DEFAULT 'despesa',
-            vencimento DATE,
+            vencimento VARCHAR(10), -- DD/MM/YYYY
             situacao VARCHAR(50),
-            data_pagamento DATE,
+            data_pagamento VARCHAR(10), -- DD/MM/YYYY
             parcela VARCHAR(10) DEFAULT '1',
             empresa VARCHAR(200),
             status VARCHAR(20) DEFAULT 'pendente',
