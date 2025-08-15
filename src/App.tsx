@@ -72,6 +72,23 @@ function App() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [transactionToEdit, setTransactionToEdit] = useState<SheetData | null>(null)
 
+  // Função para formatar data automaticamente
+  const formatDateInput = (value: string): string => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '')
+    
+    // Aplica a máscara DD/MM/AAAA
+    if (numbers.length <= 2) {
+      return numbers
+    } else if (numbers.length <= 4) {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2)}`
+    } else if (numbers.length <= 8) {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4)}`
+    } else {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`
+    }
+  }
+
   const loadData = async () => {
     try {
       setLoading(true)
@@ -146,6 +163,11 @@ function App() {
       resetPagination()
       // Mostra feedback positivo
       setConnectionStatus({ success: true, message: 'Dados carregados com sucesso!' })
+      
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => {
+        setConnectionStatus({})
+      }, 5000)
     } catch (error: any) {
       console.error('❌ Erro ao carregar dados:', error)
       
@@ -805,12 +827,20 @@ function App() {
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {/* Status Message */}
         {connectionStatus.message && (
-          <div className={`mb-4 p-4 rounded-md ${
+          <div className={`mb-4 p-4 rounded-md relative ${
             connectionStatus.success 
               ? 'bg-green-50 text-green-800 border border-green-200' 
               : 'bg-red-50 text-red-800 border border-red-200'
           }`}>
-            {connectionStatus.message}
+            <div className="flex items-center justify-between">
+              <span>{connectionStatus.message}</span>
+              <button
+                onClick={() => setConnectionStatus({})}
+                className="ml-4 text-gray-400 hover:text-gray-600 focus:outline-none"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         )}
 
@@ -918,7 +948,34 @@ function App() {
               ))}
             </div>
 
-            {/* Period Filters */}
+            {/* Conta Filter - Primeiro */}
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Filtro por Conta Bancária</h3>
+              
+              <div className="flex flex-wrap gap-4">
+                {[
+                  { value: 'todas', label: 'Todas as Contas' },
+                  ...contas.map(conta => ({
+                    value: conta.nome,
+                    label: `${conta.nome} - ${conta.banco}`
+                  }))
+                ].map((conta) => (
+                  <button
+                    key={conta.value}
+                    onClick={() => applyContaFilter(conta.value)}
+                    className={`px-4 py-2 rounded-md text-sm font-medium ${
+                      contaFilter === conta.value
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {conta.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Period Filters - Segundo */}
             <div className="bg-white shadow rounded-lg p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Filtros de Período</h3>
               
@@ -960,7 +1017,11 @@ function App() {
                         type="text"
                         placeholder="DD/MM/AAAA"
                         value={customStartDate}
-                        onChange={(e) => setCustomStartDate(e.target.value)}
+                        onChange={(e) => {
+                          const formatted = formatDateInput(e.target.value)
+                          setCustomStartDate(formatted)
+                        }}
+                        onFocus={(e) => e.target.select()}
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -970,7 +1031,11 @@ function App() {
                         type="text"
                         placeholder="DD/MM/AAAA"
                         value={customEndDate}
-                        onChange={(e) => setCustomEndDate(e.target.value)}
+                        onChange={(e) => {
+                          const formatted = formatDateInput(e.target.value)
+                          setCustomEndDate(formatted)
+                        }}
+                        onFocus={(e) => e.target.select()}
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -983,33 +1048,6 @@ function App() {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Conta Filter */}
-            <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Filtro por Conta Bancária</h3>
-              
-              <div className="flex flex-wrap gap-4">
-                {[
-                  { value: 'todas', label: 'Todas as Contas' },
-                  ...contas.map(conta => ({
-                    value: conta.nome,
-                    label: `${conta.nome} - ${conta.banco}`
-                  }))
-                ].map((conta) => (
-                  <button
-                    key={conta.value}
-                    onClick={() => applyContaFilter(conta.value)}
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${
-                      contaFilter === conta.value
-                        ? 'bg-green-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {conta.label}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Charts */}
