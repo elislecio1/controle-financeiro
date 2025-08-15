@@ -427,10 +427,16 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       const config = integracao.configuracao;
       const startTime = Date.now();
       
-      // Verificar se as credenciais estão configuradas
-      if (!config.clientId || !config.clientSecret) {
-        console.log('⚠️ Credenciais não configuradas - fazendo sincronização simulada');
-        return await this.sincronizarInterSimulado(integracao);
+      console.log('🔍 Verificando credenciais configuradas...');
+      console.log('🔑 API Key configurada:', !!config.apiKey);
+      console.log('🔑 API Secret configurada:', !!config.apiSecret);
+      console.log('🔑 Client ID configurado:', !!config.clientId);
+      console.log('🔑 Client Secret configurado:', !!config.clientSecret);
+      
+      // Verificar se as credenciais estão configuradas (API oficial usa apiKey/apiSecret)
+      if (!config.apiKey || !config.apiSecret) {
+        console.error('❌ Credenciais da API não configuradas (API Key e API Secret são obrigatórias)');
+        throw new Error('Credenciais da API não configuradas (API Key e API Secret são obrigatórias)');
       }
       
       console.log('🔄 Iniciando sincronização REAL com Banco Inter...');
@@ -471,78 +477,11 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       };
     } catch (error) {
       console.error('❌ Erro na sincronização REAL com Inter:', error);
-      
-      // Se der erro na sincronização real, tentar sincronização simulada
-      console.log('🔄 Tentando sincronização simulada como fallback...');
-      return await this.sincronizarInterSimulado(integracao);
+      throw error; // Não fazer fallback para simulação
     }
   }
 
-  // Sincronização simulada para o Banco Inter (quando credenciais não estão configuradas)
-  private async sincronizarInterSimulado(integracao: IntegracaoBancaria): Promise<ResultadoSincronizacao> {
-    try {
-      const startTime = Date.now();
-      
-      console.log('🎭 Iniciando sincronização SIMULADA com Banco Inter...');
-      
-      // Simular delay de sincronização
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Gerar transações simuladas
-      const transacoesSimuladas = this.gerarTransacoesSimuladasInter();
-      
-      // Salvar transações simuladas no banco
-      await this.salvarTransacoesSimuladas(integracao.id, transacoesSimuladas);
-      
-      // Registrar log de sincronização
-      await this.registrarLogSincronizacao({
-        integracaoId: integracao.id,
-        tipoOperacao: 'importacao',
-        status: 'sucesso',
-        mensagem: `Sincronização SIMULADA com Banco Inter: ${transacoesSimuladas.length} transações importadas (credenciais não configuradas)`,
-        dadosProcessados: transacoesSimuladas.length,
-        transacoesImportadas: transacoesSimuladas.length,
-        transacoesAtualizadas: 0,
-        transacoesErro: 0,
-        tempoExecucaoMs: Date.now() - startTime
-      });
-      
-      console.log(`✅ Sincronização SIMULADA concluída: ${transacoesSimuladas.length} transações simuladas importadas`);
-      
-      return {
-        sucesso: true,
-        mensagem: 'Sincronização SIMULADA com Banco Inter realizada com sucesso (configure as credenciais para sincronização real)',
-        transacoesImportadas: transacoesSimuladas.length,
-        transacoesAtualizadas: 0,
-        transacoesErro: 0,
-        tempoExecucao: Date.now() - startTime,
-        detalhes: {
-          banco: 'Inter',
-          ambiente: integracao.configuracao.ambiente,
-          transacoesReais: false,
-          simulacao: true
-        }
-      };
-    } catch (error) {
-      console.error('❌ Erro na sincronização simulada:', error);
-      
-      // Registrar log de erro
-      await this.registrarLogSincronizacao({
-        integracaoId: integracao.id,
-        tipoOperacao: 'erro',
-        status: 'erro',
-        mensagem: `Erro na sincronização simulada: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-        dadosProcessados: 0,
-        transacoesImportadas: 0,
-        transacoesAtualizadas: 0,
-        transacoesErro: 1,
-        tempoExecucaoMs: 0,
-        detalhesErro: { error: error instanceof Error ? error.message : String(error) }
-      });
-      
-      throw new Error(`Erro na sincronização REAL com Inter: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-    }
-  }
+
 
   // Simulação dos endpoints específicos do Inter
   private async consultarExtratoInter(config: IntegracaoConfig): Promise<{ transacoesImportadas: number; transacoesAtualizadas: number; transacoesErro: number }> {
@@ -885,85 +824,31 @@ export class IntegracoesServiceImpl implements IntegracoesService {
     }
   }
 
-  // Gerar transações simuladas para o Banco Inter
-  private gerarTransacoesSimuladasInter(): any[] {
-    const transacoes = [];
-    const hoje = new Date();
-    
-    // Gerar 15-25 transações simuladas
-    const numTransacoes = Math.floor(Math.random() * 11) + 15;
-    
-    for (let i = 0; i < numTransacoes; i++) {
-      const data = new Date(hoje);
-      data.setDate(data.getDate() - Math.floor(Math.random() * 30)); // Últimos 30 dias
-      
-      const tipos = ['PIX', 'TED', 'DOC', 'Boleto', 'Cartão de Crédito', 'Transferência'];
-      const descricoes = [
-        'Pagamento PIX recebido',
-        'Transferência enviada',
-        'Pagamento de boleto',
-        'Compra no cartão',
-        'Depósito em dinheiro',
-        'Saque no caixa eletrônico',
-        'Pagamento de conta',
-        'Recebimento de cliente',
-        'Pagamento a fornecedor',
-        'Transferência entre contas'
-      ];
-      
-      const valor = Math.random() > 0.5 ? 
-        (Math.random() * 5000 + 100) : 
-        -(Math.random() * 3000 + 50); // 50% chance de ser negativo
-      
-      transacoes.push({
-        id: `sim_${Date.now()}_${i}`,
-        data: data.toISOString().split('T')[0],
-        descricao: descricoes[Math.floor(Math.random() * descricoes.length)],
-        valor: valor,
-        tipo: tipos[Math.floor(Math.random() * tipos.length)],
-        status: Math.random() > 0.1 ? 'confirmado' : 'pendente',
-        categoria: 'Simulado',
-        conta: 'Conta Principal',
-        banco: 'Inter',
-        simulacao: true
-      });
-    }
-    
-    return transacoes;
-  }
 
-  // Salvar transações simuladas no banco
-  private async salvarTransacoesSimuladas(integracaoId: string, transacoes: any[]): Promise<void> {
-    try {
-      console.log(`💾 Salvando ${transacoes.length} transações simuladas...`);
-      
-      // Usar a função existente que salva transações em lote
-      await this.salvarTransacoesImportadas(integracaoId, transacoes.length);
-      
-      console.log(`✅ ${transacoes.length} transações simuladas salvas com sucesso!`);
-    } catch (error) {
-      console.error('Erro ao salvar transações simuladas:', error);
-      throw error;
-    }
-  }
 
   // Método para buscar transações reais da API do Inter
   private async buscarTransacoesReaisInter(config: IntegracaoConfig): Promise<any[]> {
     try {
       console.log('🔍 Buscando transações REAIS da API do Inter...');
       
-      // Verificar se temos as credenciais necessárias
-      if (!config.clientId || !config.clientSecret) {
-        throw new Error('Credenciais do Banco Inter não configuradas (ClientID e ClientSecret)');
+      // Verificar se temos as credenciais necessárias (API oficial usa apiKey/apiSecret)
+      if (!config.apiKey || !config.apiSecret) {
+        throw new Error('Credenciais da API não configuradas (API Key e API Secret são obrigatórias)');
       }
 
-      // URL base da API do Inter
-      const baseUrl = config.ambiente === 'producao' 
-        ? 'https://cdp.inter.com.br' 
-        : 'https://cdp.inter.com.br'; // Mesma URL para ambos os ambientes
+      console.log('🔑 Usando credenciais da API oficial...');
+      console.log('🔑 API Key:', config.apiKey ? 'Configurada' : 'Não configurada');
+      console.log('🔑 API Secret:', config.apiSecret ? 'Configurada' : 'Não configurada');
 
-      // 1. Obter token de acesso
-      const token = await this.obterTokenInter(config, baseUrl);
+      // URL base da API do Inter
+      const baseUrl = config.baseUrl || (config.ambiente === 'producao' 
+        ? 'https://cdp.inter.com.br' 
+        : 'https://cdp.inter.com.br');
+
+      console.log('🌐 URL da API:', baseUrl);
+
+      // 1. Obter token de acesso usando API Key/Secret
+      const token = await this.obterTokenInterAPI(config, baseUrl);
       
       // 2. Buscar extrato bancário
       const extrato = await this.buscarExtratoInter(config, baseUrl, token);
@@ -976,17 +861,47 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       
     } catch (error) {
       console.error('❌ Erro ao buscar transações reais:', error);
-      
-      // Se não conseguir conectar com a API real, retornar array vazio
-      // ou lançar erro para o usuário saber que precisa configurar
       throw new Error(`Erro ao conectar com API do Inter: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
   }
 
-  // Obter token de acesso do Inter
+  // Obter token de acesso do Inter usando API Key/Secret (API Oficial)
+  private async obterTokenInterAPI(config: IntegracaoConfig, baseUrl: string): Promise<string> {
+    try {
+      console.log('🔑 Obtendo token de acesso do Inter via API oficial...');
+      
+      // Usar API Key e API Secret para autenticação
+      const response = await fetch(`${baseUrl}/oauth/v2/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-API-Key': config.apiKey || '',
+          'X-API-Secret': config.apiSecret || ''
+        },
+        body: new URLSearchParams({
+          grant_type: 'client_credentials',
+          scope: 'extrato.read'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao obter token: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Token obtido com sucesso');
+      return data.access_token;
+      
+    } catch (error) {
+      console.error('❌ Erro ao obter token via API oficial:', error);
+      throw error;
+    }
+  }
+
+  // Obter token de acesso do Inter (Open Banking - mantido para compatibilidade)
   private async obterTokenInter(config: IntegracaoConfig, baseUrl: string): Promise<string> {
     try {
-      console.log('🔑 Obtendo token de acesso do Inter...');
+      console.log('🔑 Obtendo token de acesso do Inter (Open Banking)...');
       
       // Simular obtenção de token (implementar com certificado real)
       const response = await fetch(`${baseUrl}/oauth/v2/token`, {
