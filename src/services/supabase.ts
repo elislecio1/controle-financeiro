@@ -856,8 +856,18 @@ class SupabaseServiceImpl implements SupabaseService {
         throw new Error(`Erro ao buscar categorias: ${error.message}`)
       }
 
-      console.log('✅ Categorias carregadas:', data?.length || 0, 'registros')
-      return data || []
+             console.log('✅ Categorias carregadas:', data?.length || 0, 'registros')
+       
+       // Converter dados unknown para Categoria[]
+       const categoriasMapeadas: Categoria[] = (data || []).map(item => ({
+         id: String(item.id),
+         nome: String(item.nome),
+         tipo: String(item.tipo) as 'receita' | 'despesa',
+         cor: String(item.cor),
+         ativo: Boolean(item.ativo)
+       }))
+       
+       return categoriasMapeadas
     } catch (error) {
       console.error('❌ Erro ao buscar categorias:', error)
       throw error
@@ -882,12 +892,22 @@ class SupabaseServiceImpl implements SupabaseService {
         }
       }
 
-      console.log('✅ Categoria salva com sucesso')
-      return {
-        success: true,
-        message: 'Categoria salva com sucesso!',
-        data: data
-      }
+             console.log('✅ Categoria salva com sucesso')
+       
+       // Converter dados unknown para Categoria
+       const categoriaMapeada: Categoria = {
+         id: String(data.id),
+         nome: String(data.nome),
+         tipo: String(data.tipo) as 'receita' | 'despesa',
+         cor: String(data.cor),
+         ativo: Boolean(data.ativo)
+       }
+       
+       return {
+         success: true,
+         message: 'Categoria salva com sucesso!',
+         data: categoriaMapeada
+       }
     } catch (error: any) {
       console.error('❌ Erro ao salvar categoria:', error)
       return {
@@ -973,13 +993,13 @@ class SupabaseServiceImpl implements SupabaseService {
 
       console.log('✅ Subcategorias carregadas:', data?.length || 0, 'registros')
       
-      // Mapear categoria_id para categoriaId (formato TypeScript)
-      const mappedData: Subcategoria[] = (data || []).map(item => ({
-        id: item.id,
-        nome: item.nome,
-        categoriaId: item.categoria_id,
-        ativo: item.ativo
-      }))
+             // Mapear categoria_id para categoriaId (formato TypeScript)
+       const mappedData: Subcategoria[] = (data || []).map(item => ({
+         id: String(item.id),
+         nome: String(item.nome),
+         categoriaId: String(item.categoria_id),
+         ativo: Boolean(item.ativo)
+       }))
       
       return mappedData.length > 0 ? mappedData : mockSubcategorias
     } catch (error) {
@@ -1015,13 +1035,13 @@ class SupabaseServiceImpl implements SupabaseService {
 
       console.log('✅ Subcategoria salva com sucesso')
       
-      // Mapear de volta para o formato TypeScript
-      const mappedData: Subcategoria = {
-        id: data.id,
-        nome: data.nome,
-        categoriaId: data.categoria_id,
-        ativo: data.ativo
-      }
+             // Mapear de volta para o formato TypeScript
+       const mappedData: Subcategoria = {
+         id: String(data.id),
+         nome: String(data.nome),
+         categoriaId: String(data.categoria_id),
+         ativo: Boolean(data.ativo)
+       }
       
       return {
         success: true,

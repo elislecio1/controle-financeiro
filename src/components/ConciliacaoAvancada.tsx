@@ -391,7 +391,7 @@ export const ConciliacaoAvancada: React.FC<ConciliacaoAvancadaProps> = ({ integr
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
                 <select
                   value={dadosEdicaoLote.tipo}
-                  onChange={(e) => setDadosEdicaoLote(prev => ({ ...prev, tipo: e.target.value }))}
+                                     onChange={(e) => setDadosEdicaoLote(prev => ({ ...prev, tipo: e.target.value as 'debito' | 'credito' | 'transferencia' }))}
                   className="w-full p-2 border border-gray-300 rounded-md"
                 >
                   <option value="debito">Débito</option>
@@ -621,7 +621,7 @@ export const ConciliacaoAvancada: React.FC<ConciliacaoAvancadaProps> = ({ integr
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
                   <select
                     value={editandoTransacao.tipo}
-                    onChange={(e) => setEditandoTransacao(prev => ({ ...prev, tipo: e.target.value }))}
+                                         onChange={(e) => setEditandoTransacao(prev => ({ ...prev, tipo: e.target.value as 'debito' | 'credito' | 'transferencia' }))}
                     className="w-full p-2 border border-gray-300 rounded-md"
                   >
                     <option value="debito">Débito</option>
