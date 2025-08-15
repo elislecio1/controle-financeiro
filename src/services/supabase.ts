@@ -491,30 +491,30 @@ class SupabaseServiceImpl implements SupabaseService {
         console.log('📋 Dados salvos (primeira transação):', savedData)
         
         const sheetData: SheetData | undefined = savedData ? {
-          id: savedData.id.toString(),
-          data: this.formatDateForDisplay(savedData.data),
-          valor: this.parseValue(savedData.valor),
-          descricao: savedData.descricao,
-          conta: savedData.conta,
-          contaTransferencia: savedData.conta_transferencia,
-          cartao: savedData.cartao,
-          categoria: savedData.categoria,
-          subcategoria: savedData.subcategoria,
-          contato: savedData.contato,
-          centro: savedData.centro,
-          projeto: savedData.projeto,
-          forma: savedData.forma,
-          numeroDocumento: savedData.numero_documento,
-          observacoes: savedData.observacoes,
-          dataCompetencia: savedData.data_competencia ? this.formatDateForDisplay(savedData.data_competencia) : undefined,
-          tags: savedData.tags ? JSON.parse(savedData.tags) : undefined,
-          tipo: savedData.tipo,
-          vencimento: this.formatDateForDisplay(savedData.vencimento),
-          status: savedData.status || this.calculateStatus(savedData.vencimento, savedData.data_pagamento),
-          dataPagamento: savedData.data_pagamento ? this.formatDateForDisplay(savedData.data_pagamento) : undefined,
-          empresa: savedData.empresa,
-          parcela: savedData.parcela,
-          situacao: savedData.situacao
+          id: String(savedData.id),
+          data: this.formatDateForDisplay(String(savedData.data)),
+          valor: this.parseValue(Number(savedData.valor)),
+          descricao: String(savedData.descricao),
+          conta: String(savedData.conta),
+          contaTransferencia: savedData.conta_transferencia ? String(savedData.conta_transferencia) : undefined,
+          cartao: savedData.cartao ? String(savedData.cartao) : undefined,
+          categoria: String(savedData.categoria),
+          subcategoria: savedData.subcategoria ? String(savedData.subcategoria) : undefined,
+          contato: savedData.contato ? String(savedData.contato) : undefined,
+          centro: savedData.centro ? String(savedData.centro) : undefined,
+          projeto: savedData.projeto ? String(savedData.projeto) : undefined,
+          forma: String(savedData.forma),
+          numeroDocumento: savedData.numero_documento ? String(savedData.numero_documento) : undefined,
+          observacoes: savedData.observacoes ? String(savedData.observacoes) : undefined,
+          dataCompetencia: savedData.data_competencia ? this.formatDateForDisplay(String(savedData.data_competencia)) : undefined,
+          tags: savedData.tags ? JSON.parse(String(savedData.tags)) : undefined,
+          tipo: String(savedData.tipo) as 'receita' | 'despesa' | 'transferencia' | 'investimento',
+          vencimento: this.formatDateForDisplay(String(savedData.vencimento)),
+          status: savedData.status ? String(savedData.status) as 'pago' | 'pendente' | 'vencido' : this.calculateStatus(String(savedData.vencimento), savedData.data_pagamento ? String(savedData.data_pagamento) : undefined),
+          dataPagamento: savedData.data_pagamento ? this.formatDateForDisplay(String(savedData.data_pagamento)) : undefined,
+          empresa: savedData.empresa ? String(savedData.empresa) : undefined,
+          parcela: savedData.parcela ? String(savedData.parcela) : undefined,
+          situacao: savedData.situacao ? String(savedData.situacao) : undefined
         } : undefined
 
         return {
@@ -565,30 +565,30 @@ class SupabaseServiceImpl implements SupabaseService {
       
       const savedData = data?.[0]
       const sheetData: SheetData | undefined = savedData ? {
-        id: savedData.id.toString(),
-        data: this.formatDateForDisplay(savedData.data),
-        valor: this.parseValue(savedData.valor),
-        descricao: savedData.descricao,
-        conta: savedData.conta,
-        contaTransferencia: savedData.conta_transferencia,
-        cartao: savedData.cartao,
-        categoria: savedData.categoria,
-        subcategoria: savedData.subcategoria,
-        contato: savedData.contato,
-        centro: savedData.centro,
-        projeto: savedData.projeto,
-        forma: savedData.forma,
-        numeroDocumento: savedData.numero_documento,
-        observacoes: savedData.observacoes,
-        dataCompetencia: this.formatDateForDisplay(savedData.data_competencia),
-        tags: savedData.tags ? JSON.parse(savedData.tags) : [],
-        status: savedData.status || this.calculateStatus(savedData.vencimento, savedData.data_pagamento),
-        dataPagamento: savedData.data_pagamento || '',
-        vencimento: this.formatDateForDisplay(savedData.vencimento),
-        empresa: savedData.empresa,
-        tipo: savedData.tipo,
-        parcela: savedData.parcela || '1',
-        situacao: savedData.situacao || ''
+        id: String(savedData.id),
+        data: this.formatDateForDisplay(String(savedData.data)),
+        valor: this.parseValue(Number(savedData.valor)),
+        descricao: String(savedData.descricao),
+        conta: String(savedData.conta),
+        contaTransferencia: savedData.conta_transferencia ? String(savedData.conta_transferencia) : undefined,
+        cartao: savedData.cartao ? String(savedData.cartao) : undefined,
+        categoria: String(savedData.categoria),
+        subcategoria: savedData.subcategoria ? String(savedData.subcategoria) : undefined,
+        contato: savedData.contato ? String(savedData.contato) : undefined,
+        centro: savedData.centro ? String(savedData.centro) : undefined,
+        projeto: savedData.projeto ? String(savedData.projeto) : undefined,
+        forma: String(savedData.forma),
+        numeroDocumento: savedData.numero_documento ? String(savedData.numero_documento) : undefined,
+        observacoes: savedData.observacoes ? String(savedData.observacoes) : undefined,
+        dataCompetencia: this.formatDateForDisplay(String(savedData.data_competencia)),
+        tags: savedData.tags ? JSON.parse(String(savedData.tags)) : [],
+        status: savedData.status ? String(savedData.status) as 'pago' | 'pendente' | 'vencido' : this.calculateStatus(String(savedData.vencimento), savedData.data_pagamento ? String(savedData.data_pagamento) : undefined),
+        dataPagamento: savedData.data_pagamento ? String(savedData.data_pagamento) : '',
+        vencimento: this.formatDateForDisplay(String(savedData.vencimento)),
+        empresa: savedData.empresa ? String(savedData.empresa) : undefined,
+        tipo: String(savedData.tipo) as 'receita' | 'despesa' | 'transferencia' | 'investimento',
+        parcela: savedData.parcela ? String(savedData.parcela) : '1',
+        situacao: savedData.situacao ? String(savedData.situacao) : ''
       } : undefined
 
       return {
@@ -816,19 +816,19 @@ class SupabaseServiceImpl implements SupabaseService {
 
       const item = data[0]
       return {
-        id: item.id.toString(),
-        data: this.formatDateForDisplay(item.data),
-        valor: this.parseValue(item.valor),
-        descricao: item.descricao,
-        conta: item.conta,
-        categoria: item.categoria,
-        forma: item.forma,
-        tipo: item.tipo,
-        status: item.status || this.calculateStatus(item.vencimento, item.data_pagamento), // Usar status do banco primeiro
-        vencimento: this.formatDateForDisplay(item.vencimento),
-        dataPagamento: this.formatDateForDisplay(item.data_pagamento) || '',
-        parcela: item.parcela || '1',
-        situacao: item.situacao || ''
+        id: String(item.id),
+        data: this.formatDateForDisplay(String(item.data)),
+        valor: this.parseValue(Number(item.valor)),
+        descricao: String(item.descricao),
+        conta: String(item.conta),
+        categoria: String(item.categoria),
+        forma: String(item.forma),
+        tipo: String(item.tipo) as 'receita' | 'despesa' | 'transferencia' | 'investimento',
+        status: item.status ? String(item.status) as 'pago' | 'pendente' | 'vencido' : this.calculateStatus(String(item.vencimento), item.data_pagamento ? String(item.data_pagamento) : undefined),
+        vencimento: this.formatDateForDisplay(String(item.vencimento)),
+        dataPagamento: item.data_pagamento ? this.formatDateForDisplay(String(item.data_pagamento)) : '',
+        parcela: item.parcela ? String(item.parcela) : '1',
+        situacao: item.situacao ? String(item.situacao) : ''
       }
     } catch (error) {
       return null

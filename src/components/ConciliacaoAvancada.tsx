@@ -35,15 +35,19 @@ export const ConciliacaoAvancada: React.FC<ConciliacaoAvancadaProps> = ({ integr
   const [transacoesSelecionadas, setTransacoesSelecionadas] = useState<string[]>([]);
   const [modoEdicaoLote, setModoEdicaoLote] = useState(false);
   const [dadosEdicaoLote, setDadosEdicaoLote] = useState({
-    categoria: '',
+    categoriaBanco: '',
     descricao: '',
-    tipo: 'debito'
+    tipo: 'debito' as 'debito' | 'credito' | 'transferencia'
   });
 
   // Estados para modal de detalhes/edição
   const [modalAberto, setModalAberto] = useState(false);
   const [transacaoSelecionada, setTransacaoSelecionada] = useState<TransacaoImportada | null>(null);
-  const [editandoTransacao, setEditandoTransacao] = useState<Partial<TransacaoImportada>>({});
+  const [editandoTransacao, setEditandoTransacao] = useState<{
+    descricao?: string;
+    categoriaBanco?: string;
+    tipo?: 'debito' | 'credito' | 'transferencia';
+  }>({});
 
   // Estados para estatísticas
   const [stats, setStats] = useState({
@@ -190,7 +194,7 @@ export const ConciliacaoAvancada: React.FC<ConciliacaoAvancadaProps> = ({ integr
     if (modo === 'editar') {
       setEditandoTransacao({
         descricao: transacao.descricao,
-        categoria: transacao.categoriaBanco,
+        categoriaBanco: transacao.categoriaBanco,
         tipo: transacao.tipo
       });
     }
@@ -372,16 +376,16 @@ export const ConciliacaoAvancada: React.FC<ConciliacaoAvancadaProps> = ({ integr
                 />
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                <input
-                  type="text"
-                  value={dadosEdicaoLote.categoria}
-                  onChange={(e) => setDadosEdicaoLote(prev => ({ ...prev, categoria: e.target.value }))}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                  placeholder="Nova categoria"
-                />
-              </div>
+                             <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                 <input
+                   type="text"
+                   value={dadosEdicaoLote.categoriaBanco}
+                   onChange={(e) => setDadosEdicaoLote(prev => ({ ...prev, categoriaBanco: e.target.value }))}
+                   className="w-full p-2 border border-gray-300 rounded-md"
+                   placeholder="Nova categoria"
+                 />
+               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
@@ -603,15 +607,15 @@ export const ConciliacaoAvancada: React.FC<ConciliacaoAvancadaProps> = ({ integr
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                  <input
-                    type="text"
-                    value={editandoTransacao.categoria}
-                    onChange={(e) => setEditandoTransacao(prev => ({ ...prev, categoria: e.target.value }))}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                  />
-                </div>
+                                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                   <input
+                     type="text"
+                     value={editandoTransacao.categoriaBanco}
+                     onChange={(e) => setEditandoTransacao(prev => ({ ...prev, categoriaBanco: e.target.value }))}
+                     className="w-full p-2 border border-gray-300 rounded-md"
+                   />
+                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
@@ -693,19 +697,19 @@ export const ConciliacaoAvancada: React.FC<ConciliacaoAvancadaProps> = ({ integr
                 </div>
                 
                 <div className="pt-4">
-                  <button
-                    onClick={() => {
-                      setEditandoTransacao({
-                        descricao: transacaoSelecionada.descricao,
-                        categoria: transacaoSelecionada.categoriaBanco,
-                        tipo: transacaoSelecionada.tipo
-                      });
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Editar
-                  </button>
+                                     <button
+                     onClick={() => {
+                       setEditandoTransacao({
+                         descricao: transacaoSelecionada.descricao,
+                         categoriaBanco: transacaoSelecionada.categoriaBanco,
+                         tipo: transacaoSelecionada.tipo
+                       });
+                     }}
+                     className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                   >
+                     <Edit className="w-4 h-4" />
+                     Editar
+                   </button>
                 </div>
               </div>
             )}
