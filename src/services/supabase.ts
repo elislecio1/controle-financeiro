@@ -1137,8 +1137,24 @@ class SupabaseServiceImpl implements SupabaseService {
         return mockInvestimentos
       }
 
-      console.log('✅ Investimentos carregados:', data?.length || 0, 'registros')
-      return data || mockInvestimentos
+             console.log('✅ Investimentos carregados:', data?.length || 0, 'registros')
+       
+       // Converter dados unknown para Investimento[]
+       const investimentosMapeados: Investimento[] = (data || []).map(item => ({
+         id: String(item.id),
+         nome: String(item.nome),
+         tipo: String(item.tipo) as 'acao' | 'fiis' | 'etfs' | 'cdb' | 'lci' | 'lca' | 'poupanca' | 'outros',
+         valor: Number(item.valor),
+         quantidade: Number(item.quantidade),
+         precoMedio: Number(item.preco_medio),
+         dataCompra: String(item.data_compra),
+         instituicao: String(item.instituicao),
+         observacoes: String(item.observacoes || ''),
+         ativo: Boolean(item.ativo),
+         dataCriacao: String(item.data_criacao)
+       }))
+       
+       return investimentosMapeados.length > 0 ? investimentosMapeados : mockInvestimentos
     } catch (error) {
       console.error('❌ Erro ao buscar investimentos:', error)
       return mockInvestimentos
@@ -1163,12 +1179,28 @@ class SupabaseServiceImpl implements SupabaseService {
         }
       }
 
-      console.log('✅ Investimento salvo com sucesso')
-      return {
-        success: true,
-        message: 'Investimento salvo com sucesso!',
-        data: data
-      }
+             console.log('✅ Investimento salvo com sucesso')
+       
+       // Converter dados unknown para Investimento
+       const investimentoMapeado: Investimento = {
+         id: String(data.id),
+         nome: String(data.nome),
+         tipo: String(data.tipo) as 'acao' | 'fiis' | 'etfs' | 'cdb' | 'lci' | 'lca' | 'poupanca' | 'outros',
+         valor: Number(data.valor),
+         quantidade: Number(data.quantidade),
+         precoMedio: Number(data.preco_medio),
+         dataCompra: String(data.data_compra),
+         instituicao: String(data.instituicao),
+         observacoes: String(data.observacoes || ''),
+         ativo: Boolean(data.ativo),
+         dataCriacao: String(data.data_criacao)
+       }
+       
+       return {
+         success: true,
+         message: 'Investimento salvo com sucesso!',
+         data: investimentoMapeado
+       }
     } catch (error: any) {
       console.error('❌ Erro ao salvar investimento:', error)
       return {
