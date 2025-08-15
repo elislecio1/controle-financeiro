@@ -60,9 +60,12 @@ export default function ContatoSelector({ value, onChange, placeholder = "Seleci
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-        setShowQuickForm(false)
-        setSearchTerm('')
+        // Só fechar se não estiver salvando um contato
+        if (!loading) {
+          setIsOpen(false)
+          setShowQuickForm(false)
+          setSearchTerm('')
+        }
       }
     }
 
@@ -70,7 +73,7 @@ export default function ContatoSelector({ value, onChange, placeholder = "Seleci
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [])
+  }, [loading])
 
   // Salvar contato rápido
   const handleSaveQuickContato = async (e: React.FormEvent) => {
@@ -99,9 +102,12 @@ export default function ContatoSelector({ value, onChange, placeholder = "Seleci
         // Adicionar à lista e selecionar
         const newContato = result.data
         setContatos(prev => [...prev, newContato])
+        
+        // Selecionar o contato recém-cadastrado
+        console.log('✅ Contato cadastrado e selecionado:', newContato.nome)
         onChange(newContato.nome)
         
-        // Limpar formulário e fechar
+        // Limpar formulário mas NÃO fechar o dropdown
         setQuickFormData({
           nome: '',
           tipo: 'cliente',
@@ -109,7 +115,7 @@ export default function ContatoSelector({ value, onChange, placeholder = "Seleci
           telefone: ''
         })
         setShowQuickForm(false)
-        setIsOpen(false)
+        // NÃO fechar o dropdown: setIsOpen(false) - REMOVIDO
         setSearchTerm('')
         
         // Aguardar um pouco antes de limpar a mensagem
