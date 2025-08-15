@@ -1340,7 +1340,7 @@ class SupabaseServiceImpl implements SupabaseService {
       return {
         success: true,
         message: 'Conta bancária salva com sucesso!',
-        data: data
+        data: data as unknown as ContaBancaria
       }
     } catch (error: any) {
       console.error('❌ Erro ao salvar conta bancária:', error)
@@ -1426,7 +1426,7 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       console.log('✅ Cartões de crédito carregados:', data?.length || 0, 'registros')
-      return data || mockCartoes
+      return (data as unknown as CartaoCredito[]) || mockCartoes
     } catch (error) {
       console.error('❌ Erro ao buscar cartões de crédito:', error)
       return mockCartoes
@@ -1455,7 +1455,7 @@ class SupabaseServiceImpl implements SupabaseService {
       return {
         success: true,
         message: 'Cartão de crédito salvo com sucesso!',
-        data: data
+        data: data as unknown as CartaoCredito
       }
     } catch (error: any) {
       console.error('❌ Erro ao salvar cartão de crédito:', error)
@@ -1555,7 +1555,7 @@ class SupabaseServiceImpl implements SupabaseService {
         ativo: item.ativo
       }))
       
-      return contatosMapeados || mockContatos
+      return (contatosMapeados as unknown as Contato[]) || mockContatos
     } catch (error) {
       console.error('❌ Erro ao buscar contatos:', error)
       return mockContatos
@@ -1596,7 +1596,7 @@ class SupabaseServiceImpl implements SupabaseService {
       return {
         success: true,
         message: 'Contato salvo com sucesso!',
-        data: data
+        data: data as unknown as Contato
       }
     } catch (error: any) {
       console.error('❌ Erro ao salvar contato:', error)
