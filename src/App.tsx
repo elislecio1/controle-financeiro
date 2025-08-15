@@ -855,7 +855,112 @@ function App() {
         {/* General Dashboard */}
         {activeTab === 'geral' && !loading && (
           <div className="space-y-6">
-            {/* Stats Cards */}
+            {/* Filtros no Topo - Primeiro */}
+            <div className="space-y-4">
+              {/* Conta Filter - Primeiro */}
+              <div className="bg-white shadow rounded-lg p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Filtro por Conta Bancária</h3>
+                
+                <div className="flex flex-wrap gap-4">
+                  {[
+                    { value: 'todas', label: 'Todas as Contas' },
+                    ...contas.map(conta => ({
+                      value: conta.nome,
+                      label: `${conta.nome} - ${conta.banco}`
+                    }))
+                  ].map((conta) => (
+                    <button
+                      key={conta.value}
+                      onClick={() => applyContaFilter(conta.value)}
+                      className={`px-4 py-2 rounded-md text-sm font-medium ${
+                        contaFilter === conta.value
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {conta.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Period Filters - Segundo */}
+              <div className="bg-white shadow rounded-lg p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Filtros de Período</h3>
+                
+                <div className="flex flex-wrap gap-4">
+                  {[
+                    { value: 'all', label: 'Todos os Períodos' },
+                    { value: 'current_month', label: 'Mês Atual' },
+                    { value: 'last_month', label: 'Mês Anterior' },
+                    { value: 'current_year', label: 'Ano Atual' },
+                    { value: 'last_year', label: 'Ano Anterior' }
+                  ].map((period) => (
+                    <button
+                      key={period.value}
+                      onClick={() => applyPeriodFilter(period.value)}
+                      className={`px-4 py-2 rounded-md text-sm font-medium ${
+                        periodFilter === period.value
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {period.label}
+                    </button>
+                  ))}
+                  
+                  <button
+                    onClick={() => setShowCustomPeriod(!showCustomPeriod)}
+                    className="px-4 py-2 rounded-md text-sm font-medium bg-purple-100 text-purple-700 hover:bg-purple-200"
+                  >
+                    Período Customizado
+                  </button>
+                </div>
+
+                {showCustomPeriod && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-md">
+                    <div className="flex items-center space-x-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Data Início</label>
+                        <input
+                          type="text"
+                          placeholder="DD/MM/AAAA"
+                          value={customStartDate}
+                          onChange={(e) => {
+                            const formatted = formatDateInput(e.target.value)
+                            setCustomStartDate(formatted)
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Data Fim</label>
+                        <input
+                          type="text"
+                          placeholder="DD/MM/AAAA"
+                          value={customEndDate}
+                          onChange={(e) => {
+                            const formatted = formatDateInput(e.target.value)
+                            setCustomEndDate(formatted)
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <button
+                        onClick={applyCustomPeriodFilter}
+                        className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      >
+                        Aplicar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Stats Cards - Depois dos Filtros */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="bg-white overflow-hidden shadow rounded-lg">
                 <div className="p-5">
@@ -946,108 +1051,6 @@ function App() {
                   </div>
                 </button>
               ))}
-            </div>
-
-            {/* Conta Filter - Primeiro */}
-            <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Filtro por Conta Bancária</h3>
-              
-              <div className="flex flex-wrap gap-4">
-                {[
-                  { value: 'todas', label: 'Todas as Contas' },
-                  ...contas.map(conta => ({
-                    value: conta.nome,
-                    label: `${conta.nome} - ${conta.banco}`
-                  }))
-                ].map((conta) => (
-                  <button
-                    key={conta.value}
-                    onClick={() => applyContaFilter(conta.value)}
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${
-                      contaFilter === conta.value
-                        ? 'bg-green-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {conta.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Period Filters - Segundo */}
-            <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Filtros de Período</h3>
-              
-              <div className="flex flex-wrap gap-4">
-                {[
-                  { value: 'all', label: 'Todos os Períodos' },
-                  { value: 'current_month', label: 'Mês Atual' },
-                  { value: 'last_month', label: 'Mês Anterior' },
-                  { value: 'current_year', label: 'Ano Atual' },
-                  { value: 'last_year', label: 'Ano Anterior' }
-                ].map((period) => (
-                  <button
-                    key={period.value}
-                    onClick={() => applyPeriodFilter(period.value)}
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${
-                      periodFilter === period.value
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {period.label}
-                  </button>
-                ))}
-                
-                <button
-                  onClick={() => setShowCustomPeriod(!showCustomPeriod)}
-                  className="px-4 py-2 rounded-md text-sm font-medium bg-purple-100 text-purple-700 hover:bg-purple-200"
-                >
-                  Período Customizado
-                </button>
-              </div>
-
-              {showCustomPeriod && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-md">
-                  <div className="flex items-center space-x-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Data Início</label>
-                      <input
-                        type="text"
-                        placeholder="DD/MM/AAAA"
-                        value={customStartDate}
-                        onChange={(e) => {
-                          const formatted = formatDateInput(e.target.value)
-                          setCustomStartDate(formatted)
-                        }}
-                        onFocus={(e) => e.target.select()}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Data Fim</label>
-                      <input
-                        type="text"
-                        placeholder="DD/MM/AAAA"
-                        value={customEndDate}
-                        onChange={(e) => {
-                          const formatted = formatDateInput(e.target.value)
-                          setCustomEndDate(formatted)
-                        }}
-                        onFocus={(e) => e.target.select()}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <button
-                      onClick={applyCustomPeriodFilter}
-                      className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                    >
-                      Aplicar
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Charts */}

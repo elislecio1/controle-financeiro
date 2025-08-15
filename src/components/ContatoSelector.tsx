@@ -112,6 +112,7 @@ export default function ContatoSelector({ value, onChange, placeholder = "Seleci
         setIsOpen(false)
         setSearchTerm('')
         
+        // Aguardar um pouco antes de limpar a mensagem
         setTimeout(() => setMessage(null), 2000)
       } else {
         setMessage({ type: 'error', text: result.message })
@@ -245,7 +246,12 @@ export default function ContatoSelector({ value, onChange, placeholder = "Seleci
           {/* Botão para adicionar novo */}
           <div className="p-3 border-t border-gray-200">
             <button
-              onClick={() => setShowQuickForm(true)}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setShowQuickForm(true)
+              }}
               className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md"
             >
               <Plus className="h-4 w-4" />
@@ -268,7 +274,7 @@ export default function ContatoSelector({ value, onChange, placeholder = "Seleci
             </button>
           </div>
 
-          <form onSubmit={handleSaveQuickContato} className="space-y-3">
+          <form onSubmit={handleSaveQuickContato} className="space-y-3" onClick={(e) => e.stopPropagation()}>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Nome *
