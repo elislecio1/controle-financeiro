@@ -1,0 +1,3 @@
+[33m9c10f3f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m  Remove: Eliminação completa de todas as simulações - sistema 100% real
+[33m667d61b[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m  Fix: Correção das URLs da API do Banco Inter e implementação de fallback para desenvolvimento
+[33m237502e[m  Fix: Remoção da sincronização simulada - Sistema agora sempre tenta sincronização real com credenciais configuradas
