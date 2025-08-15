@@ -546,11 +546,11 @@ ORDER BY table_name;
 -- Verificar contagem de registros em cada tabela
 SELECT 
     'CONTAGEM DE REGISTROS' as status,
-    schemaname || '.' || tablename as tabela,
+    schemaname || '.' || relname as tabela,
     n_tup_ins as total_registros
 FROM pg_stat_user_tables 
 WHERE schemaname = 'public'
-    AND tablename IN (
+    AND relname IN (
         'transactions',
         'categorias', 
         'subcategorias',
@@ -565,6 +565,6 @@ WHERE schemaname = 'public'
         'transacoes_importadas',
         'metas_orcamentos'
     )
-ORDER BY tablename;
+ORDER BY relname;
 
 SELECT 'Script de verificação e criação de tabelas concluído com sucesso!' as resultado;
