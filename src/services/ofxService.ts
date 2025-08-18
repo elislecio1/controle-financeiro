@@ -439,23 +439,23 @@ export class OFXService {
             continue;
           }
           
-          // Transação não existe - criar nova
-          const novaTransacao = {
-            data: transaction.datePosted,
-            valor: Math.abs(transaction.amount),
-            descricao: transaction.memo || transaction.name || 'Transação OFX',
-            conta: contaBancariaId,
-            categoria: transaction.categoria || (transaction.amount > 0 ? 'Receitas' : 'Despesas'),
-            contato: transaction.contato || null,
-            forma: transaction.forma || null,
-            tipo: transaction.amount > 0 ? 'receita' : 'despesa',
-            vencimento: transaction.datePosted, // Usar a data da transação como vencimento
-            situacao: 'pago', // Transações OFX já foram processadas
-            status: 'confirmada',
-            observacoes: `OFX Import - ${transaction.fitId || 'sem ID'}`,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
+                     // Transação não existe - criar nova
+           const novaTransacao = {
+             data: transaction.datePosted,
+             valor: Math.abs(transaction.amount),
+             descricao: transaction.memo || transaction.name || 'Transação OFX',
+             conta: contaBancariaId,
+             categoria: transaction.categoria || (transaction.amount > 0 ? 'Receitas' : 'Despesas'),
+             contato: transaction.contato || null,
+             forma: transaction.forma || null,
+             tipo: transaction.amount > 0 ? 'receita' : 'despesa',
+             vencimento: transaction.datePosted, // Usar a data da transação como vencimento
+             situacao: 'pago', // Transações OFX já foram processadas
+             status: 'pago', // Transações OFX já foram pagas
+             observacoes: `OFX Import - ${transaction.fitId || 'sem ID'}`,
+             created_at: new Date().toISOString(),
+             updated_at: new Date().toISOString()
+           };
           
           const { error: insertError } = await supabase
             .from('transactions')
