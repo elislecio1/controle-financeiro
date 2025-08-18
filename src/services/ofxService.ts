@@ -22,6 +22,9 @@ export interface OFXTransaction {
   name?: string;
   bankId?: string;
   accountId?: string;
+  categoria?: string;
+  contato?: string;
+  forma?: string;
 }
 
 export interface OFXAccount {
