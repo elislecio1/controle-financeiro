@@ -449,6 +449,8 @@ export class OFXService {
             contato: transaction.contato || null,
             forma: transaction.forma || null,
             tipo: transaction.amount > 0 ? 'receita' : 'despesa',
+            vencimento: transaction.datePosted, // Usar a data da transação como vencimento
+            situacao: 'pago', // Transações OFX já foram processadas
             status: 'confirmada',
             observacoes: `OFX Import - ${transaction.fitId || 'sem ID'}`,
             created_at: new Date().toISOString(),
