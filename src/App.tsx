@@ -584,10 +584,18 @@ function App() {
     if (!selectedTransaction || !paymentDate) return
     
     try {
+      // Converter data ISO para formato brasileiro
+      const converterDataParaBrasileiro = (dataISO: string): string => {
+        if (!dataISO) return ''
+        const data = new Date(dataISO)
+        if (isNaN(data.getTime())) return dataISO
+        return data.toLocaleDateString('pt-BR')
+      }
+      
       const updatedTransaction: SheetData = {
         ...selectedTransaction,
         status: 'pago' as const,
-        dataPagamento: paymentDate,
+        dataPagamento: converterDataParaBrasileiro(paymentDate),
         situacao: 'pago' // Adicionar também o campo situacao
       }
       
