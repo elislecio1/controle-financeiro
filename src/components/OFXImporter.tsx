@@ -16,9 +16,12 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
   const [step, setStep] = useState<'select' | 'preview' | 'import' | 'complete'>('select');
   
   // Estados para edição
-  const [editingTransactions, setEditingTransactions] = useState<{ [key: number]: string }>({});
+  const [editingTransactions, setEditingTransactions] = useState<{ [key: number]: any }>({});
   const [selectedTransactions, setSelectedTransactions] = useState<Set<number>>(new Set());
   const [batchEditDescription, setBatchEditDescription] = useState<string>('');
+  const [batchEditContato, setBatchEditContato] = useState<string>('');
+  const [batchEditCategoria, setBatchEditCategoria] = useState<string>('');
+  const [batchEditForma, setBatchEditForma] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,13 +80,16 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
     setStep('import');
 
     try {
-      // Aplicar as edições de descrição antes da importação
+      // Aplicar as edições antes da importação
       const modifiedData = {
         ...previewData,
         transactions: previewData.transactions.map((transaction, index) => ({
           ...transaction,
-          memo: getFinalDescription(index, transaction.memo || transaction.name || ''),
-          name: getFinalDescription(index, transaction.memo || transaction.name || '')
+          memo: getFinalField(index, 'descricao', transaction.memo || transaction.name || ''),
+          name: getFinalField(index, 'descricao', transaction.memo || transaction.name || ''),
+          contato: getFinalField(index, 'contato', ''),
+          categoria: getFinalField(index, 'categoria', transaction.amount > 0 ? 'Receitas' : 'Despesas'),
+          forma: getFinalField(index, 'forma', '')
         }))
       };
 
@@ -120,10 +126,13 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
   };
 
   // Funções de edição
-  const handleEditDescription = (index: number, description: string) => {
+  const handleEditField = (index: number, field: string, value: string) => {
     setEditingTransactions(prev => ({
       ...prev,
-      [index]: description
+      [index]: {
+        ...prev[index],
+        [field]: value
+      }
     }));
   };
 
@@ -151,18 +160,27 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
   };
 
   const handleBatchEdit = () => {
-    if (selectedTransactions.size === 0 || !batchEditDescription.trim()) return;
+    if (selectedTransactions.size === 0) return;
     
     const newEditingTransactions = { ...editingTransactions };
     selectedTransactions.forEach(index => {
-      newEditingTransactions[index] = batchEditDescription;
+      newEditingTransactions[index] = {
+        ...newEditingTransactions[index],
+        descricao: batchEditDescription || newEditingTransactions[index]?.descricao,
+        contato: batchEditContato || newEditingTransactions[index]?.contato,
+        categoria: batchEditCategoria || newEditingTransactions[index]?.categoria,
+        forma: batchEditForma || newEditingTransactions[index]?.forma
+      };
     });
     setEditingTransactions(newEditingTransactions);
     setBatchEditDescription('');
+    setBatchEditContato('');
+    setBatchEditCategoria('');
+    setBatchEditForma('');
   };
 
-  const getFinalDescription = (index: number, originalDescription: string) => {
-    return editingTransactions[index] || originalDescription;
+  const getFinalField = (index: number, field: string, originalValue: string) => {
+    return editingTransactions[index]?.[field] || originalValue;
   };
 
   if (step === 'select') {
@@ -295,66 +313,116 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
             </div>
           </div>
 
-          {/* Controles de Edição em Lote */}
-          {isEditing && (
-            <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-center space-x-4 mb-3">
-                <button
-                  onClick={handleSelectAll}
-                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Selecionar Todas
-                </button>
-                <button
-                  onClick={handleDeselectAll}
-                  className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
-                >
-                  Desmarcar Todas
-                </button>
-                <span className="text-sm text-gray-600">
-                  {selectedTransactions.size} selecionada(s)
-                </span>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <input
-                  type="text"
-                  value={batchEditDescription}
-                  onChange={(e) => setBatchEditDescription(e.target.value)}
-                  placeholder="Nova descrição para todas as selecionadas..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <button
-                  onClick={handleBatchEdit}
-                  disabled={selectedTransactions.size === 0 || !batchEditDescription.trim()}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  Aplicar
-                </button>
-              </div>
-            </div>
-          )}
+                     {/* Controles de Edição em Lote */}
+           {isEditing && (
+             <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+               <div className="flex items-center space-x-4 mb-3">
+                 <button
+                   onClick={handleSelectAll}
+                   className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                 >
+                   Selecionar Todas
+                 </button>
+                 <button
+                   onClick={handleDeselectAll}
+                   className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
+                 >
+                   Desmarcar Todas
+                 </button>
+                 <span className="text-sm text-gray-600">
+                   {selectedTransactions.size} selecionada(s)
+                 </span>
+               </div>
+               
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+                 <input
+                   type="text"
+                   value={batchEditDescription}
+                   onChange={(e) => setBatchEditDescription(e.target.value)}
+                   placeholder="Nova descrição..."
+                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 />
+                 <input
+                   type="text"
+                   value={batchEditContato}
+                   onChange={(e) => setBatchEditContato(e.target.value)}
+                   placeholder="Cliente/Fornecedor..."
+                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 />
+                 <select
+                   value={batchEditCategoria}
+                   onChange={(e) => setBatchEditCategoria(e.target.value)}
+                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 >
+                   <option value="">Selecionar categoria...</option>
+                   <option value="Receitas">Receitas</option>
+                   <option value="Despesas">Despesas</option>
+                   <option value="Alimentação">Alimentação</option>
+                   <option value="Transporte">Transporte</option>
+                   <option value="Moradia">Moradia</option>
+                   <option value="Saúde">Saúde</option>
+                   <option value="Educação">Educação</option>
+                   <option value="Lazer">Lazer</option>
+                   <option value="Vestuário">Vestuário</option>
+                   <option value="Serviços">Serviços</option>
+                   <option value="Impostos">Impostos</option>
+                   <option value="Investimentos">Investimentos</option>
+                 </select>
+                 <select
+                   value={batchEditForma}
+                   onChange={(e) => setBatchEditForma(e.target.value)}
+                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                 >
+                   <option value="">Forma de pagamento...</option>
+                   <option value="Dinheiro">Dinheiro</option>
+                   <option value="Cartão de Crédito">Cartão de Crédito</option>
+                   <option value="Cartão de Débito">Cartão de Débito</option>
+                   <option value="PIX">PIX</option>
+                   <option value="Transferência">Transferência</option>
+                   <option value="Boleto">Boleto</option>
+                   <option value="Cheque">Cheque</option>
+                 </select>
+               </div>
+               
+               <div className="flex justify-end">
+                 <button
+                   onClick={handleBatchEdit}
+                   disabled={selectedTransactions.size === 0}
+                   className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                 >
+                   Aplicar Edições em Lote
+                 </button>
+               </div>
+             </div>
+           )}
 
           <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50 sticky top-0">
-                <tr>
-                  {isEditing && (
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      <input
-                        type="checkbox"
-                        checked={selectedTransactions.size === previewData.transactions.length}
-                        onChange={() => selectedTransactions.size === previewData.transactions.length ? handleDeselectAll() : handleSelectAll()}
-                        className="rounded border-gray-300"
-                      />
-                    </th>
-                  )}
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Descrição</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Valor</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
-                </tr>
-              </thead>
+                             <thead className="bg-gray-50 sticky top-0">
+                 <tr>
+                   {isEditing && (
+                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                       <input
+                         type="checkbox"
+                         checked={selectedTransactions.size === previewData.transactions.length}
+                         onChange={() => selectedTransactions.size === previewData.transactions.length ? handleDeselectAll() : handleSelectAll()}
+                         className="rounded border-gray-300"
+                       />
+                     </th>
+                   )}
+                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
+                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Descrição</th>
+                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Valor</th>
+                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                   {isEditing && (
+                     <>
+                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cliente/Fornecedor</th>
+                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Categoria</th>
+                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Forma</th>
+                     </>
+                   )}
+                 </tr>
+               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {previewData.transactions.slice(0, 10).map((transaction, index) => (
                   <tr key={index} className={`hover:bg-gray-50 ${isEditing ? 'bg-blue-50' : ''}`}>
@@ -369,35 +437,84 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
                       </td>
                     )}
                     <td className="px-3 py-2 text-sm text-gray-900">{transaction.datePosted}</td>
-                    <td className="px-3 py-2 text-sm text-gray-900">
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          value={editingTransactions[index] || transaction.memo || transaction.name || 'Transação OFX'}
-                          onChange={(e) => handleEditDescription(index, e.target.value)}
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      ) : (
-                        getFinalDescription(index, transaction.memo || transaction.name || 'Transação OFX')
-                      )}
-                    </td>
+                                         <td className="px-3 py-2 text-sm text-gray-900">
+                       {isEditing ? (
+                         <input
+                           type="text"
+                           value={getFinalField(index, 'descricao', transaction.memo || transaction.name || 'Transação OFX')}
+                           onChange={(e) => handleEditField(index, 'descricao', e.target.value)}
+                           className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                         />
+                       ) : (
+                         getFinalField(index, 'descricao', transaction.memo || transaction.name || 'Transação OFX')
+                       )}
+                     </td>
                     <td className={`px-3 py-2 text-sm font-medium ${
                       transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
                     }`}>
                       {formatCurrency(Math.abs(transaction.amount))}
                     </td>
-                    <td className="px-3 py-2 text-sm text-gray-900">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        transaction.amount > 0 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {transaction.amount > 0 ? 'Crédito' : 'Débito'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+                                         <td className="px-3 py-2 text-sm text-gray-900">
+                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                         transaction.amount > 0 
+                           ? 'bg-green-100 text-green-800' 
+                           : 'bg-red-100 text-red-800'
+                       }`}>
+                         {transaction.amount > 0 ? 'Crédito' : 'Débito'}
+                       </span>
+                     </td>
+                     {isEditing && (
+                       <>
+                         <td className="px-3 py-2 text-sm text-gray-900">
+                           <input
+                             type="text"
+                             value={getFinalField(index, 'contato', '')}
+                             onChange={(e) => handleEditField(index, 'contato', e.target.value)}
+                             placeholder="Cliente/Fornecedor"
+                             className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           />
+                         </td>
+                         <td className="px-3 py-2 text-sm text-gray-900">
+                           <select
+                             value={getFinalField(index, 'categoria', transaction.amount > 0 ? 'Receitas' : 'Despesas')}
+                             onChange={(e) => handleEditField(index, 'categoria', e.target.value)}
+                             className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           >
+                             <option value="Receitas">Receitas</option>
+                             <option value="Despesas">Despesas</option>
+                             <option value="Alimentação">Alimentação</option>
+                             <option value="Transporte">Transporte</option>
+                             <option value="Moradia">Moradia</option>
+                             <option value="Saúde">Saúde</option>
+                             <option value="Educação">Educação</option>
+                             <option value="Lazer">Lazer</option>
+                             <option value="Vestuário">Vestuário</option>
+                             <option value="Serviços">Serviços</option>
+                             <option value="Impostos">Impostos</option>
+                             <option value="Investimentos">Investimentos</option>
+                           </select>
+                         </td>
+                         <td className="px-3 py-2 text-sm text-gray-900">
+                           <select
+                             value={getFinalField(index, 'forma', '')}
+                             onChange={(e) => handleEditField(index, 'forma', e.target.value)}
+                             className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           >
+                             <option value="">Selecionar...</option>
+                             <option value="Dinheiro">Dinheiro</option>
+                             <option value="Cartão de Crédito">Cartão de Crédito</option>
+                             <option value="Cartão de Débito">Cartão de Débito</option>
+                             <option value="PIX">PIX</option>
+                             <option value="Transferência">Transferência</option>
+                             <option value="Boleto">Boleto</option>
+                             <option value="Cheque">Cheque</option>
+                           </select>
+                         </td>
+                       </>
+                     )}
+                   </tr>
+                 ))}
+               </tbody>
             </table>
             {previewData.transactions.length > 10 && (
               <div className="p-3 text-center text-sm text-gray-500 bg-gray-50">
