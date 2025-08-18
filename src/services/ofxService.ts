@@ -311,10 +311,10 @@ export class OFXService {
          existing.valor === valor && 
          existing.data === dataTransacao &&
          existing.descricao.toLowerCase() === descricao.toLowerCase()
-       );
+       ) || null;
        
        // Verificar se é duplicata exata (mesmo valor, data, descrição E mesmo banco)
-       const isExactDuplicate = exactMatch && exactMatch.conta === contaBancariaId;
+       const isExactDuplicate = exactMatch ? exactMatch.conta === contaBancariaId : false;
        
        // Gerar sugestões baseadas em transações similares
        const suggestions = this.generateSuggestions(similarTransactions, descricao);
