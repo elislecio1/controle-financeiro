@@ -877,28 +877,41 @@ export class IntegracoesServiceImpl implements IntegracoesService {
   private async obterTokenInterAPI(config: IntegracaoConfig, baseUrl: string): Promise<string> {
     try {
       console.log('🔑 Obtendo token de acesso do Inter via API oficial...');
-      console.log('🔗 Tentando conectar com:', `${baseUrl}/oauth/v2/token`);
+      console.log('🔗 Tentando conectar via proxy...');
       
-      const response = await fetch(`${baseUrl}/oauth/v2/token`, {
+      // Usar proxy para contornar CORS
+      const response = await fetch('/api/banco-inter', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-API-Key': config.apiKey || '',
-          'X-API-Secret': config.apiSecret || ''
+          'Content-Type': 'application/json',
         },
-        body: new URLSearchParams({
-          grant_type: 'client_credentials',
-          scope: 'extrato.read'
+        body: JSON.stringify({
+          method: 'POST',
+          endpoint: `${baseUrl}/oauth/v2/token`,
+          credentials: {
+            apiKey: config.apiKey || '',
+            apiSecret: config.apiSecret || ''
+          },
+          data: {
+            grant_type: 'client_credentials',
+            scope: 'extrato.read'
+          }
         })
       });
 
       if (!response.ok) {
-        throw new Error(`Erro ao obter token: ${response.status} ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(`Erro ao obter token: ${errorData.error || response.statusText}`);
       }
 
-      const data = await response.json();
-      console.log('✅ Token obtido com sucesso');
-      return data.access_token;
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(`Erro na API: ${result.error}`);
+      }
+
+      console.log('✅ Token obtido com sucesso via proxy');
+      return result.data.access_token;
       
     } catch (error) {
       console.error('❌ Erro ao obter token via API oficial:', error);
@@ -942,26 +955,44 @@ export class IntegracoesServiceImpl implements IntegracoesService {
   private async buscarExtratoInter(config: IntegracaoConfig, baseUrl: string, token: string): Promise<any[]> {
     try {
       console.log('📋 Buscando extrato bancário do Inter...');
-      console.log('🔗 Tentando conectar com:', `${baseUrl}/banking/v2/extrato`);
+      console.log('🔗 Tentando conectar via proxy...');
       
       const dataInicio = new Date();
       dataInicio.setDate(dataInicio.getDate() - 30);
       
-      const response = await fetch(`${baseUrl}/banking/v2/extrato`, {
-        method: 'GET',
+      // Usar proxy para contornar CORS
+      const response = await fetch('/api/banco-inter', {
+        method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify({
+          method: 'GET',
+          endpoint: `${baseUrl}/banking/v2/extrato`,
+          credentials: {
+            apiKey: config.apiKey || '',
+            apiSecret: config.apiSecret || ''
+          },
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        })
       });
 
       if (!response.ok) {
-        throw new Error(`Erro ao buscar extrato: ${response.status} ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(`Erro ao buscar extrato: ${errorData.error || response.statusText}`);
       }
 
-      const data = await response.json();
-      console.log('✅ Extrato real obtido com sucesso');
-      return data.transacoes || [];
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(`Erro na API: ${result.error}`);
+      }
+
+      console.log('✅ Extrato real obtido com sucesso via proxy');
+      return result.data.transacoes || [];
       
     } catch (error) {
       console.error('❌ Erro ao buscar extrato:', error);
