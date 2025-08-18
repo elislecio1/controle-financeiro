@@ -10,6 +10,7 @@ import Module4 from './components/modules/Module4/Module4'
 import DataImport from './components/DataImport'
 import SistemaAlertas from './components/SistemaAlertas'
 import IntegracoesBancarias from './components/IntegracoesBancarias'
+import { OFXImporter } from './components/OFXImporter'
 import { ToastContainer } from './components/ToastNotification'
 import { formatarMoeda, formatarValorTabela, getClasseValor } from './utils/formatters'
 
@@ -56,6 +57,9 @@ function App() {
   // Estados para Sistema de Alertas
   const [showAlertasModal, setShowAlertasModal] = useState(false)
   const [alertasAtivos, setAlertasAtivos] = useState<Alerta[]>([])
+
+  // Estados para Importação OFX
+  const [showOFXModal, setShowOFXModal] = useState(false)
 
   // Estados para ordenação e confirmação de pagamento
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
@@ -785,16 +789,24 @@ function App() {
                   Exportar
                 </button>
                 
-                <label className="flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 cursor-pointer">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Importar
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={handleImportData}
-                    className="hidden"
-                  />
-                </label>
+                                 <label className="flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 cursor-pointer">
+                   <Upload className="h-4 w-4 mr-2" />
+                   Importar
+                   <input
+                     type="file"
+                     accept=".json"
+                     onChange={handleImportData}
+                     className="hidden"
+                   />
+                 </label>
+                 
+                 <button
+                   onClick={() => setShowOFXModal(true)}
+                   className="flex items-center px-3 py-2 text-sm font-medium text-purple-700 bg-purple-100 rounded-md hover:bg-purple-200"
+                 >
+                   <Upload className="h-4 w-4 mr-2" />
+                   Importar OFX
+                 </button>
               </div>
             </div>
           </div>
@@ -1451,58 +1463,87 @@ function App() {
           </div>
         )}
 
-        {/* Modal de Confirmação de Pagamento */}
-        {showPaymentModal && selectedTransaction && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-              <div className="mt-3">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Confirmar Pagamento
-                </h3>
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600 mb-2">
-                    <strong>Descrição:</strong> {selectedTransaction.descricao}
-                  </p>
-                  <p className="text-sm text-gray-600 mb-2">
-                    <strong>Valor:</strong> {formatarValorTabela(selectedTransaction.valor)}
-                  </p>
-                  <p className="text-sm text-gray-600 mb-4">
-                    <strong>Vencimento:</strong> {selectedTransaction.data}
-                  </p>
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Data do Pagamento
-                  </label>
-                  <input
-                    type="date"
-                    value={paymentDate}
-                    onChange={(e) => setPaymentDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div className="flex justify-end space-x-3">
-                  <button
-                    onClick={() => {
-                      setShowPaymentModal(false)
-                      setSelectedTransaction(null)
-                      setPaymentDate('')
-                    }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleSavePayment}
-                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
-                  >
-                    Confirmar Pagamento
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+                 {/* Modal de Confirmação de Pagamento */}
+         {showPaymentModal && selectedTransaction && (
+           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+             <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+               <div className="mt-3">
+                 <h3 className="text-lg font-medium text-gray-900 mb-4">
+                   Confirmar Pagamento
+                 </h3>
+                 <div className="mb-4">
+                   <p className="text-sm text-gray-600 mb-2">
+                     <strong>Descrição:</strong> {selectedTransaction.descricao}
+                   </p>
+                   <p className="text-sm text-gray-600 mb-2">
+                     <strong>Valor:</strong> {formatarValorTabela(selectedTransaction.valor)}
+                   </p>
+                   <p className="text-sm text-gray-600 mb-4">
+                     <strong>Vencimento:</strong> {selectedTransaction.data}
+                   </p>
+                 </div>
+                 <div className="mb-4">
+                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                     Data do Pagamento
+                   </label>
+                   <input
+                     type="date"
+                     value={paymentDate}
+                     onChange={(e) => setPaymentDate(e.target.value)}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                   />
+                 </div>
+                 <div className="flex justify-end space-x-3">
+                   <button
+                     onClick={() => {
+                       setShowPaymentModal(false)
+                       setSelectedTransaction(null)
+                       setPaymentDate('')
+                     }}
+                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                   >
+                     Cancelar
+                   </button>
+                   <button
+                     onClick={handleSavePayment}
+                     className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+                   >
+                     Confirmar Pagamento
+                   </button>
+                 </div>
+               </div>
+             </div>
+           </div>
+         )}
+
+         {/* Modal de Importação OFX */}
+         {showOFXModal && (
+           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+             <div className="relative top-10 mx-auto p-4 w-full max-w-4xl shadow-lg rounded-md bg-white">
+               <div className="mt-3">
+                 <div className="flex justify-between items-center mb-4">
+                   <h3 className="text-lg font-medium text-gray-900">
+                     Importação de Arquivo OFX
+                   </h3>
+                   <button
+                     onClick={() => setShowOFXModal(false)}
+                     className="text-gray-400 hover:text-gray-600"
+                   >
+                     <span className="text-2xl">×</span>
+                   </button>
+                 </div>
+                 <OFXImporter 
+                   onImportComplete={(result) => {
+                     console.log('Importação OFX concluída:', result);
+                     if (result.success) {
+                       loadData(); // Recarregar dados após importação
+                     }
+                   }}
+                 />
+               </div>
+             </div>
+           </div>
+         )}
       </main>
     </div>
   )
