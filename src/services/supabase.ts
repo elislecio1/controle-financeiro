@@ -611,7 +611,7 @@ class SupabaseServiceImpl implements SupabaseService {
       
       const updateData: any = {}
       
-      if (data.data) updateData.data = this.convertToISODate(data.data)
+      if (data.data) updateData.data = data.data // Manter formato brasileiro DD/MM/AAAA
       if (data.valor !== undefined) updateData.valor = data.valor
       if (data.descricao) updateData.descricao = data.descricao
       if (data.conta) updateData.conta = data.conta
@@ -625,12 +625,12 @@ class SupabaseServiceImpl implements SupabaseService {
       if (data.forma) updateData.forma = data.forma
       if (data.numeroDocumento !== undefined) updateData.numero_documento = data.numeroDocumento
       if (data.observacoes !== undefined) updateData.observacoes = data.observacoes
-      if (data.dataCompetencia !== undefined) updateData.data_competencia = data.dataCompetencia ? this.convertToISODate(data.dataCompetencia) : null
+      if (data.dataCompetencia !== undefined) updateData.data_competencia = data.dataCompetencia || null // Manter formato brasileiro DD/MM/AAAA
       if (data.tags !== undefined) updateData.tags = data.tags ? JSON.stringify(data.tags) : null
       if (data.tipo) updateData.tipo = data.tipo
-      if (data.vencimento) updateData.vencimento = this.convertToISODate(data.vencimento)
+      if (data.vencimento) updateData.vencimento = data.vencimento // Manter formato brasileiro DD/MM/AAAA
       if (data.situacao !== undefined) updateData.situacao = data.situacao
-      if (data.dataPagamento !== undefined) updateData.data_pagamento = data.dataPagamento ? this.convertToISODate(data.dataPagamento) : null
+      if (data.dataPagamento !== undefined) updateData.data_pagamento = data.dataPagamento || null // Manter formato brasileiro DD/MM/AAAA
       
       updateData.updated_at = new Date().toISOString()
 

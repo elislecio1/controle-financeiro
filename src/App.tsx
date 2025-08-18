@@ -587,7 +587,8 @@ function App() {
       const updatedTransaction: SheetData = {
         ...selectedTransaction,
         status: 'pago' as const,
-        dataPagamento: paymentDate
+        dataPagamento: paymentDate,
+        situacao: 'pago' // Adicionar também o campo situacao
       }
       
       // Atualizar no Supabase
@@ -626,7 +627,8 @@ function App() {
       const updatedTransaction: SheetData = {
         ...transaction,
         status: 'pendente' as const,
-        dataPagamento: undefined
+        dataPagamento: undefined,
+        situacao: 'pendente' // Adicionar também o campo situacao
       }
       
       // Atualizar no Supabase
