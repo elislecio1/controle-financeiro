@@ -840,17 +840,15 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       console.log('🔑 API Key:', config.apiKey ? 'Configurada' : 'Não configurada');
       console.log('🔑 API Secret:', config.apiSecret ? 'Configurada' : 'Não configurada');
 
-      // URL base da API do Inter - Forçar URL correta mesmo se configurada incorretamente
+      // URL base da API do Inter - Usar URL que funciona
       let baseUrl = config.baseUrl || (config.ambiente === 'producao' 
-        ? 'https://api.inter.com.br' 
-        : 'https://api-hml.inter.com.br');
+        ? 'https://cdp.inter.com.br' 
+        : 'https://cdp.inter.com.br');
       
-      // Corrigir URL se estiver incorreta
-      if (baseUrl === 'https://cdp.inter.com.br') {
-        console.log('⚠️  URL incorreta detectada, corrigindo automaticamente...');
-        baseUrl = config.ambiente === 'producao' 
-          ? 'https://api.inter.com.br' 
-          : 'https://api-hml.inter.com.br';
+      // Manter URL original que funcionava
+      if (!baseUrl || baseUrl === 'https://api.inter.com.br' || baseUrl === 'https://api-hml.inter.com.br') {
+        console.log('⚠️  Usando URL original que funciona...');
+        baseUrl = 'https://cdp.inter.com.br';
       }
 
       console.log('🌐 URL da API:', baseUrl);
