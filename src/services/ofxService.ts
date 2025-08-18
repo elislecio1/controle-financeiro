@@ -214,11 +214,20 @@ export class OFXService {
     }
   }
   
-  // Verificar se uma transação já existe no sistema
-  private async checkExistingTransaction(
-    transaction: OFXTransaction, 
-    contaBancariaId: string
-  ): Promise<{ exists: boolean; similarTransactions: any[]; exactMatch: any | null }> {
+     // Verificar se uma transação já existe no sistema e obter sugestões
+   private async checkExistingTransaction(
+     transaction: OFXTransaction, 
+     contaBancariaId: string
+   ): Promise<{ 
+     exists: boolean; 
+     similarTransactions: any[]; 
+     exactMatch: any | null;
+     suggestions: {
+       categoria?: string;
+       contato?: string;
+       forma?: string;
+     };
+   }> {
     try {
       const valor = Math.abs(transaction.amount);
       const dataTransacao = transaction.datePosted;
@@ -232,14 +241,24 @@ export class OFXService {
         .gte('data', this.subtractDays(dataTransacao, 3))
         .lte('data', this.addDays(dataTransacao, 3));
       
-      if (error) {
-        console.error('❌ Erro ao buscar transações existentes:', error);
-        return { exists: false, similarTransactions: [], exactMatch: null };
-      }
-      
-      if (!existingTransactions || existingTransactions.length === 0) {
-        return { exists: false, similarTransactions: [], exactMatch: null };
-      }
+             if (error) {
+         console.error('❌ Erro ao buscar transações existentes:', error);
+         return { 
+           exists: false, 
+           similarTransactions: [], 
+           exactMatch: null,
+           suggestions: {}
+         };
+       }
+       
+       if (!existingTransactions || existingTransactions.length === 0) {
+         return { 
+           exists: false, 
+           similarTransactions: [], 
+           exactMatch: null,
+           suggestions: {}
+         };
+       }
       
       // Filtrar transações similares com critérios mais específicos
       const similarTransactions = existingTransactions.filter(existing => {
@@ -251,24 +270,33 @@ export class OFXService {
         return valorSimilar && dataSimilar && descricaoSimilar;
       });
       
-      // Verificar se há correspondência exata
-      const exactMatch = similarTransactions.find(existing => 
-        existing.valor === valor && 
-        existing.data === dataTransacao &&
-        existing.descricao.toLowerCase() === descricao.toLowerCase()
-      );
+             // Verificar se há correspondência exata
+       const exactMatch = similarTransactions.find(existing => 
+         existing.valor === valor && 
+         existing.data === dataTransacao &&
+         existing.descricao.toLowerCase() === descricao.toLowerCase()
+       );
+       
+       // Gerar sugestões baseadas em transações similares
+       const suggestions = this.generateSuggestions(similarTransactions, descricao);
+       
+       return {
+         exists: similarTransactions.length > 0,
+         similarTransactions,
+         exactMatch,
+         suggestions
+       };
       
-      return {
-        exists: similarTransactions.length > 0,
-        similarTransactions,
-        exactMatch
-      };
-      
-    } catch (error) {
-      console.error('❌ Erro ao verificar transação existente:', error);
-      return { exists: false, similarTransactions: [], exactMatch: null };
-    }
-  }
+         } catch (error) {
+       console.error('❌ Erro ao verificar transação existente:', error);
+       return { 
+         exists: false, 
+         similarTransactions: [], 
+         exactMatch: null,
+         suggestions: {}
+       };
+     }
+   }
   
   // Verificar se duas datas são similares (dentro de 1 dia)
   private isDateSimilar(date1: string, date2: string): boolean {
@@ -351,10 +379,119 @@ export class OFXService {
     }
   }
   
-  // Subtrair dias de uma data
-  private subtractDays(dateStr: string, days: number): string {
-    return this.addDays(dateStr, -days);
-  }
+     // Subtrair dias de uma data
+   private subtractDays(dateStr: string, days: number): string {
+     return this.addDays(dateStr, -days);
+   }
+   
+   // Gerar sugestões baseadas em transações similares
+   private generateSuggestions(similarTransactions: any[], currentDescription: string): {
+     categoria?: string;
+     contato?: string;
+     forma?: string;
+   } {
+     const suggestions: {
+       categoria?: string;
+       contato?: string;
+       forma?: string;
+     } = {};
+     
+     if (similarTransactions.length === 0) return suggestions;
+     
+     // Agrupar transações por similaridade de descrição
+     const descriptionGroups = new Map<string, any[]>();
+     
+     similarTransactions.forEach(transaction => {
+       const cleanDesc = transaction.descricao.toLowerCase().replace(/[^a-z0-9]/g, '');
+       const currentCleanDesc = currentDescription.toLowerCase().replace(/[^a-z0-9]/g, '');
+       
+       // Se as descrições são similares, agrupar
+       if (this.isDescriptionSimilar(transaction.descricao, currentDescription)) {
+         if (!descriptionGroups.has(cleanDesc)) {
+           descriptionGroups.set(cleanDesc, []);
+         }
+         descriptionGroups.get(cleanDesc)!.push(transaction);
+       }
+     });
+     
+     // Encontrar o grupo mais frequente
+     let mostFrequentGroup: any[] = [];
+     let maxFrequency = 0;
+     
+     descriptionGroups.forEach((group, desc) => {
+       if (group.length > maxFrequency) {
+         maxFrequency = group.length;
+         mostFrequentGroup = group;
+       }
+     });
+     
+     if (mostFrequentGroup.length > 0) {
+       // Sugerir categoria mais frequente
+       const categoriaCount = new Map<string, number>();
+       mostFrequentGroup.forEach(t => {
+         if (t.categoria) {
+           categoriaCount.set(t.categoria, (categoriaCount.get(t.categoria) || 0) + 1);
+         }
+       });
+       
+       let mostFrequentCategoria = '';
+       let maxCategoriaCount = 0;
+       categoriaCount.forEach((count, categoria) => {
+         if (count > maxCategoriaCount) {
+           maxCategoriaCount = count;
+           mostFrequentCategoria = categoria;
+         }
+       });
+       
+       if (mostFrequentCategoria) {
+         suggestions.categoria = mostFrequentCategoria;
+       }
+       
+       // Sugerir contato mais frequente
+       const contatoCount = new Map<string, number>();
+       mostFrequentGroup.forEach(t => {
+         if (t.contato) {
+           contatoCount.set(t.contato, (contatoCount.get(t.contato) || 0) + 1);
+         }
+       });
+       
+       let mostFrequentContato = '';
+       let maxContatoCount = 0;
+       contatoCount.forEach((count, contato) => {
+         if (count > maxContatoCount) {
+           maxContatoCount = count;
+           mostFrequentContato = contato;
+         }
+       });
+       
+       if (mostFrequentContato) {
+         suggestions.contato = mostFrequentContato;
+       }
+       
+       // Sugerir forma de pagamento mais frequente
+       const formaCount = new Map<string, number>();
+       mostFrequentGroup.forEach(t => {
+         if (t.forma) {
+           formaCount.set(t.forma, (formaCount.get(t.forma) || 0) + 1);
+         }
+       });
+       
+       let mostFrequentForma = '';
+       let maxFormaCount = 0;
+       formaCount.forEach((count, forma) => {
+         if (count > maxFormaCount) {
+           maxFormaCount = count;
+           mostFrequentForma = forma;
+         }
+       });
+       
+       if (mostFrequentForma) {
+         suggestions.forma = mostFrequentForma;
+       }
+     }
+     
+     return suggestions;
+   }
   
   // Atualizar banco de uma transação existente
   private async updateTransactionBank(transactionId: string, newContaBancariaId: string): Promise<boolean> {
@@ -413,8 +550,8 @@ export class OFXService {
         try {
           console.log(`🔍 Processando transação: ${transaction.memo || transaction.name} - R$ ${transaction.amount}`);
           
-          // Verificar se a transação já existe
-          const { exists, similarTransactions, exactMatch } = await this.checkExistingTransaction(transaction, contaBancariaId);
+                     // Verificar se a transação já existe e obter sugestões
+           const { exists, similarTransactions, exactMatch, suggestions } = await this.checkExistingTransaction(transaction, contaBancariaId);
           
           if (exactMatch) {
             // Transação exata encontrada - verificar se precisa atualizar o banco
@@ -439,15 +576,15 @@ export class OFXService {
             continue;
           }
           
-                     // Transação não existe - criar nova
+                     // Transação não existe - criar nova com sugestões inteligentes
            const novaTransacao = {
              data: transaction.datePosted,
              valor: Math.abs(transaction.amount),
              descricao: transaction.memo || transaction.name || 'Transação OFX',
              conta: contaBancariaId,
-             categoria: transaction.categoria || (transaction.amount > 0 ? 'Receitas' : 'Despesas'),
-             contato: transaction.contato || null,
-             forma: transaction.forma || null,
+             categoria: transaction.categoria || suggestions.categoria || (transaction.amount > 0 ? 'Receitas' : 'Despesas'),
+             contato: transaction.contato || suggestions.contato || null,
+             forma: transaction.forma || suggestions.forma || 'PIX', // Usar sugestão ou valor padrão
              tipo: transaction.amount > 0 ? 'receita' : 'despesa',
              vencimento: transaction.datePosted, // Usar a data da transação como vencimento
              situacao: 'pago', // Transações OFX já foram processadas
@@ -456,6 +593,11 @@ export class OFXService {
              created_at: new Date().toISOString(),
              updated_at: new Date().toISOString()
            };
+           
+           // Log das sugestões aplicadas
+           if (suggestions.categoria || suggestions.contato || suggestions.forma) {
+             console.log(`💡 Sugestões aplicadas para "${novaTransacao.descricao}":`, suggestions);
+           }
           
           const { error: insertError } = await supabase
             .from('transactions')
