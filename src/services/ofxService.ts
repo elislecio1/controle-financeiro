@@ -47,6 +47,24 @@ export interface OFXData {
   endDate: string;
 }
 
+export interface SimilarTransaction {
+  id: string;
+  descricao: string;
+  valor: number;
+  data: string;
+  categoria?: string;
+  contato?: string;
+  forma?: string;
+  status: string;
+  conta: string;
+}
+
+export interface ReconciliationOption {
+  action: 'conciliar' | 'marcar_pago' | 'editar' | 'importar' | 'pular';
+  transactionId?: string;
+  editedData?: any;
+}
+
 export interface ImportResult {
   success: boolean;
   message: string;
@@ -56,6 +74,11 @@ export interface ImportResult {
   errorCount: number;
   errors: string[];
   data?: OFXData;
+  similarTransactions?: {
+    ofxTransaction: OFXTransaction;
+    similarTransactions: SimilarTransaction[];
+  }[];
+  needsReconciliation?: boolean;
 }
 
 export class OFXService {
@@ -220,8 +243,9 @@ export class OFXService {
      contaBancariaId: string
    ): Promise<{ 
      exists: boolean; 
-     similarTransactions: any[]; 
-     exactMatch: any | null;
+     similarTransactions: SimilarTransaction[]; 
+     exactMatch: SimilarTransaction | null;
+     isExactDuplicate: boolean;
      suggestions: {
        categoria?: string;
        contato?: string;
@@ -247,6 +271,7 @@ export class OFXService {
            exists: false, 
            similarTransactions: [], 
            exactMatch: null,
+           isExactDuplicate: false,
            suggestions: {}
          };
        }
@@ -256,26 +281,40 @@ export class OFXService {
            exists: false, 
            similarTransactions: [], 
            exactMatch: null,
+           isExactDuplicate: false,
            suggestions: {}
          };
        }
       
-      // Filtrar transações similares com critérios mais específicos
-      const similarTransactions = existingTransactions.filter(existing => {
-        // Verificar se é a mesma transação (mesmo valor, data e descrição similar)
-        const valorSimilar = Math.abs(existing.valor - valor) < 0.02; // Tolerância de R$ 0,02
-        const dataSimilar = this.isDateSimilar(existing.data, dataTransacao);
-        const descricaoSimilar = this.isDescriptionSimilar(existing.descricao, descricao);
-        
-        return valorSimilar && dataSimilar && descricaoSimilar;
-      });
-      
-             // Verificar se há correspondência exata
+             // Filtrar transações similares com critérios mais específicos
+       const similarTransactions: SimilarTransaction[] = existingTransactions.filter(existing => {
+         // Verificar se é a mesma transação (mesmo valor, data e descrição similar)
+         const valorSimilar = Math.abs(existing.valor - valor) < 0.02; // Tolerância de R$ 0,02
+         const dataSimilar = this.isDateSimilar(existing.data, dataTransacao);
+         const descricaoSimilar = this.isDescriptionSimilar(existing.descricao, descricao);
+         
+         return valorSimilar && dataSimilar && descricaoSimilar;
+       }).map(existing => ({
+         id: existing.id,
+         descricao: existing.descricao,
+         valor: existing.valor,
+         data: existing.data,
+         categoria: existing.categoria,
+         contato: existing.contato,
+         forma: existing.forma,
+         status: existing.status,
+         conta: existing.conta
+       }));
+       
+       // Verificar se há correspondência exata (100% idêntica)
        const exactMatch = similarTransactions.find(existing => 
          existing.valor === valor && 
          existing.data === dataTransacao &&
          existing.descricao.toLowerCase() === descricao.toLowerCase()
        );
+       
+       // Verificar se é duplicata exata (mesmo valor, data, descrição E mesmo banco)
+       const isExactDuplicate = exactMatch && exactMatch.conta === contaBancariaId;
        
        // Gerar sugestões baseadas em transações similares
        const suggestions = this.generateSuggestions(similarTransactions, descricao);
@@ -284,6 +323,7 @@ export class OFXService {
          exists: similarTransactions.length > 0,
          similarTransactions,
          exactMatch,
+         isExactDuplicate,
          suggestions
        };
       
@@ -293,6 +333,7 @@ export class OFXService {
          exists: false, 
          similarTransactions: [], 
          exactMatch: null,
+         isExactDuplicate: false,
          suggestions: {}
        };
      }
@@ -493,8 +534,126 @@ export class OFXService {
      return suggestions;
    }
   
-  // Atualizar banco de uma transação existente
-  private async updateTransactionBank(transactionId: string, newContaBancariaId: string): Promise<boolean> {
+     // Processar ações de conciliação
+   async processReconciliation(
+     ofxTransaction: OFXTransaction, 
+     reconciliationOption: ReconciliationOption,
+     contaBancariaId: string
+   ): Promise<{ success: boolean; message: string }> {
+     try {
+       switch (reconciliationOption.action) {
+         case 'conciliar':
+           if (reconciliationOption.transactionId) {
+             // Marcar transação existente como conciliada
+             const { error } = await supabase
+               .from('transactions')
+               .update({ 
+                 status: 'pago',
+                 situacao: 'conciliada',
+                 updated_at: new Date().toISOString()
+               })
+               .eq('id', reconciliationOption.transactionId);
+             
+             if (error) {
+               console.error('❌ Erro ao conciliar transação:', error);
+               return { success: false, message: `Erro ao conciliar: ${error.message}` };
+             }
+             
+             return { success: true, message: 'Transação conciliada com sucesso' };
+           }
+           break;
+           
+         case 'marcar_pago':
+           if (reconciliationOption.transactionId) {
+             // Marcar transação existente como paga
+             const { error } = await supabase
+               .from('transactions')
+               .update({ 
+                 status: 'pago',
+                 updated_at: new Date().toISOString()
+               })
+               .eq('id', reconciliationOption.transactionId);
+             
+             if (error) {
+               console.error('❌ Erro ao marcar como pago:', error);
+               return { success: false, message: `Erro ao marcar como pago: ${error.message}` };
+             }
+             
+             return { success: true, message: 'Transação marcada como paga' };
+           }
+           break;
+           
+         case 'editar':
+           if (reconciliationOption.transactionId && reconciliationOption.editedData) {
+             // Editar transação existente
+             const { error } = await supabase
+               .from('transactions')
+               .update({ 
+                 ...reconciliationOption.editedData,
+                 updated_at: new Date().toISOString()
+               })
+               .eq('id', reconciliationOption.transactionId);
+             
+             if (error) {
+               console.error('❌ Erro ao editar transação:', error);
+               return { success: false, message: `Erro ao editar: ${error.message}` };
+             }
+             
+             return { success: true, message: 'Transação editada com sucesso' };
+           }
+           break;
+           
+         case 'importar':
+           // Importar como nova transação
+           const novaTransacao = {
+             data: ofxTransaction.datePosted,
+             valor: Math.abs(ofxTransaction.amount),
+             descricao: ofxTransaction.memo || ofxTransaction.name || 'Transação OFX',
+             conta: contaBancariaId,
+             categoria: ofxTransaction.categoria || (ofxTransaction.amount > 0 ? 'Receitas' : 'Despesas'),
+             contato: ofxTransaction.contato || null,
+             forma: ofxTransaction.forma || 'PIX',
+             tipo: ofxTransaction.amount > 0 ? 'receita' : 'despesa',
+             vencimento: ofxTransaction.datePosted,
+             situacao: 'pago',
+             status: 'pago',
+             observacoes: `OFX Import - ${ofxTransaction.fitId || 'sem ID'}`,
+             created_at: new Date().toISOString(),
+             updated_at: new Date().toISOString()
+           };
+           
+           const { error: insertError } = await supabase
+             .from('transactions')
+             .insert(novaTransacao);
+           
+           if (insertError) {
+             console.error('❌ Erro ao importar transação:', insertError);
+             return { success: false, message: `Erro ao importar: ${insertError.message}` };
+           }
+           
+           return { success: true, message: 'Transação importada com sucesso' };
+           
+         case 'pular':
+           // Não fazer nada
+           return { success: true, message: 'Transação pulada' };
+           
+         default:
+           return { success: false, message: 'Ação de conciliação inválida' };
+       }
+       
+       return { success: false, message: 'Ação não processada' };
+       
+     } catch (error) {
+       console.error('❌ Erro ao processar conciliação:', error);
+       return { 
+         success: false, 
+         message: `Erro ao processar conciliação: ${error instanceof Error ? error.message : 'Erro desconhecido'}` 
+       };
+     }
+   }
+   
+   // Atualizar banco de uma transação existente
+   private async updateTransactionBank(transactionId: string, newContaBancariaId: string): Promise<boolean> {
     try {
       const { error } = await supabase
         .from('transactions')
@@ -540,10 +699,14 @@ export class OFXService {
         return result;
       }
       
-      let importedCount = 0;
-      let updatedCount = 0;
-      let skippedCount = 0;
-      const errors: string[] = [];
+             let importedCount = 0;
+       let updatedCount = 0;
+       let skippedCount = 0;
+       const errors: string[] = [];
+       const similarTransactionsForReconciliation: {
+         ofxTransaction: OFXTransaction;
+         similarTransactions: SimilarTransaction[];
+       }[] = [];
       
       // Processar cada transação individualmente
       for (const transaction of ofxData.transactions) {
@@ -551,30 +714,34 @@ export class OFXService {
           console.log(`🔍 Processando transação: ${transaction.memo || transaction.name} - R$ ${transaction.amount}`);
           
                      // Verificar se a transação já existe e obter sugestões
-           const { exists, similarTransactions, exactMatch, suggestions } = await this.checkExistingTransaction(transaction, contaBancariaId);
+           const { exists, similarTransactions, exactMatch, isExactDuplicate, suggestions } = await this.checkExistingTransaction(transaction, contaBancariaId);
           
-          if (exactMatch) {
-            // Transação exata encontrada - verificar se precisa atualizar o banco
-            if (exactMatch.conta !== contaBancariaId) {
-              const updated = await this.updateTransactionBank(exactMatch.id, contaBancariaId);
-              if (updated) {
-                updatedCount++;
-                console.log(`✅ Transação existente atualizada: ${exactMatch.descricao}`);
-              }
-            } else {
-              skippedCount++;
-              console.log(`⏭️ Transação já existe: ${exactMatch.descricao}`);
-            }
-            continue;
-          }
-          
-          if (similarTransactions.length > 0) {
-            // Transações similares encontradas - pular por segurança
-            skippedCount++;
-            console.log(`⚠️ Transação similar encontrada, pulando: ${transaction.memo || transaction.name}`);
-            errors.push(`Transação similar encontrada: ${transaction.memo || transaction.name} - R$ ${transaction.amount}`);
-            continue;
-          }
+                     if (isExactDuplicate) {
+             // Transação 100% idêntica no mesmo banco - pular
+             skippedCount++;
+             console.log(`⏭️ Transação duplicada exata encontrada, pulando: ${transaction.memo || transaction.name}`);
+             continue;
+           }
+           
+           if (exactMatch && exactMatch.conta !== contaBancariaId) {
+             // Transação exata encontrada em banco diferente - atualizar banco
+             const updated = await this.updateTransactionBank(exactMatch.id, contaBancariaId);
+             if (updated) {
+               updatedCount++;
+               console.log(`✅ Transação existente atualizada: ${exactMatch.descricao}`);
+             }
+             continue;
+           }
+           
+           if (similarTransactions.length > 0) {
+             // Transações similares encontradas - adicionar para conciliação
+             similarTransactionsForReconciliation.push({
+               ofxTransaction: transaction,
+               similarTransactions: similarTransactions
+             });
+             console.log(`🔍 Transação similar encontrada, adicionada para conciliação: ${transaction.memo || transaction.name}`);
+             continue;
+           }
           
                      // Transação não existe - criar nova com sugestões inteligentes
            const novaTransacao = {
@@ -619,20 +786,27 @@ export class OFXService {
         }
       }
       
-      result.success = true;
-      result.importedCount = importedCount;
-      result.errors = errors;
-      
-      const summary = [
-        `Importação concluída:`,
-        `✅ ${importedCount} novas transações importadas`,
-        `🔄 ${updatedCount} transações atualizadas`,
-        `⏭️ ${skippedCount} transações puladas (já existiam)`,
-        `❌ ${result.errorCount} erros`
-      ].join('\n');
-      
-      result.message = summary;
-      result.data = ofxData;
+             result.success = true;
+       result.importedCount = importedCount;
+       result.errors = errors;
+       
+       // Adicionar transações que precisam de conciliação
+       if (similarTransactionsForReconciliation.length > 0) {
+         result.similarTransactions = similarTransactionsForReconciliation;
+         result.needsReconciliation = true;
+       }
+       
+       const summary = [
+         `Importação concluída:`,
+         `✅ ${importedCount} novas transações importadas`,
+         `🔄 ${updatedCount} transações atualizadas`,
+         `⏭️ ${skippedCount} transações puladas (já existiam)`,
+         similarTransactionsForReconciliation.length > 0 ? `🔍 ${similarTransactionsForReconciliation.length} transações similares para conciliação` : '',
+         `❌ ${result.errorCount} erros`
+       ].filter(line => line).join('\n');
+       
+       result.message = summary;
+       result.data = ofxData;
       
       console.log('✅ Importação OFX com conciliação concluída:', result);
       
