@@ -24,7 +24,7 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
 
   const loadContasBancarias = async () => {
     try {
-      const contas = await supabaseService.getContasBancarias();
+      const contas = await supabaseService.getContas();
       setContasBancarias(contas);
       if (contas.length > 0) {
         setSelectedConta(contas[0].id);
