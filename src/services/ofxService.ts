@@ -223,11 +223,11 @@ export class OFXService {
       
       // Buscar transações existentes com critérios de similaridade
       const { data: existingTransactions, error } = await supabase
-        .from('transacoes')
+        .from('transactions')
         .select('*')
         .or(`valor.eq.${valor},valor.eq.${valor + 0.01},valor.eq.${valor - 0.01}`)
-        .gte('data_transacao', this.subtractDays(dataTransacao, 3))
-        .lte('data_transacao', this.addDays(dataTransacao, 3));
+        .gte('data', this.subtractDays(dataTransacao, 3))
+        .lte('data', this.addDays(dataTransacao, 3));
       
       if (error) {
         console.error('❌ Erro ao buscar transações existentes:', error);
@@ -242,7 +242,7 @@ export class OFXService {
       const similarTransactions = existingTransactions.filter(existing => {
         // Verificar se é a mesma transação (mesmo valor, data e descrição similar)
         const valorSimilar = Math.abs(existing.valor - valor) < 0.02; // Tolerância de R$ 0,02
-        const dataSimilar = this.isDateSimilar(existing.data_transacao, dataTransacao);
+        const dataSimilar = this.isDateSimilar(existing.data, dataTransacao);
         const descricaoSimilar = this.isDescriptionSimilar(existing.descricao, descricao);
         
         return valorSimilar && dataSimilar && descricaoSimilar;
@@ -251,7 +251,7 @@ export class OFXService {
       // Verificar se há correspondência exata
       const exactMatch = similarTransactions.find(existing => 
         existing.valor === valor && 
-        existing.data_transacao === dataTransacao &&
+        existing.data === dataTransacao &&
         existing.descricao.toLowerCase() === descricao.toLowerCase()
       );
       
@@ -357,9 +357,9 @@ export class OFXService {
   private async updateTransactionBank(transactionId: string, newContaBancariaId: string): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('transacoes')
+        .from('transactions')
         .update({ 
-          conta_bancaria_id: newContaBancariaId,
+          conta: newContaBancariaId,
           updated_at: new Date().toISOString()
         })
         .eq('id', transactionId);
@@ -415,7 +415,7 @@ export class OFXService {
           
           if (exactMatch) {
             // Transação exata encontrada - verificar se precisa atualizar o banco
-            if (exactMatch.conta_bancaria_id !== contaBancariaId) {
+            if (exactMatch.conta !== contaBancariaId) {
               const updated = await this.updateTransactionBank(exactMatch.id, contaBancariaId);
               if (updated) {
                 updatedCount++;
@@ -438,30 +438,19 @@ export class OFXService {
           
           // Transação não existe - criar nova
           const novaTransacao = {
-            id: crypto.randomUUID(),
-            conta_bancaria_id: contaBancariaId,
-            data_transacao: transaction.datePosted,
+            data: transaction.datePosted,
             valor: Math.abs(transaction.amount),
             descricao: transaction.memo || transaction.name || 'Transação OFX',
-            tipo: transaction.amount > 0 ? 'credito' : 'debito',
-            categoria_id: null,
+            conta: contaBancariaId,
+            tipo: transaction.amount > 0 ? 'receita' : 'despesa',
             status: 'confirmada',
-            id_externo: transaction.fitId,
-            dados_originais: {
-              ofx: true,
-              transactionType: transaction.type,
-              checkNum: transaction.checkNum,
-              refNum: transaction.refNum,
-              sic: transaction.sic,
-              payeeId: transaction.payeeId,
-              originalAmount: transaction.amount
-            },
+            observacoes: `OFX Import - ${transaction.fitId || 'sem ID'}`,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
           
           const { error: insertError } = await supabase
-            .from('transacoes')
+            .from('transactions')
             .insert(novaTransacao);
           
           if (insertError) {

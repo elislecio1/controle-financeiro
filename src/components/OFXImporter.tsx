@@ -15,6 +15,12 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [step, setStep] = useState<'select' | 'preview' | 'import' | 'complete'>('select');
   
+  // Estados para edição
+  const [editingTransactions, setEditingTransactions] = useState<{ [key: number]: string }>({});
+  const [selectedTransactions, setSelectedTransactions] = useState<Set<number>>(new Set());
+  const [batchEditDescription, setBatchEditDescription] = useState<string>('');
+  const [isEditing, setIsEditing] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Carregar contas bancárias
@@ -71,7 +77,17 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
     setStep('import');
 
     try {
-      const result = await ofxService.importOFXTransactions(previewData, selectedConta);
+      // Aplicar as edições de descrição antes da importação
+      const modifiedData = {
+        ...previewData,
+        transactions: previewData.transactions.map((transaction, index) => ({
+          ...transaction,
+          memo: getFinalDescription(index, transaction.memo || transaction.name || ''),
+          name: getFinalDescription(index, transaction.memo || transaction.name || '')
+        }))
+      };
+
+      const result = await ofxService.importOFXTransactions(modifiedData, selectedConta);
       setImportResult(result);
       setStep('complete');
       
@@ -101,6 +117,52 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
       style: 'currency',
       currency: 'BRL'
     }).format(value);
+  };
+
+  // Funções de edição
+  const handleEditDescription = (index: number, description: string) => {
+    setEditingTransactions(prev => ({
+      ...prev,
+      [index]: description
+    }));
+  };
+
+  const handleSelectTransaction = (index: number) => {
+    setSelectedTransactions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (previewData) {
+      const allIndices = Array.from({ length: previewData.transactions.length }, (_, i) => i);
+      setSelectedTransactions(new Set(allIndices));
+    }
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedTransactions(new Set());
+  };
+
+  const handleBatchEdit = () => {
+    if (selectedTransactions.size === 0 || !batchEditDescription.trim()) return;
+    
+    const newEditingTransactions = { ...editingTransactions };
+    selectedTransactions.forEach(index => {
+      newEditingTransactions[index] = batchEditDescription;
+    });
+    setEditingTransactions(newEditingTransactions);
+    setBatchEditDescription('');
+  };
+
+  const getFinalDescription = (index: number, originalDescription: string) => {
+    return editingTransactions[index] || originalDescription;
   };
 
   if (step === 'select') {
@@ -217,11 +279,76 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
 
         {/* Prévia das Transações */}
         <div className="mb-6">
-          <h3 className="font-semibold text-gray-800 mb-3">📋 Prévia das Transações</h3>
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="font-semibold text-gray-800">📋 Prévia das Transações</h3>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setIsEditing(!isEditing)}
+                className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                  isEditing 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {isEditing ? '✕ Cancelar Edição' : '✏️ Editar Descrições'}
+              </button>
+            </div>
+          </div>
+
+          {/* Controles de Edição em Lote */}
+          {isEditing && (
+            <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+              <div className="flex items-center space-x-4 mb-3">
+                <button
+                  onClick={handleSelectAll}
+                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Selecionar Todas
+                </button>
+                <button
+                  onClick={handleDeselectAll}
+                  className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
+                >
+                  Desmarcar Todas
+                </button>
+                <span className="text-sm text-gray-600">
+                  {selectedTransactions.size} selecionada(s)
+                </span>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={batchEditDescription}
+                  onChange={(e) => setBatchEditDescription(e.target.value)}
+                  placeholder="Nova descrição para todas as selecionadas..."
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <button
+                  onClick={handleBatchEdit}
+                  disabled={selectedTransactions.size === 0 || !batchEditDescription.trim()}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Aplicar
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>
+                  {isEditing && (
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      <input
+                        type="checkbox"
+                        checked={selectedTransactions.size === previewData.transactions.length}
+                        onChange={() => selectedTransactions.size === previewData.transactions.length ? handleDeselectAll() : handleSelectAll()}
+                        className="rounded border-gray-300"
+                      />
+                    </th>
+                  )}
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Descrição</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Valor</th>
@@ -230,10 +357,29 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {previewData.transactions.slice(0, 10).map((transaction, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
+                  <tr key={index} className={`hover:bg-gray-50 ${isEditing ? 'bg-blue-50' : ''}`}>
+                    {isEditing && (
+                      <td className="px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedTransactions.has(index)}
+                          onChange={() => handleSelectTransaction(index)}
+                          className="rounded border-gray-300"
+                        />
+                      </td>
+                    )}
                     <td className="px-3 py-2 text-sm text-gray-900">{transaction.datePosted}</td>
                     <td className="px-3 py-2 text-sm text-gray-900">
-                      {transaction.memo || transaction.name || 'Transação OFX'}
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editingTransactions[index] || transaction.memo || transaction.name || 'Transação OFX'}
+                          onChange={(e) => handleEditDescription(index, e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        getFinalDescription(index, transaction.memo || transaction.name || 'Transação OFX')
+                      )}
                     </td>
                     <td className={`px-3 py-2 text-sm font-medium ${
                       transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
