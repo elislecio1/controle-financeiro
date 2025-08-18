@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "functions": {
+    "api/banco-inter.js": {
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/banco-inter",
+      "dest": "/api/banco-inter.js"
+    }
+  ]
+}

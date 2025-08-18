@@ -12,14 +12,32 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { method, endpoint, credentials, data } = req.body;
+    console.log('🔍 API Route recebeu requisição:', req.method);
+    console.log('📦 Body recebido:', JSON.stringify(req.body, null, 2));
+
+    const { method, endpoint, credentials, data, headers: customHeaders } = req.body;
 
     // Validar dados necessários
-    if (!endpoint || !credentials) {
+    if (!endpoint) {
+      console.error('❌ Endpoint não fornecido');
       return res.status(400).json({ 
-        error: 'Endpoint e credenciais são obrigatórios' 
+        error: 'Endpoint é obrigatório',
+        received: { endpoint, hasCredentials: !!credentials }
       });
     }
+
+    if (!credentials) {
+      console.error('❌ Credenciais não fornecidas');
+      return res.status(400).json({ 
+        error: 'Credenciais são obrigatórias',
+        received: { endpoint, hasCredentials: false }
+      });
+    }
+
+    console.log('🔑 Credenciais recebidas:', {
+      hasApiKey: !!credentials.apiKey,
+      hasApiSecret: !!credentials.apiSecret
+    });
 
     // Configurar headers para a API do Banco Inter
     const headers = {
@@ -35,9 +53,13 @@ export default async function handler(req, res) {
     }
 
     // Adicionar headers customizados se fornecidos
-    if (req.body.headers) {
-      Object.assign(headers, req.body.headers);
+    if (customHeaders) {
+      Object.assign(headers, customHeaders);
     }
+
+    console.log('🌐 Fazendo requisição para:', endpoint);
+    console.log('📋 Headers:', headers);
+    console.log('📦 Data:', data);
 
     // Fazer requisição para a API do Banco Inter
     const response = await fetch(endpoint, {
@@ -46,14 +68,18 @@ export default async function handler(req, res) {
       body: data ? new URLSearchParams(data) : undefined,
     });
 
+    console.log('📡 Resposta da API:', response.status, response.statusText);
+
     // Verificar se a requisição foi bem-sucedida
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Erro na API do Banco Inter:', response.status, errorText);
+      console.error('❌ Erro na API do Banco Inter:', response.status, errorText);
       
       return res.status(response.status).json({
         error: `Erro na API do Banco Inter: ${response.status}`,
-        details: errorText
+        details: errorText,
+        endpoint,
+        method: method || 'POST'
       });
     }
 
@@ -72,7 +98,8 @@ export default async function handler(req, res) {
     
     return res.status(500).json({
       error: 'Erro interno do servidor',
-      details: error.message
+      details: error.message,
+      stack: error.stack
     });
   }
 }
