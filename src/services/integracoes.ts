@@ -879,6 +879,14 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       console.log('🔑 Obtendo token de acesso do Inter via API oficial...');
       console.log('🔗 Tentando conectar via proxy...');
       
+      // Preparar dados de autenticação conforme documentação
+      const authData = new URLSearchParams({
+        grant_type: 'client_credentials',
+        scope: 'extrato.read'
+      });
+      
+      console.log('📦 Dados de autenticação:', authData.toString());
+      
       // Usar proxy para contornar CORS
       const response = await fetch('/api/banco-inter', {
         method: 'POST',
@@ -901,6 +909,7 @@ export class IntegracoesServiceImpl implements IntegracoesService {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ Erro na resposta:', errorData);
         throw new Error(`Erro ao obter token: ${errorData.error || response.statusText}`);
       }
 
@@ -911,6 +920,7 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       }
 
       console.log('✅ Token obtido com sucesso via proxy');
+      console.log('🔑 Token:', result.data.access_token ? 'Presente' : 'Ausente');
       return result.data.access_token;
       
     } catch (error) {
@@ -957,8 +967,21 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       console.log('📋 Buscando extrato bancário do Inter...');
       console.log('🔗 Tentando conectar via proxy...');
       
+      // Calcular datas (últimos 30 dias)
+      const dataFim = new Date();
       const dataInicio = new Date();
       dataInicio.setDate(dataInicio.getDate() - 30);
+      
+      // Formatar datas no formato YYYY-MM-DD conforme documentação
+      const dataInicioStr = dataInicio.toISOString().split('T')[0];
+      const dataFimStr = dataFim.toISOString().split('T')[0];
+      
+      console.log('📅 Período de consulta:', dataInicioStr, 'até', dataFimStr);
+      
+      // Usar endpoint correto com parâmetros obrigatórios
+      const endpoint = `${baseUrl}/banking/v2/extrato/completo?dataInicio=${dataInicioStr}&dataFim=${dataFimStr}&tamanhoPagina=100&pagina=0`;
+      
+      console.log('🌐 Endpoint completo:', endpoint);
       
       // Usar proxy para contornar CORS
       const response = await fetch('/api/banco-inter', {
@@ -968,7 +991,7 @@ export class IntegracoesServiceImpl implements IntegracoesService {
         },
         body: JSON.stringify({
           method: 'GET',
-          endpoint: `${baseUrl}/banking/v2/extrato`,
+          endpoint: endpoint,
           credentials: {
             apiKey: config.apiKey || '',
             apiSecret: config.apiSecret || ''
@@ -992,6 +1015,14 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       }
 
       console.log('✅ Extrato real obtido com sucesso via proxy');
+      console.log('📊 Dados retornados:', result.data);
+      
+      // Verificar se há transações
+      if (!result.data.transacoes || result.data.transacoes.length === 0) {
+        console.log('⚠️ Nenhuma transação encontrada no período');
+        return [];
+      }
+      
       return result.data.transacoes || [];
       
     } catch (error) {

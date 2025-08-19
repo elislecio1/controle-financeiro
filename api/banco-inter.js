@@ -44,12 +44,11 @@ export default async function handler(req, res) {
       'Content-Type': 'application/x-www-form-urlencoded',
     };
 
-    // Adicionar credenciais se fornecidas
-    if (credentials.apiKey) {
-      headers['X-API-Key'] = credentials.apiKey;
-    }
-    if (credentials.apiSecret) {
-      headers['X-API-Secret'] = credentials.apiSecret;
+    // Para autenticação OAuth, usar Basic Auth com API Key e Secret
+    if (credentials.apiKey && credentials.apiSecret) {
+      const authString = `${credentials.apiKey}:${credentials.apiSecret}`;
+      const authBase64 = Buffer.from(authString).toString('base64');
+      headers['Authorization'] = `Basic ${authBase64}`;
     }
 
     // Adicionar headers customizados se fornecidos
