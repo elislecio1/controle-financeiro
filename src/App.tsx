@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
-import { TrendingUp, Users, DollarSign, Activity, Database, Settings, RefreshCw, Calendar, Filter, Search, Plus, Download, Upload, CheckCircle, XCircle, Trash2, Edit, Bell } from 'lucide-react'
+import { TrendingUp, Users, DollarSign, Activity, Database, Settings, RefreshCw, Calendar, Filter, Search, Plus, Download, Upload, CheckCircle, XCircle, Trash2, Edit, Bell, User } from 'lucide-react'
 import { SheetData, Categoria, Subcategoria, CentroCusto, Meta, Orcamento, Investimento, ContaBancaria, CartaoCredito, Contato, Alerta } from './types'
 import { supabaseService } from './services/supabase'
 import TransactionForm from './components/TransactionForm'
@@ -12,11 +12,15 @@ import SistemaAlertas from './components/SistemaAlertas'
 import IntegracoesBancarias from './components/IntegracoesBancarias'
 import { OFXImporter } from './components/OFXImporter'
 import { ToastContainer } from './components/ToastNotification'
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
+import { UserProfile } from './components/auth/UserProfile'
+import { useAuth } from './hooks/useAuth'
 import { formatarMoeda, formatarValorTabela, getClasseValor } from './utils/formatters'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
 function App() {
+  const { user, profile, isAuthenticated } = useAuth()
   const [data, setData] = useState<SheetData[]>([])
   const [filteredData, setFilteredData] = useState<SheetData[]>([])
   const [loading, setLoading] = useState(true)
@@ -24,6 +28,9 @@ function App() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<{ success?: boolean; message?: string }>({})
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  
+  // Estados para perfil do usuário
+  const [showUserProfile, setShowUserProfile] = useState(false)
   
   // Novos estados para filtros de período
   const [periodFilter, setPeriodFilter] = useState<string>('all')
@@ -818,6 +825,28 @@ function App() {
                    Importar OFX
                  </button>
               </div>
+              
+              {/* Botão do usuário */}
+              <div className="flex items-center space-x-3">
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-900">{profile?.name || user?.email}</p>
+                  <p className="text-xs text-gray-500">{profile?.role === 'admin' ? 'Administrador' : 'Usuário'}</p>
+                </div>
+                <button
+                  onClick={() => setShowUserProfile(true)}
+                  className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  {profile?.avatar_url ? (
+                    <img 
+                      src={profile.avatar_url} 
+                      alt="Avatar" 
+                      className="w-8 h-8 rounded-full"
+                    />
+                  ) : (
+                    <User className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1555,8 +1584,23 @@ function App() {
            </div>
          )}
       </main>
+      
+      {/* Modal do Perfil do Usuário */}
+      <UserProfile 
+        isOpen={showUserProfile}
+        onClose={() => setShowUserProfile(false)}
+      />
     </div>
   )
 }
 
-export default App 
+// Componente App protegido por autenticação
+const ProtectedApp: React.FC = () => {
+  return (
+    <ProtectedRoute requiredRole="user">
+      <App />
+    </ProtectedRoute>
+  )
+}
+
+export default ProtectedApp 

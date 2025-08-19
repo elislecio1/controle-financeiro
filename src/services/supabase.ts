@@ -17,7 +17,9 @@ const getSupabaseClient = () => {
     supabaseInstance = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
         persistSession: true,
-        storageKey: 'controle-financeiro-auth'
+        storageKey: 'controle-financeiro-auth',
+        autoRefreshToken: true,
+        detectSessionInUrl: true
       }
     })
   }
@@ -26,6 +28,21 @@ const getSupabaseClient = () => {
 
 // Cliente Supabase
 const supabase = getSupabaseClient()
+
+// Função para verificar se o usuário está autenticado
+const ensureAuthenticated = async () => {
+  const { data: { session }, error } = await supabase.auth.getSession()
+  if (error || !session) {
+    throw new Error('Usuário não autenticado')
+  }
+  return session.user
+}
+
+// Função para adicionar user_id automaticamente nas operações
+const addUserIdToData = async (data: any) => {
+  const user = await ensureAuthenticated()
+  return { ...data, user_id: user.id }
+}
 
 // Dados mock para quando não há conexão
 const mockData: SheetData[] = [
@@ -411,6 +428,9 @@ class SupabaseServiceImpl implements SupabaseService {
     try {
       console.log('💾 Salvando transação no Supabase...')
       
+      // Verificar autenticação
+      await ensureAuthenticated()
+      
       // Validar campos obrigatórios
       if (!transaction.descricao || !transaction.valor || !transaction.data) {
         throw new Error('Descrição, valor e data são obrigatórios')
@@ -425,8 +445,8 @@ class SupabaseServiceImpl implements SupabaseService {
         }
       }
       
-      // Criar transação principal
-      const transactionData = {
+      // Criar transação principal com user_id
+      const transactionData = await addUserIdToData({
         data: this.convertToISODate(transaction.data),
         valor: transaction.valor, // Mantém negativo para despesas
         descricao: transaction.descricao,
@@ -448,7 +468,7 @@ class SupabaseServiceImpl implements SupabaseService {
         situacao: '',
         data_pagamento: null,
         created_at: new Date().toISOString()
-      }
+      })
 
       // Se for transferência, criar duas transações (débito e crédito)
       if (transaction.tipo === 'transferencia' && transaction.contaTransferencia) {

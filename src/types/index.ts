@@ -421,4 +421,84 @@ export interface DadosConciliacao {
   automatica: boolean
 }
 
+// Sistema de Autenticação e Usuários
+export interface User {
+  id: string
+  email: string
+  name?: string
+  avatar_url?: string
+  role: 'admin' | 'user' | 'viewer'
+  created_at: string
+  updated_at: string
+  last_sign_in_at?: string
+  email_confirmed_at?: string
+}
+
+export interface UserProfile {
+  id: string
+  user_id: string
+  name: string
+  avatar_url?: string
+  phone?: string
+  document?: string
+  birth_date?: string
+  role: 'admin' | 'user' | 'viewer'
+  preferences: UserPreferences
+  created_at: string
+  updated_at: string
+}
+
+export interface UserPreferences {
+  theme: 'light' | 'dark' | 'auto'
+  currency: 'BRL' | 'USD' | 'EUR'
+  date_format: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD'
+  language: 'pt-BR' | 'en-US' | 'es-ES'
+  notifications: {
+    email: boolean
+    push: boolean
+    sms: boolean
+  }
+  dashboard: {
+    default_period: 'current_month' | 'last_30_days' | 'current_year'
+    show_charts: boolean
+    show_stats: boolean
+  }
+}
+
+export interface AuthState {
+  user: User | null
+  profile: UserProfile | null
+  loading: boolean
+  error: string | null
+  isAuthenticated: boolean
+}
+
+export interface LoginCredentials {
+  email: string
+  password: string
+}
+
+export interface RegisterCredentials {
+  email: string
+  password: string
+  name: string
+  confirmPassword: string
+}
+
+export interface ResetPasswordRequest {
+  email: string
+}
+
+export interface UpdatePasswordRequest {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+export interface AuthError {
+  message: string
+  status?: number
+  code?: string
+}
+
 export default {} 
