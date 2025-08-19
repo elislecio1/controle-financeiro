@@ -87,14 +87,22 @@ export default async function handler(req, res) {
 
     // Verificar se a requisição foi bem-sucedida
     if (!response.ok) {
-      const errorText = await response.text();
+      let errorText = '';
+      try {
+        errorText = await response.text();
+      } catch (e) {
+        errorText = 'Erro ao ler resposta';
+      }
+      
       console.error('❌ Erro na API do Banco Inter:', response.status, errorText);
+      console.error('📋 Headers da resposta:', Object.fromEntries(response.headers.entries()));
       
       return res.status(response.status).json({
         error: `Erro na API do Banco Inter: ${response.status}`,
         details: errorText,
         endpoint,
-        method: method || 'POST'
+        method: method || 'POST',
+        responseHeaders: Object.fromEntries(response.headers.entries())
       });
     }
 

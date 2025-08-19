@@ -882,7 +882,7 @@ export class IntegracoesServiceImpl implements IntegracoesService {
       // Preparar dados de autenticação conforme documentação
       const authData = new URLSearchParams({
         grant_type: 'client_credentials',
-        scope: 'extrato.read'
+        scope: 'extrato.read conta.read'
       });
       
       console.log('📦 Dados de autenticação:', authData.toString());
@@ -902,7 +902,7 @@ export class IntegracoesServiceImpl implements IntegracoesService {
           },
           data: {
             grant_type: 'client_credentials',
-            scope: 'extrato.read'
+            scope: 'extrato.read conta.read'
           }
         })
       });
