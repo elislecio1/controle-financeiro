@@ -63,18 +63,8 @@ export default function TransactionForm({
   // Carregar dados da transação para edição
   useEffect(() => {
     if (transactionToEdit && isEditing) {
-      // Converter data do formato DD/MM/AAAA para YYYY-MM-DD
-      const converterDataParaISO = (dataStr: string): string => {
-        if (!dataStr) return ''
-        const data = parsearDataBrasileira(dataStr)
-        if (data) {
-          return data.toISOString().split('T')[0] // Retorna YYYY-MM-DD
-        }
-        return dataStr
-      }
-
       setFormData({
-        data: converterDataParaISO(transactionToEdit.data || ''),
+        data: transactionToEdit.data || '',
         valor: Math.abs(transactionToEdit.valor),
         descricao: transactionToEdit.descricao || '',
         conta: transactionToEdit.conta || (contas.length > 0 ? contas[0].nome : ''),
@@ -83,7 +73,7 @@ export default function TransactionForm({
         contato: transactionToEdit.contato || '',
         forma: transactionToEdit.forma || 'Dinheiro',
         tipo: transactionToEdit.tipo || 'despesa',
-        vencimento: converterDataParaISO(transactionToEdit.vencimento || ''),
+        vencimento: transactionToEdit.vencimento || '',
         parcelas: typeof transactionToEdit.parcela === 'number' ? transactionToEdit.parcela : 1,
         contaTransferencia: transactionToEdit.contaTransferencia || ''
       })
@@ -413,9 +403,14 @@ export default function TransactionForm({
                 Data *
               </label>
               <input
-                type="date"
+                type="text"
+                placeholder="DD/MM/AAAA"
                 value={formData.data}
-                onChange={(e) => handleInputChange('data', e.target.value)}
+                onChange={(e) => {
+                  const formatted = formatDate(e.target.value)
+                  handleInputChange('data', formatted)
+                }}
+                onFocus={(e) => e.target.select()}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                 required
               />
@@ -575,9 +570,14 @@ export default function TransactionForm({
                 Data de Vencimento
               </label>
               <input
-                type="date"
+                type="text"
+                placeholder="DD/MM/AAAA"
                 value={formData.vencimento}
-                onChange={(e) => handleInputChange('vencimento', e.target.value)}
+                onChange={(e) => {
+                  const formatted = formatDate(e.target.value)
+                  handleInputChange('vencimento', formatted)
+                }}
+                onFocus={(e) => e.target.select()}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
               />
             </div>
