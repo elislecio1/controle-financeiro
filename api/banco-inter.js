@@ -49,6 +49,13 @@ export default async function handler(req, res) {
       const authString = `${credentials.apiKey}:${credentials.apiSecret}`;
       const authBase64 = Buffer.from(authString).toString('base64');
       headers['Authorization'] = `Basic ${authBase64}`;
+      
+      console.log('🔑 Basic Auth configurado:', {
+        apiKey: credentials.apiKey ? 'Presente' : 'Ausente',
+        apiSecret: credentials.apiSecret ? 'Presente' : 'Ausente',
+        authString: `${credentials.apiKey}:${credentials.apiSecret}`,
+        authBase64: authBase64
+      });
     }
 
     // Adicionar headers customizados se fornecidos
@@ -57,15 +64,24 @@ export default async function handler(req, res) {
     }
 
     console.log('🌐 Fazendo requisição para:', endpoint);
-    console.log('📋 Headers:', headers);
+    console.log('📋 Headers:', JSON.stringify(headers, null, 2));
     console.log('📦 Data:', data);
+    console.log('📦 Data como URLSearchParams:', data ? new URLSearchParams(data).toString() : 'undefined');
 
     // Fazer requisição para a API do Banco Inter
-    const response = await fetch(endpoint, {
+    const requestOptions = {
       method: method || 'POST',
       headers,
-      body: data ? new URLSearchParams(data) : undefined,
-    });
+    };
+
+    // Adicionar body apenas se houver dados
+    if (data && Object.keys(data).length > 0) {
+      requestOptions.body = new URLSearchParams(data);
+    }
+
+    console.log('🚀 Opções da requisição:', JSON.stringify(requestOptions, null, 2));
+
+    const response = await fetch(endpoint, requestOptions);
 
     console.log('📡 Resposta da API:', response.status, response.statusText);
 
