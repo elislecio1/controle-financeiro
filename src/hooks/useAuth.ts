@@ -15,6 +15,25 @@ export const useAuth = () => {
     return unsubscribe
   }, [])
 
+  // Função para verificar se o usuário tem o role necessário ou superior
+  const hasRole = (requiredRole: string): boolean => {
+    const userRole = authState.profile?.role
+    
+    if (!userRole) return false
+    
+    // Hierarquia de roles: admin > user > viewer
+    const roleHierarchy = {
+      'admin': 3,
+      'user': 2,
+      'viewer': 1
+    }
+    
+    const userLevel = roleHierarchy[userRole as keyof typeof roleHierarchy] || 0
+    const requiredLevel = roleHierarchy[requiredRole as keyof typeof roleHierarchy] || 0
+    
+    return userLevel >= requiredLevel
+  }
+
   return {
     // Estado
     ...authState,
@@ -29,7 +48,7 @@ export const useAuth = () => {
     updateProfile: authService.updateProfile.bind(authService),
     
     // Utilitários
-    hasRole: (role: string) => authState.profile?.role === role,
+    hasRole,
     hasPermission: (permission: string) => {
       // Implementar lógica de permissões baseada no role
       const userRole = authState.profile?.role
