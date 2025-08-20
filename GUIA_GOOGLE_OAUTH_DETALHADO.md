@@ -56,8 +56,8 @@ Nome: FinFlow Pro Web Client
 URIs de redirecionamento autorizados:
 - http://localhost:3000/auth/callback
 - http://localhost:5173/auth/callback
-- https://seu-dominio.com/auth/callback
-- https://seu-projeto.supabase.co/auth/v1/callback
+- https://controle-financeiro-chi-six.vercel.app/auth/callback
+- https://eshaahpcddqkeevxpgfk.supabase.co/auth/v1/callback
 ```
 
 5. Clique em **"Criar"**
@@ -86,11 +86,12 @@ URIs de redirecionamento autorizados:
 2. Configure:
 
 ```
-Site URL: http://localhost:3000 (ou seu domínio)
+Site URL: https://controle-financeiro-chi-six.vercel.app
 Redirect URLs:
 - http://localhost:3000/auth/callback
 - http://localhost:5173/auth/callback
-- https://seu-dominio.com/auth/callback
+- https://controle-financeiro-chi-six.vercel.app/auth/callback
+- https://eshaahpcddqkeevxpgfk.supabase.co/auth/v1/callback
 ```
 
 3. Clique em **"Save"**
@@ -149,8 +150,8 @@ User Metadata:
 
 ```
 URIs de redirecionamento autorizados:
-- https://seu-dominio.com/auth/callback
-- https://seu-projeto.supabase.co/auth/v1/callback
+- https://controle-financeiro-chi-six.vercel.app/auth/callback
+- https://eshaahpcddqkeevxpgfk.supabase.co/auth/v1/callback
 ```
 
 ### 5.2 Atualizar Supabase
@@ -158,10 +159,10 @@ URIs de redirecionamento autorizados:
 2. Atualize:
 
 ```
-Site URL: https://seu-dominio.com
+Site URL: https://controle-financeiro-chi-six.vercel.app
 Redirect URLs:
-- https://seu-dominio.com/auth/callback
-- https://seu-projeto.supabase.co/auth/v1/callback
+- https://controle-financeiro-chi-six.vercel.app/auth/callback
+- https://eshaahpcddqkeevxpgfk.supabase.co/auth/v1/callback
 ```
 
 ---
@@ -180,6 +181,9 @@ Redirect URLs:
 ### Problema: Não redireciona após login
 **Solução**: Verifique se as URLs de redirecionamento estão configuradas corretamente
 
+### Problema: 404 na página de callback
+**Solução**: A página de callback foi criada e configurada nas rotas
+
 ---
 
 ## 📋 Checklist de Configuração
@@ -191,10 +195,12 @@ Redirect URLs:
 - [ ] Google OAuth habilitado no Supabase
 - [ ] Credenciais configuradas no Supabase
 - [ ] URLs de redirecionamento configuradas
+- [ ] Página de callback criada (/auth/callback)
+- [ ] Rotas configuradas no React Router
 - [ ] Login com Google testado
 - [ ] Super usuário elislecio@gmail.com criado
 - [ ] Usuário configurado como admin
-- [ ] Domínio de produção configurado (se aplicável)
+- [ ] Domínio de produção configurado
 
 ---
 
