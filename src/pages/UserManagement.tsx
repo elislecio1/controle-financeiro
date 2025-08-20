@@ -199,20 +199,20 @@ export const UserManagement: React.FC = () => {
           console.warn('⚠️ Erro ao enviar e-mail, mas convite foi criado:', emailResult.error)
           alert(`Convite criado mas erro ao enviar e-mail: ${emailResult.error}`)
         }
-      } catch (emailError) {
-        console.error('❌ Erro ao enviar e-mail:', emailError)
-        alert(`Convite criado mas erro ao enviar e-mail: ${emailError.message}`)
-      }
+             } catch (emailError: any) {
+         console.error('❌ Erro ao enviar e-mail:', emailError)
+         alert(`Convite criado mas erro ao enviar e-mail: ${emailError.message || 'Erro desconhecido'}`)
+       }
       
       setShowInviteModal(false)
       setInviteForm({ email: '', name: '', role: 'user' })
       
       // Recarregar lista de convites
       await loadInvites()
-    } catch (error) {
-      console.error('❌ Erro ao convidar usuário:', error)
-      alert(`Erro ao convidar usuário: ${error.message}`)
-    }
+         } catch (error: any) {
+       console.error('❌ Erro ao convidar usuário:', error)
+       alert(`Erro ao convidar usuário: ${error.message || 'Erro desconhecido'}`)
+     }
   }
 
   const handleEditUser = async () => {
