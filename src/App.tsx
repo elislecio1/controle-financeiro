@@ -31,6 +31,7 @@ function App() {
   
   // Estados para perfil do usuário
   const [showUserProfile, setShowUserProfile] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
   
   // Novos estados para filtros de período
   const [periodFilter, setPeriodFilter] = useState<string>('all')
@@ -210,6 +211,21 @@ function App() {
 
   useEffect(() => {
     loadData()
+  }, [])
+
+  // Fechar menu do usuário quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (!target.closest('.user-menu-container')) {
+        setShowUserMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
   }, [])
 
   // useEffect para aplicar filtros de busca, tipo e status
@@ -832,9 +848,9 @@ function App() {
                   <p className="text-sm font-medium text-gray-900">{profile?.name || user?.email}</p>
                   <p className="text-xs text-gray-500">{profile?.role === 'admin' ? 'Administrador' : 'Usuário'}</p>
                 </div>
-                <div className="relative">
+                <div className="relative user-menu-container">
                   <button
-                    onClick={() => setShowUserProfile(true)}
+                    onClick={() => setShowUserMenu(!showUserMenu)}
                     className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     {profile?.avatar_url ? (
@@ -849,17 +865,23 @@ function App() {
                   </button>
                   
                   {/* Menu dropdown para administradores */}
-                  {profile?.role === 'admin' && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                  {profile?.role === 'admin' && showUserMenu && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
                       <button
-                        onClick={() => window.location.href = '/admin/users'}
+                        onClick={() => {
+                          setShowUserMenu(false)
+                          window.location.href = '/admin/users'
+                        }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                       >
                         <Users className="h-4 w-4 mr-2" />
                         Gestão de Usuários
                       </button>
                       <button
-                        onClick={() => setShowUserProfile(true)}
+                        onClick={() => {
+                          setShowUserMenu(false)
+                          setShowUserProfile(true)
+                        }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                       >
                         <User className="h-4 w-4 mr-2" />
