@@ -455,20 +455,28 @@ function App() {
     setPeriodFilter(period)
     setCurrentPage(1)
     
-    if (period === 'all') {
-      setFilteredData(data)
-      return
+    // Aplicar filtros combinados
+    applyCombinedFilters(period, contaFilter)
+  }
+
+  // Função para aplicar filtros combinados
+  const applyCombinedFilters = (period: string, conta: string) => {
+    let filtered = [...data]
+    
+    // Aplicar filtro de período
+    if (period !== 'all') {
+      const periodDates = getPeriodDates(period)
+      if (periodDates) {
+        filtered = filtered.filter(item => 
+          isDateInPeriod(item.vencimento, periodDates.start, periodDates.end)
+        )
+      }
     }
     
-    const periodDates = getPeriodDates(period)
-    if (!periodDates) {
-      setFilteredData(data)
-      return
+    // Aplicar filtro de conta bancária
+    if (conta !== 'todas') {
+      filtered = filtered.filter(item => item.conta === conta)
     }
-    
-    const filtered = data.filter(item => 
-      isDateInPeriod(item.vencimento, periodDates.start, periodDates.end)
-    )
     
     setFilteredData(filtered)
   }
@@ -502,28 +510,42 @@ function App() {
       return
     }
     
-    const filtered = data.filter(item => 
+    // Aplicar filtro customizado combinado com filtro de conta
+    let filtered = data.filter(item => 
       isDateInPeriod(item.vencimento, startDate, endDate)
     )
     
+    // Aplicar filtro de conta se estiver ativo
+    if (contaFilter !== 'todas') {
+      filtered = filtered.filter(item => item.conta === contaFilter)
+    }
+    
     setFilteredData(filtered)
     setCurrentPage(1)
-    setConnectionStatus({ success: true, message: 'Filtro aplicado com sucesso!' })
+    setConnectionStatus({ success: true, message: 'Filtro customizado aplicado com sucesso!' })
   }
 
   // Função para aplicar filtro de conta bancária
   const applyContaFilter = (conta: string) => {
     setContaFilter(conta)
     
-    if (conta === 'todas') {
-      setFilteredData(data)
-    } else {
-      const filtered = data.filter(item => item.conta === conta)
-      setFilteredData(filtered)
-    }
+    // Aplicar filtros combinados
+    applyCombinedFilters(periodFilter, conta)
     
     resetPagination()
     setConnectionStatus({ success: true, message: `Filtro de conta: ${conta === 'todas' ? 'Todas as contas' : conta}` })
+  }
+
+  // Função para limpar todos os filtros
+  const clearAllFilters = () => {
+    setPeriodFilter('all')
+    setContaFilter('todas')
+    setCustomStartDate('')
+    setCustomEndDate('')
+    setShowCustomPeriod(false)
+    setFilteredData(data)
+    setCurrentPage(1)
+    setConnectionStatus({ success: true, message: 'Todos os filtros foram limpos!' })
   }
 
   // Função para obter o banco de uma conta
@@ -970,6 +992,38 @@ function App() {
           <div className="space-y-6">
             {/* Filtros no Topo - Primeiro */}
             <div className="space-y-4">
+              {/* Indicador de Filtros Ativos */}
+              {(periodFilter !== 'all' || contaFilter !== 'todas') && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-5 w-5 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-800">Filtros Ativos:</span>
+                    </div>
+                    <button
+                      onClick={clearAllFilters}
+                      className="text-sm text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Limpar Todos
+                    </button>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {periodFilter !== 'all' && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Período: {periodFilter === 'current_month' ? 'Mês Atual' : 
+                                  periodFilter === 'last_month' ? 'Mês Anterior' :
+                                  periodFilter === 'current_year' ? 'Ano Atual' :
+                                  periodFilter === 'last_year' ? 'Ano Anterior' : periodFilter}
+                      </span>
+                    )}
+                    {contaFilter !== 'todas' && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Conta: {contaFilter}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
               {/* Conta Filter - Primeiro */}
               <div className="bg-white shadow rounded-lg p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Filtro por Conta Bancária</h3>
@@ -999,7 +1053,16 @@ function App() {
 
               {/* Period Filters - Segundo */}
               <div className="bg-white shadow rounded-lg p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Filtros de Período</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Filtros de Período</h3>
+                  <button
+                    onClick={clearAllFilters}
+                    className="px-3 py-1 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200 flex items-center gap-1"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Limpar Filtros
+                  </button>
+                </div>
                 
                 <div className="flex flex-wrap gap-4">
                   {[
