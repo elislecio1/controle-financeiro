@@ -39,6 +39,9 @@ interface UserProfile {
   full_name: string
   role: 'admin' | 'user' | 'viewer'
   status: 'active' | 'inactive' | 'pending'
+  approved: boolean
+  allow_google_login: boolean
+  allow_email_login: boolean
   last_login?: string
   created_at: string
   updated_at: string
@@ -207,6 +210,45 @@ const UserManagement: React.FC = () => {
     } catch (error: any) {
       console.error('Erro ao atualizar usuário:', error)
       alert(`Erro ao atualizar usuário: ${error.message}`)
+    }
+  }
+
+  const handleApproveUser = async (email: string) => {
+    try {
+      const { data, error } = await supabase
+        .rpc('approve_user', {
+          target_email: email,
+          allow_google: true,
+          allow_email: true,
+          user_role: 'user'
+        })
+
+      if (error) throw error
+
+      await loadData()
+      alert('Usuário aprovado com sucesso!')
+    } catch (error: any) {
+      console.error('Erro ao aprovar usuário:', error)
+      alert(`Erro ao aprovar usuário: ${error.message}`)
+    }
+  }
+
+  const handleRevokeAccess = async (email: string) => {
+    if (!confirm('Tem certeza que deseja revogar o acesso deste usuário?')) return
+
+    try {
+      const { data, error } = await supabase
+        .rpc('revoke_user_access', {
+          target_email: email
+        })
+
+      if (error) throw error
+
+      await loadData()
+      alert('Acesso do usuário revogado com sucesso!')
+    } catch (error: any) {
+      console.error('Erro ao revogar acesso:', error)
+      alert(`Erro ao revogar acesso: ${error.message}`)
     }
   }
 
@@ -441,6 +483,8 @@ const UserManagement: React.FC = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuário</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Função</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aprovado</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Login</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último Acesso</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                       </tr>
@@ -473,6 +517,23 @@ const UserManagement: React.FC = () => {
                               <span className="ml-2 text-sm text-gray-900">{getStatusText(user.status)}</span>
                             </div>
                           </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              user.approved ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {user.approved ? 'Sim' : 'Não'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div className="flex flex-col space-y-1">
+                              {user.allow_google_login && (
+                                <span className="text-blue-600 text-xs">Google</span>
+                              )}
+                              {user.allow_email_login && (
+                                <span className="text-green-600 text-xs">Email</span>
+                              )}
+                            </div>
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {user.last_login ? new Date(user.last_login).toLocaleDateString('pt-BR') : 'Nunca acessou'}
                           </td>
@@ -492,6 +553,24 @@ const UserManagement: React.FC = () => {
                               >
                                 <Edit className="h-4 w-4" />
                               </button>
+                              {!user.approved && (
+                                <button
+                                  onClick={() => handleApproveUser(user.email)}
+                                  className="text-green-600 hover:text-green-900"
+                                  title="Aprovar usuário"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </button>
+                              )}
+                              {user.approved && (
+                                <button
+                                  onClick={() => handleRevokeAccess(user.email)}
+                                  className="text-yellow-600 hover:text-yellow-900"
+                                  title="Revogar acesso"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleDeleteUser(user.id)}
                                 className="text-red-600 hover:text-red-900"

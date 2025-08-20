@@ -824,12 +824,12 @@ function App() {
   const paginatedData = filteredData.slice(startIndex, endIndex)
   const totalPages = Math.ceil(filteredData.length / itemsPerPage)
 
-  // Cálculo separado de despesas e receitas das transações exibidas
-  const despesasExibidas = paginatedData
+  // Cálculo separado de despesas e receitas de todas as transações filtradas (não apenas da página atual)
+  const despesasExibidas = filteredData
     .filter(item => item.tipo === 'despesa')
     .reduce((sum, item) => sum + Math.abs(item.valor), 0)
   
-  const receitasExibidas = paginatedData
+  const receitasExibidas = filteredData
     .filter(item => item.tipo === 'receita')
     .reduce((sum, item) => sum + Math.abs(item.valor), 0)
   
@@ -1552,7 +1552,7 @@ function App() {
                         </td>
                         <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                           <span className="font-bold">
-                            {paginatedData.length} transação{paginatedData.length !== 1 ? 'ões' : ''}
+                            {filteredData.length} transação{filteredData.length !== 1 ? 'ões' : ''} (todas)
                           </span>
                         </td>
                         <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
@@ -1589,51 +1589,7 @@ function App() {
                         </td>
                       </tr>
                       
-                      {/* Linha de Total Geral (quando há filtros aplicados) */}
-                      {filteredData.length !== data.length && (
-                        <tr className="bg-blue-50 border-t border-blue-200 font-semibold">
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-blue-900">
-                            <span className="font-bold">TOTAL GERAL</span>
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-900">
-                            <span className="font-bold">
-                              {filteredData.length} transação{filteredData.length !== 1 ? 'ões' : ''}
-                            </span>
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-500">
-                            -
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-500">
-                            -
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-500">
-                            -
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-bold">
-                            <div className="flex flex-col space-y-1">
-                              <div className="text-green-600">
-                                Receitas: {formatarMoeda(receitasGeral)}
-                              </div>
-                              <div className="text-red-600">
-                                Despesas: {formatarMoeda(despesasGeral)}
-                              </div>
-                              <div className={`border-t pt-1 ${getClasseValor(totalGeral)}`}>
-                                Total: {formatarMoeda(Math.abs(totalGeral))}
-                                {totalGeral < 0 ? ' (Prejuízo)' : totalGeral > 0 ? ' (Lucro)' : ' (Equilibrado)'}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-500">
-                            -
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-500">
-                            -
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-500">
-                            -
-                          </td>
-                        </tr>
-                      )}
+
                     </tbody>
                   </table>
                 </div>
