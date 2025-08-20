@@ -824,17 +824,27 @@ function App() {
   const paginatedData = filteredData.slice(startIndex, endIndex)
   const totalPages = Math.ceil(filteredData.length / itemsPerPage)
 
-  // Cálculo do total das transações exibidas
-  const totalExibido = paginatedData.reduce((sum, item) => {
-    const valor = item.tipo === 'despesa' ? -Math.abs(item.valor) : item.valor
-    return sum + valor
-  }, 0)
+  // Cálculo separado de despesas e receitas das transações exibidas
+  const despesasExibidas = paginatedData
+    .filter(item => item.tipo === 'despesa')
+    .reduce((sum, item) => sum + Math.abs(item.valor), 0)
+  
+  const receitasExibidas = paginatedData
+    .filter(item => item.tipo === 'receita')
+    .reduce((sum, item) => sum + Math.abs(item.valor), 0)
+  
+  const totalExibido = receitasExibidas - despesasExibidas
 
-  // Cálculo do total geral de todas as transações filtradas
-  const totalGeral = filteredData.reduce((sum, item) => {
-    const valor = item.tipo === 'despesa' ? -Math.abs(item.valor) : item.valor
-    return sum + valor
-  }, 0)
+  // Cálculo separado de despesas e receitas de todas as transações filtradas
+  const despesasGeral = filteredData
+    .filter(item => item.tipo === 'despesa')
+    .reduce((sum, item) => sum + Math.abs(item.valor), 0)
+  
+  const receitasGeral = filteredData
+    .filter(item => item.tipo === 'receita')
+    .reduce((sum, item) => sum + Math.abs(item.valor), 0)
+  
+  const totalGeral = receitasGeral - despesasGeral
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -1554,9 +1564,19 @@ function App() {
                         <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                           -
                         </td>
-                        <td className={`px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-bold ${getClasseValor(totalExibido)}`}>
-                          {formatarMoeda(Math.abs(totalExibido))}
-                          {totalExibido < 0 ? ' (Despesa)' : totalExibido > 0 ? ' (Receita)' : ''}
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-bold">
+                          <div className="flex flex-col space-y-1">
+                            <div className="text-green-600">
+                              Receitas: {formatarMoeda(receitasExibidas)}
+                            </div>
+                            <div className="text-red-600">
+                              Despesas: {formatarMoeda(despesasExibidas)}
+                            </div>
+                            <div className={`border-t pt-1 ${getClasseValor(totalExibido)}`}>
+                              Total: {formatarMoeda(Math.abs(totalExibido))}
+                              {totalExibido < 0 ? ' (Prejuízo)' : totalExibido > 0 ? ' (Lucro)' : ' (Equilibrado)'}
+                            </div>
+                          </div>
                         </td>
                         <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                           -
@@ -1589,9 +1609,19 @@ function App() {
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-500">
                             -
                           </td>
-                          <td className={`px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-bold ${getClasseValor(totalGeral)}`}>
-                            {formatarMoeda(Math.abs(totalGeral))}
-                            {totalGeral < 0 ? ' (Despesa)' : totalGeral > 0 ? ' (Receita)' : ''}
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-bold">
+                            <div className="flex flex-col space-y-1">
+                              <div className="text-green-600">
+                                Receitas: {formatarMoeda(receitasGeral)}
+                              </div>
+                              <div className="text-red-600">
+                                Despesas: {formatarMoeda(despesasGeral)}
+                              </div>
+                              <div className={`border-t pt-1 ${getClasseValor(totalGeral)}`}>
+                                Total: {formatarMoeda(Math.abs(totalGeral))}
+                                {totalGeral < 0 ? ' (Prejuízo)' : totalGeral > 0 ? ' (Lucro)' : ' (Equilibrado)'}
+                              </div>
+                            </div>
                           </td>
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-500">
                             -
