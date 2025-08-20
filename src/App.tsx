@@ -23,6 +23,12 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 function App() {
   const navigate = useNavigate()
   const { user, profile, isAuthenticated } = useAuth()
+  
+  // Log temporário para verificar configuração do Supabase
+  console.log('🔧 Verificando configuração do Supabase:')
+  console.log('URL:', import.meta.env.VITE_SUPABASE_URL)
+  console.log('Anon Key configurada:', !!import.meta.env.VITE_SUPABASE_ANON_KEY)
+  console.log('Configuração válida:', import.meta.env.VITE_SUPABASE_URL !== 'https://your-project.supabase.co' && import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your-anon-key')
   const [data, setData] = useState<SheetData[]>([])
   const [filteredData, setFilteredData] = useState<SheetData[]>([])
   const [loading, setLoading] = useState(true)

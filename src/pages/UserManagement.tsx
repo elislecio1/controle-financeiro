@@ -16,7 +16,12 @@ import {
   ArrowLeft,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  RefreshCw,
+  Settings,
+  Calendar,
+  AlertTriangle,
+  Info
 } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 
@@ -63,6 +68,9 @@ export const UserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [activeTab, setActiveTab] = useState<'users' | 'invites'>('users')
+  const [showInviteDetails, setShowInviteDetails] = useState(false)
+  const [selectedInvite, setSelectedInvite] = useState<InviteData | null>(null)
 
   // Estados para formulário de convite
   const [inviteForm, setInviteForm] = useState({
@@ -378,10 +386,41 @@ export const UserManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+             {/* Content */}
+       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+         {/* Tabs */}
+         <div className="bg-white rounded-lg shadow mb-6">
+           <div className="border-b border-gray-200">
+             <nav className="-mb-px flex space-x-8 px-6">
+               <button
+                 onClick={() => setActiveTab('users')}
+                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                   activeTab === 'users'
+                     ? 'border-blue-500 text-blue-600'
+                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                 }`}
+               >
+                 <Users className="h-4 w-4 inline mr-2" />
+                 Usuários ({users.length})
+               </button>
+               <button
+                 onClick={() => setActiveTab('invites')}
+                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                   activeTab === 'invites'
+                     ? 'border-blue-500 text-blue-600'
+                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                 }`}
+               >
+                 <Mail className="h-4 w-4 inline mr-2" />
+                 Convites ({invites.length})
+               </button>
+             </nav>
+           </div>
+         </div>
+
+         {/* Filters - Only show for users tab */}
+         {activeTab === 'users' && (
+           <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -443,11 +482,13 @@ export const UserManagement: React.FC = () => {
                 Limpar Filtros
               </button>
             </div>
-          </div>
-        </div>
+                     </div>
+         </div>
+         )}
 
-                 {/* Users List */}
-         <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+         {/* Users Tab Content */}
+         {activeTab === 'users' && (
+           <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
            <div className="px-6 py-4 border-b border-gray-200">
              <h3 className="text-lg font-medium text-gray-900">
                Usuários ({filteredUsers.length})
@@ -562,16 +603,77 @@ export const UserManagement: React.FC = () => {
                 </tbody>
               </table>
             </div>
-                     )}
-         </div>
+                                )}
+          </div>
+         )}
 
-         {/* Invites List */}
-         <div className="bg-white rounded-lg shadow overflow-hidden">
-           <div className="px-6 py-4 border-b border-gray-200">
-             <h3 className="text-lg font-medium text-gray-900">
-               Convites Enviados ({invites.length})
-             </h3>
-           </div>
+                  {/* Invites Tab Content */}
+         {activeTab === 'invites' && (
+           <div className="space-y-6">
+             {/* Statistics Cards */}
+             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+               <div className="bg-white rounded-lg shadow p-4">
+                 <div className="flex items-center">
+                   <div className="p-2 bg-blue-100 rounded-lg">
+                     <Mail className="h-6 w-6 text-blue-600" />
+                   </div>
+                   <div className="ml-4">
+                     <p className="text-sm font-medium text-gray-600">Total</p>
+                     <p className="text-2xl font-bold text-gray-900">{invites.length}</p>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="bg-white rounded-lg shadow p-4">
+                 <div className="flex items-center">
+                   <div className="p-2 bg-yellow-100 rounded-lg">
+                     <Clock className="h-6 w-6 text-yellow-600" />
+                   </div>
+                   <div className="ml-4">
+                     <p className="text-sm font-medium text-gray-600">Pendentes</p>
+                     <p className="text-2xl font-bold text-gray-900">
+                       {invites.filter(i => i.status === 'pending').length}
+                     </p>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="bg-white rounded-lg shadow p-4">
+                 <div className="flex items-center">
+                   <div className="p-2 bg-green-100 rounded-lg">
+                     <CheckCircle className="h-6 w-6 text-green-600" />
+                   </div>
+                   <div className="ml-4">
+                     <p className="text-sm font-medium text-gray-600">Aceitos</p>
+                     <p className="text-2xl font-bold text-gray-900">
+                       {invites.filter(i => i.status === 'accepted').length}
+                     </p>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="bg-white rounded-lg shadow p-4">
+                 <div className="flex items-center">
+                   <div className="p-2 bg-red-100 rounded-lg">
+                     <XCircle className="h-6 w-6 text-red-600" />
+                   </div>
+                   <div className="ml-4">
+                     <p className="text-sm font-medium text-gray-600">Expirados</p>
+                     <p className="text-2xl font-bold text-gray-900">
+                       {invites.filter(i => i.status === 'expired').length}
+                     </p>
+                   </div>
+                 </div>
+               </div>
+             </div>
+
+             {/* Invites List */}
+             <div className="bg-white rounded-lg shadow overflow-hidden">
+               <div className="px-6 py-4 border-b border-gray-200">
+                 <h3 className="text-lg font-medium text-gray-900">
+                   Convites Enviados ({invites.length})
+                 </h3>
+               </div>
 
            {invites.length === 0 ? (
              <div className="p-6 text-center">
@@ -648,37 +750,47 @@ export const UserManagement: React.FC = () => {
                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                          {new Date(invite.expires_at).toLocaleDateString('pt-BR')}
                        </td>
-                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                         <div className="flex space-x-2">
-                           {invite.status === 'pending' && (
-                             <button
-                               onClick={() => handleResendInvite(invite)}
-                               className="text-blue-600 hover:text-blue-900 flex items-center"
-                               title="Reenviar convite"
-                             >
-                               <Mail className="h-4 w-4 mr-1" />
-                               Reenviar
-                             </button>
-                           )}
-                           {invite.status === 'expired' && (
-                             <button
-                               onClick={() => handleResendInvite(invite)}
-                               className="text-orange-600 hover:text-orange-900 flex items-center"
-                               title="Renovar convite"
-                             >
-                               <Mail className="h-4 w-4 mr-1" />
-                               Renovar
-                             </button>
-                           )}
-                           <button
-                             onClick={() => handleCancelInvite(invite.id)}
-                             className="text-red-600 hover:text-red-900"
-                             title="Cancelar convite"
-                           >
-                             <XCircle className="h-4 w-4" />
-                           </button>
-                         </div>
-                       </td>
+                                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => {
+                                setSelectedInvite(invite)
+                                setShowInviteDetails(true)
+                              }}
+                              className="text-gray-600 hover:text-gray-900"
+                              title="Ver detalhes"
+                            >
+                              <Info className="h-4 w-4" />
+                            </button>
+                            {invite.status === 'pending' && (
+                              <button
+                                onClick={() => handleResendInvite(invite)}
+                                className="text-blue-600 hover:text-blue-900 flex items-center"
+                                title="Reenviar convite"
+                              >
+                                <RefreshCw className="h-4 w-4 mr-1" />
+                                Reenviar
+                              </button>
+                            )}
+                            {invite.status === 'expired' && (
+                              <button
+                                onClick={() => handleResendInvite(invite)}
+                                className="text-orange-600 hover:text-orange-900 flex items-center"
+                                title="Renovar convite"
+                              >
+                                <RefreshCw className="h-4 w-4 mr-1" />
+                                Renovar
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleCancelInvite(invite.id)}
+                              className="text-red-600 hover:text-red-900"
+                              title="Cancelar convite"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
                      </tr>
                    ))}
                  </tbody>
@@ -759,8 +871,130 @@ export const UserManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Edit Modal */}
-      {showEditModal && selectedUser && (
+             {/* Invite Details Modal */}
+       {showInviteDetails && selectedInvite && (
+         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+             <div className="mt-3">
+               <div className="flex justify-between items-center mb-4">
+                 <h3 className="text-lg font-medium text-gray-900">
+                   Detalhes do Convite
+                 </h3>
+                 <button
+                   onClick={() => setShowInviteDetails(false)}
+                   className="text-gray-400 hover:text-gray-600"
+                 >
+                   <XCircle className="h-5 w-5" />
+                 </button>
+               </div>
+               
+               <div className="space-y-4">
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                     Nome
+                   </label>
+                   <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                     {selectedInvite.name}
+                   </p>
+                 </div>
+
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                     Email
+                   </label>
+                   <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                     {selectedInvite.email}
+                   </p>
+                 </div>
+
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                     Função
+                   </label>
+                   <div className="flex items-center bg-gray-50 p-2 rounded">
+                     {getRoleIcon(selectedInvite.role)}
+                     <span className="ml-2 text-sm text-gray-900 capitalize">
+                       {selectedInvite.role}
+                     </span>
+                   </div>
+                 </div>
+
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                     Status
+                   </label>
+                   <div className="flex items-center bg-gray-50 p-2 rounded">
+                     {selectedInvite.status === 'pending' && (
+                       <Clock className="h-4 w-4 text-yellow-600" />
+                     )}
+                     {selectedInvite.status === 'accepted' && (
+                       <CheckCircle className="h-4 w-4 text-green-600" />
+                     )}
+                     {selectedInvite.status === 'expired' && (
+                       <XCircle className="h-4 w-4 text-red-600" />
+                     )}
+                     <span className="ml-2 text-sm text-gray-900 capitalize">
+                       {selectedInvite.status === 'pending' ? 'Pendente' : 
+                        selectedInvite.status === 'accepted' ? 'Aceito' : 'Expirado'}
+                     </span>
+                   </div>
+                 </div>
+
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                     Enviado em
+                   </label>
+                   <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                     {new Date(selectedInvite.invited_at).toLocaleString('pt-BR')}
+                   </p>
+                 </div>
+
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                     Expira em
+                   </label>
+                   <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                     {new Date(selectedInvite.expires_at).toLocaleString('pt-BR')}
+                   </p>
+                 </div>
+
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                     Token
+                   </label>
+                   <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded break-all">
+                     {selectedInvite.token}
+                   </p>
+                 </div>
+               </div>
+
+               <div className="flex justify-end space-x-3 mt-6">
+                 <button
+                   onClick={() => setShowInviteDetails(false)}
+                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                 >
+                   Fechar
+                 </button>
+                 {selectedInvite.status === 'pending' && (
+                   <button
+                     onClick={() => {
+                       handleResendInvite(selectedInvite)
+                       setShowInviteDetails(false)
+                     }}
+                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                   >
+                     <RefreshCw className="h-4 w-4 mr-1" />
+                     Reenviar
+                   </button>
+                 )}
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* Edit Modal */}
+       {showEditModal && selectedUser && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
@@ -768,48 +1002,76 @@ export const UserManagement: React.FC = () => {
                 Editar Usuário
               </h3>
               
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nome Completo
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.name}
-                    onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                             <div className="space-y-4">
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                     Nome Completo
+                   </label>
+                   <input
+                     type="text"
+                     value={editForm.name}
+                     onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   />
+                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Função
-                  </label>
-                  <select
-                    value={editForm.role}
-                    onChange={(e) => setEditForm({...editForm, role: e.target.value as any})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="user">Usuário</option>
-                    <option value="viewer">Visualizador</option>
-                    <option value="admin">Administrador</option>
-                  </select>
-                </div>
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                     Email
+                   </label>
+                   <p className="text-sm text-gray-500 bg-gray-50 p-2 rounded">
+                     {selectedUser.email}
+                   </p>
+                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Status
-                  </label>
-                  <select
-                    value={editForm.status}
-                    onChange={(e) => setEditForm({...editForm, status: e.target.value as any})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="active">Ativo</option>
-                    <option value="inactive">Inativo</option>
-                  </select>
-                </div>
-              </div>
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                     Função
+                   </label>
+                   <select
+                     value={editForm.role}
+                     onChange={(e) => setEditForm({...editForm, role: e.target.value as any})}
+                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   >
+                     <option value="viewer">Visualizador (Apenas visualização)</option>
+                     <option value="user">Usuário (Edição básica)</option>
+                     <option value="admin">Administrador (Acesso total)</option>
+                   </select>
+                   <p className="text-xs text-gray-500 mt-1">
+                     {editForm.role === 'viewer' && 'Pode apenas visualizar dados'}
+                     {editForm.role === 'user' && 'Pode editar transações e configurações básicas'}
+                     {editForm.role === 'admin' && 'Acesso completo ao sistema, incluindo gestão de usuários'}
+                   </p>
+                 </div>
+
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                     Status
+                   </label>
+                   <select
+                     value={editForm.status}
+                     onChange={(e) => setEditForm({...editForm, status: e.target.value as any})}
+                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   >
+                     <option value="active">Ativo (Acesso permitido)</option>
+                     <option value="inactive">Inativo (Acesso bloqueado)</option>
+                   </select>
+                 </div>
+
+                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                   <div className="flex items-start">
+                     <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 mr-2" />
+                     <div className="text-sm text-yellow-800">
+                       <p className="font-medium">Permissões por Função:</p>
+                       <ul className="mt-1 space-y-1">
+                         <li>• <strong>Visualizador:</strong> Apenas visualização de dados</li>
+                         <li>• <strong>Usuário:</strong> Pode editar transações e configurações</li>
+                         <li>• <strong>Administrador:</strong> Acesso total ao sistema</li>
+                       </ul>
+                     </div>
+                   </div>
+                 </div>
+               </div>
 
               <div className="flex justify-end space-x-3 mt-6">
                 <button
