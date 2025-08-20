@@ -824,6 +824,18 @@ function App() {
   const paginatedData = filteredData.slice(startIndex, endIndex)
   const totalPages = Math.ceil(filteredData.length / itemsPerPage)
 
+  // Cálculo do total das transações exibidas
+  const totalExibido = paginatedData.reduce((sum, item) => {
+    const valor = item.tipo === 'despesa' ? -Math.abs(item.valor) : item.valor
+    return sum + valor
+  }, 0)
+
+  // Cálculo do total geral de todas as transações filtradas
+  const totalGeral = filteredData.reduce((sum, item) => {
+    const valor = item.tipo === 'despesa' ? -Math.abs(item.valor) : item.valor
+    return sum + valor
+  }, 0)
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -1522,6 +1534,76 @@ function App() {
                           </td>
                         </tr>
                       ))}
+                      
+                      {/* Linha de Total */}
+                      <tr className="bg-gray-50 border-t-2 border-gray-300 font-semibold">
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
+                          <span className="font-bold">TOTAL</span>
+                        </td>
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                          <span className="font-bold">
+                            {paginatedData.length} transação{paginatedData.length !== 1 ? 'ões' : ''}
+                          </span>
+                        </td>
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                          -
+                        </td>
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                          -
+                        </td>
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                          -
+                        </td>
+                        <td className={`px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-bold ${getClasseValor(totalExibido)}`}>
+                          {formatarMoeda(Math.abs(totalExibido))}
+                          {totalExibido < 0 ? ' (Despesa)' : totalExibido > 0 ? ' (Receita)' : ''}
+                        </td>
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                          -
+                        </td>
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                          -
+                        </td>
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                          -
+                        </td>
+                      </tr>
+                      
+                      {/* Linha de Total Geral (quando há filtros aplicados) */}
+                      {filteredData.length !== data.length && (
+                        <tr className="bg-blue-50 border-t border-blue-200 font-semibold">
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-blue-900">
+                            <span className="font-bold">TOTAL GERAL</span>
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-900">
+                            <span className="font-bold">
+                              {filteredData.length} transação{filteredData.length !== 1 ? 'ões' : ''}
+                            </span>
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-500">
+                            -
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-500">
+                            -
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-500">
+                            -
+                          </td>
+                          <td className={`px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-bold ${getClasseValor(totalGeral)}`}>
+                            {formatarMoeda(Math.abs(totalGeral))}
+                            {totalGeral < 0 ? ' (Despesa)' : totalGeral > 0 ? ' (Receita)' : ''}
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-500">
+                            -
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-500">
+                            -
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-blue-500">
+                            -
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
