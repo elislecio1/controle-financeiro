@@ -15,6 +15,7 @@ import { OFXImporter } from './components/OFXImporter'
 import { ToastContainer } from './components/ToastNotification'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { UserProfile } from './components/auth/UserProfile'
+import SystemLogs from './components/SystemLogs'
 import { useAuth } from './hooks/useAuth'
 import { formatarMoeda, formatarValorTabela, getClasseValor } from './utils/formatters'
 
@@ -40,6 +41,7 @@ function App() {
   // Estados para perfil do usuário
   const [showUserProfile, setShowUserProfile] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showSystemLogs, setShowSystemLogs] = useState(false)
   
   // Novos estados para filtros de período
   const [periodFilter, setPeriodFilter] = useState<string>('all')
@@ -901,31 +903,41 @@ function App() {
                     )}
                   </button>
                   
-                  {/* Menu dropdown para administradores */}
-                  {profile?.role === 'admin' && showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                      <button
-                        onClick={() => {
-                          setShowUserMenu(false)
-                          navigate('/admin/users')
-                        }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                      >
-                        <Users className="h-4 w-4 mr-2" />
-                        Gestão de Usuários
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowUserMenu(false)
-                          setShowUserProfile(true)
-                        }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                      >
-                        <User className="h-4 w-4 mr-2" />
-                        Meu Perfil
-                      </button>
-                    </div>
-                  )}
+                                     {/* Menu dropdown para administradores */}
+                   {profile?.role === 'admin' && showUserMenu && (
+                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                       <button
+                         onClick={() => {
+                           setShowUserMenu(false)
+                           navigate('/admin/users')
+                         }}
+                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                       >
+                         <Users className="h-4 w-4 mr-2" />
+                         Gestão de Usuários
+                       </button>
+                       <button
+                         onClick={() => {
+                           setShowUserMenu(false)
+                           setShowSystemLogs(true)
+                         }}
+                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                       >
+                         <Activity className="h-4 w-4 mr-2" />
+                         Logs do Sistema
+                       </button>
+                       <button
+                         onClick={() => {
+                           setShowUserMenu(false)
+                           setShowUserProfile(true)
+                         }}
+                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                       >
+                         <User className="h-4 w-4 mr-2" />
+                         Meu Perfil
+                       </button>
+                     </div>
+                   )}
                 </div>
               </div>
             </div>
@@ -1732,14 +1744,20 @@ function App() {
          )}
       </main>
       
-      {/* Modal do Perfil do Usuário */}
-      <UserProfile 
-        isOpen={showUserProfile}
-        onClose={() => setShowUserProfile(false)}
-      />
-    </div>
-  )
-}
+             {/* Modal do Perfil do Usuário */}
+       <UserProfile 
+         isOpen={showUserProfile}
+         onClose={() => setShowUserProfile(false)}
+       />
+
+       {/* Modal dos Logs do Sistema */}
+       <SystemLogs
+         isOpen={showSystemLogs}
+         onClose={() => setShowSystemLogs(false)}
+       />
+     </div>
+   )
+ }
 
 // Componente App protegido por autenticação
 const ProtectedApp: React.FC = () => {
