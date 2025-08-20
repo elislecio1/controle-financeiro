@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
 import { TrendingUp, Users, DollarSign, Activity, Database, Settings, RefreshCw, Calendar, Filter, Search, Plus, Download, Upload, CheckCircle, XCircle, Trash2, Edit, Bell, User } from 'lucide-react'
 import { SheetData, Categoria, Subcategoria, CentroCusto, Meta, Orcamento, Investimento, ContaBancaria, CartaoCredito, Contato, Alerta } from './types'
@@ -20,6 +21,7 @@ import { formatarMoeda, formatarValorTabela, getClasseValor } from './utils/form
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
 function App() {
+  const navigate = useNavigate()
   const { user, profile, isAuthenticated } = useAuth()
   const [data, setData] = useState<SheetData[]>([])
   const [filteredData, setFilteredData] = useState<SheetData[]>([])
@@ -870,7 +872,7 @@ function App() {
                       <button
                         onClick={() => {
                           setShowUserMenu(false)
-                          window.location.href = '/admin/users'
+                          navigate('/admin/users')
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                       >
