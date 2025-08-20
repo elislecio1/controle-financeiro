@@ -98,38 +98,38 @@ export const UserManagement: React.FC = () => {
   const loadUsers = async () => {
     try {
       setLoading(true)
+      console.log('👥 Carregando usuários...')
       
-      // Buscar usuários do Supabase Auth
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers()
-      
-      if (authError) throw authError
-
-      // Buscar perfis dos usuários
+      // Buscar perfis dos usuários da tabela user_profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
         .select('*')
+        .order('created_at', { ascending: false })
 
-      if (profilesError) throw profilesError
+      if (profilesError) {
+        console.error('❌ Erro ao carregar perfis:', profilesError)
+        throw profilesError
+      }
 
-      // Combinar dados
-      const usersData: UserData[] = authUsers.users.map((authUser: any) => {
-        const profile = profiles?.find((p: any) => p.user_id === authUser.id)
-        return {
-          id: authUser.id,
-          email: authUser.email || '',
-          name: profile?.name || authUser.user_metadata?.name || 'Sem nome',
-          role: profile?.role || 'user',
-          created_at: authUser.created_at,
-          last_sign_in_at: authUser.last_sign_in_at,
-          email_confirmed_at: authUser.email_confirmed_at,
-          avatar_url: authUser.user_metadata?.avatar_url,
-          status: authUser.email_confirmed_at ? 'active' : 'pending'
-        }
-      })
+      console.log('✅ Perfis carregados:', profiles?.length || 0)
 
+      // Converter para o formato UserData
+      const usersData: UserData[] = (profiles || []).map((profile: any) => ({
+        id: profile.user_id,
+        email: profile.email || '',
+        name: profile.name || 'Sem nome',
+        role: profile.role || 'user',
+        created_at: profile.created_at,
+        last_sign_in_at: profile.last_sign_in_at,
+        email_confirmed_at: profile.email_confirmed_at,
+        avatar_url: profile.avatar_url,
+        status: profile.email_confirmed_at ? 'active' : 'pending'
+      }))
+
+      console.log('✅ Usuários processados:', usersData.length)
       setUsers(usersData)
     } catch (error) {
-      console.error('Erro ao carregar usuários:', error)
+      console.error('❌ Erro ao carregar usuários:', error)
     } finally {
       setLoading(false)
     }
@@ -139,20 +139,32 @@ export const UserManagement: React.FC = () => {
     try {
       console.log('📋 Carregando convites...')
       
+      // Primeiro, verificar se a tabela existe
+      const { data: tableCheck, error: tableError } = await supabase
+        .from('user_invites')
+        .select('count')
+        .limit(1)
+
+      if (tableError) {
+        console.error('❌ Erro ao verificar tabela user_invites:', tableError)
+        return
+      }
+
+      console.log('✅ Tabela user_invites acessível')
+      
       const { data: invitesData, error } = await supabase
         .from('user_invites')
-        .select(`
-          *,
-          invited_by_user:user_profiles!user_invites_invited_by_fkey(name, email)
-        `)
+        .select('*')
         .order('invited_at', { ascending: false })
 
       if (error) {
         console.error('❌ Erro ao carregar convites:', error)
+        console.error('❌ Detalhes do erro:', error.code, error.message, error.details)
         return
       }
 
       console.log('✅ Convites carregados:', invitesData?.length || 0)
+      console.log('📋 Dados dos convites:', invitesData)
       setInvites(invitesData || [])
     } catch (error) {
       console.error('❌ Erro ao carregar convites:', error)
