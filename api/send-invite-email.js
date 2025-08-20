@@ -49,19 +49,27 @@ export default async function handler(req, res) {
       })
     }
 
-    // Opção 2: Usar SendGrid
+    // Opção 2: Usar SendGrid (compatível com Vercel)
     else if (process.env.SENDGRID_API_KEY) {
-      const sgMail = require('@sendgrid/mail')
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+      const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: to }] }],
+          from: { email: 'noreply@finflowpro.com', name: 'FinFlow Pro' },
+          subject: subject,
+          content: [{ type: 'text/html', value: html }]
+        })
+      })
 
-      const msg = {
-        to: to,
-        from: 'noreply@finflowpro.com',
-        subject: subject,
-        html: html
+      if (!response.ok) {
+        const error = await response.text()
+        throw new Error(`SendGrid API error: ${error}`)
       }
 
-      await sgMail.send(msg)
       console.log('✅ E-mail enviado via SendGrid')
       
       return res.status(200).json({ 
@@ -70,49 +78,20 @@ export default async function handler(req, res) {
       })
     }
 
-    // Opção 3: Usar Nodemailer com Gmail
-    else if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
-      const nodemailer = require('nodemailer')
-
-      const transporter = nodemailer.createTransporter({
-        service: 'gmail',
-        auth: {
-          user: process.env.GMAIL_USER,
-          pass: process.env.GMAIL_PASS
-        }
-      })
-
-      const mailOptions = {
-        from: process.env.GMAIL_USER,
-        to: to,
-        subject: subject,
-        html: html
-      }
-
-      await transporter.sendMail(mailOptions)
-      console.log('✅ E-mail enviado via Gmail')
-      
-      return res.status(200).json({ 
-        success: true, 
-        message: 'E-mail enviado com sucesso'
-      })
-    }
-
-    // Opção 4: Usar Supabase Edge Functions (se configurado)
+    // Opção 3: Usar Supabase Edge Functions (se configurado)
     else if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      const { createClient } = require('@supabase/supabase-js')
-      
-      const supabase = createClient(
-        process.env.SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY
-      )
-
-      const { data, error } = await supabase.functions.invoke('send-email', {
-        body: { to, subject, html }
+      const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/send-email`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ to, subject, html })
       })
 
-      if (error) {
-        throw error
+      if (!response.ok) {
+        const error = await response.text()
+        throw new Error(`Supabase Edge Function error: ${error}`)
       }
 
       console.log('✅ E-mail enviado via Supabase Edge Function')

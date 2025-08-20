@@ -238,31 +238,10 @@ function App() {
 
   // useEffect para aplicar filtros de busca, tipo e status
   useEffect(() => {
-    let filtered = [...data]
-    
-    // Aplicar filtro de busca
-    if (searchTerm.trim()) {
-      filtered = filtered.filter(item =>
-        item.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.categoria.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.subcategoria?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.conta.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    }
-    
-    // Aplicar filtro de tipo
-    if (filterTipo && filterTipo !== 'todos') {
-      filtered = filtered.filter(item => item.tipo === filterTipo)
-    }
-    
-    // Aplicar filtro de status
-    if (filterStatus && filterStatus !== 'todos') {
-      filtered = filtered.filter(item => item.status === filterStatus)
-    }
-    
-    setFilteredData(filtered)
+    // Aplicar todos os filtros combinados
+    applyCombinedFilters(periodFilter, contaFilter)
     setCurrentPage(1) // Reset para primeira página quando aplicar filtros
-  }, [data, searchTerm, filterTipo, filterStatus])
+  }, [data, searchTerm, filterTipo, filterStatus, periodFilter, contaFilter])
 
   // Função para recarregar dados quando uma transação é salva
   const handleTransactionSaved = () => {
@@ -476,6 +455,26 @@ function App() {
     // Aplicar filtro de conta bancária
     if (conta !== 'todas') {
       filtered = filtered.filter(item => item.conta === conta)
+    }
+    
+    // Aplicar filtro de busca
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(item =>
+        item.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.categoria.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.subcategoria?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.conta.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+    
+    // Aplicar filtro de tipo
+    if (filterTipo && filterTipo !== 'todos') {
+      filtered = filtered.filter(item => item.tipo === filterTipo)
+    }
+    
+    // Aplicar filtro de status
+    if (filterStatus && filterStatus !== 'todos') {
+      filtered = filtered.filter(item => item.status === filterStatus)
     }
     
     setFilteredData(filtered)
