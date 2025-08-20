@@ -5,14 +5,14 @@
       "maxDuration": 30
     }
   },
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/banco-inter",
-      "dest": "/api/banco-inter.js"
+      "source": "/api/banco-inter",
+      "destination": "/api/banco-inter.js"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
