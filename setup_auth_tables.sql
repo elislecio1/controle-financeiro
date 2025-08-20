@@ -340,9 +340,13 @@ WHERE schemaname = 'public'
 AND rowsecurity = true
 ORDER BY tablename;
 
-RAISE NOTICE '✅ Configuração de autenticação e multi-tenancy concluída!';
-RAISE NOTICE '📋 Próximos passos:';
-RAISE NOTICE '1. Configure OAuth do Google no painel do Supabase';
-RAISE NOTICE '2. Descomente e execute as seções de migração de dados se necessário';
-RAISE NOTICE '3. Teste o sistema de autenticação na aplicação';
-RAISE NOTICE '4. Verifique se todos os usuários têm perfis criados automaticamente';
+DO $$
+BEGIN
+    RAISE NOTICE '✅ Configuração de autenticação e multi-tenancy concluída!';
+    RAISE NOTICE '📋 Próximos passos:';
+    RAISE NOTICE '1. Configure OAuth do Google no painel do Supabase';
+    RAISE NOTICE '2. Descomente e execute as seções de migração de dados se necessário';
+    RAISE NOTICE '3. Teste o sistema de autenticação na aplicação';
+    RAISE NOTICE '4. Verifique se todos os usuários têm perfis criados automaticamente';
+END
+$$;
