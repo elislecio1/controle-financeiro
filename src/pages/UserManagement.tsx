@@ -40,6 +40,7 @@ interface UserData {
 }
 
 interface InviteData {
+  id: string
   email: string
   name: string
   role: 'admin' | 'user' | 'viewer'
@@ -47,6 +48,7 @@ interface InviteData {
   invited_at: string
   expires_at: string
   status: 'pending' | 'accepted' | 'expired'
+  token: string
 }
 
 export const UserManagement: React.FC = () => {
@@ -259,6 +261,55 @@ export const UserManagement: React.FC = () => {
     }
   }
 
+  const handleResendInvite = async (invite: InviteData) => {
+    try {
+      console.log('📧 Reenviando convite para:', invite.email)
+      
+      // Enviar e-mail de convite
+      const { EmailService } = await import('../services/email')
+      const emailResult = await EmailService.sendInviteEmail(invite)
+      
+      if (emailResult.success) {
+        alert(`✅ Convite reenviado com sucesso para ${invite.email}`)
+      } else {
+        console.warn('⚠️ Erro ao reenviar e-mail:', emailResult.error)
+        alert(`Erro ao reenviar e-mail: ${emailResult.error}`)
+      }
+    } catch (error: any) {
+      console.error('❌ Erro ao reenviar convite:', error)
+      alert(`Erro ao reenviar convite: ${error.message || 'Erro desconhecido'}`)
+    }
+  }
+
+  const handleCancelInvite = async (inviteId: string) => {
+    if (!confirm('Tem certeza que deseja cancelar este convite?')) return
+
+    try {
+      console.log('❌ Cancelando convite:', inviteId)
+      
+      // Cancelar convite usando a função SQL
+      const { error } = await supabase
+        .rpc('cancel_user_invite', {
+          p_invite_id: inviteId
+        })
+
+      if (error) {
+        console.error('❌ Erro ao cancelar convite:', error)
+        alert(`Erro ao cancelar convite: ${error.message}`)
+        return
+      }
+
+      console.log('✅ Convite cancelado com sucesso')
+      alert('Convite cancelado com sucesso')
+      
+      // Recarregar lista de convites
+      await loadInvites()
+    } catch (error: any) {
+      console.error('❌ Erro ao cancelar convite:', error)
+      alert(`Erro ao cancelar convite: ${error.message || 'Erro desconhecido'}`)
+    }
+  }
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -395,13 +446,13 @@ export const UserManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* Users List */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">
-              Usuários ({filteredUsers.length})
-            </h3>
-          </div>
+                 {/* Users List */}
+         <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+           <div className="px-6 py-4 border-b border-gray-200">
+             <h3 className="text-lg font-medium text-gray-900">
+               Usuários ({filteredUsers.length})
+             </h3>
+           </div>
 
           {loading ? (
             <div className="p-6 text-center">
@@ -511,9 +562,131 @@ export const UserManagement: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
-      </div>
+                     )}
+         </div>
+
+         {/* Invites List */}
+         <div className="bg-white rounded-lg shadow overflow-hidden">
+           <div className="px-6 py-4 border-b border-gray-200">
+             <h3 className="text-lg font-medium text-gray-900">
+               Convites Enviados ({invites.length})
+             </h3>
+           </div>
+
+           {invites.length === 0 ? (
+             <div className="p-6 text-center">
+               <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+               <p className="text-gray-500">Nenhum convite enviado ainda</p>
+               <p className="text-sm text-gray-400">Os convites aparecerão aqui após serem enviados</p>
+             </div>
+           ) : (
+             <div className="overflow-x-auto">
+               <table className="min-w-full divide-y divide-gray-200">
+                 <thead className="bg-gray-50">
+                   <tr>
+                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                       Convidado
+                     </th>
+                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                       Função
+                     </th>
+                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                       Status
+                     </th>
+                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                       Enviado em
+                     </th>
+                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                       Expira em
+                     </th>
+                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                       Ações
+                     </th>
+                   </tr>
+                 </thead>
+                 <tbody className="bg-white divide-y divide-gray-200">
+                   {invites.map((invite) => (
+                     <tr key={invite.id} className="hover:bg-gray-50">
+                       <td className="px-6 py-4 whitespace-nowrap">
+                         <div>
+                           <div className="text-sm font-medium text-gray-900">
+                             {invite.name}
+                           </div>
+                           <div className="text-sm text-gray-500">
+                             {invite.email}
+                           </div>
+                         </div>
+                       </td>
+                       <td className="px-6 py-4 whitespace-nowrap">
+                         <div className="flex items-center">
+                           {getRoleIcon(invite.role)}
+                           <span className="ml-2 text-sm text-gray-900 capitalize">
+                             {invite.role}
+                           </span>
+                         </div>
+                       </td>
+                       <td className="px-6 py-4 whitespace-nowrap">
+                         <div className="flex items-center">
+                           {invite.status === 'pending' && (
+                             <Clock className="h-4 w-4 text-yellow-600" />
+                           )}
+                           {invite.status === 'accepted' && (
+                             <CheckCircle className="h-4 w-4 text-green-600" />
+                           )}
+                           {invite.status === 'expired' && (
+                             <XCircle className="h-4 w-4 text-red-600" />
+                           )}
+                           <span className="ml-2 text-sm text-gray-900 capitalize">
+                             {invite.status === 'pending' ? 'Pendente' : 
+                              invite.status === 'accepted' ? 'Aceito' : 'Expirado'}
+                           </span>
+                         </div>
+                       </td>
+                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                         {new Date(invite.invited_at).toLocaleDateString('pt-BR')}
+                       </td>
+                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                         {new Date(invite.expires_at).toLocaleDateString('pt-BR')}
+                       </td>
+                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                         <div className="flex space-x-2">
+                           {invite.status === 'pending' && (
+                             <button
+                               onClick={() => handleResendInvite(invite)}
+                               className="text-blue-600 hover:text-blue-900 flex items-center"
+                               title="Reenviar convite"
+                             >
+                               <Mail className="h-4 w-4 mr-1" />
+                               Reenviar
+                             </button>
+                           )}
+                           {invite.status === 'expired' && (
+                             <button
+                               onClick={() => handleResendInvite(invite)}
+                               className="text-orange-600 hover:text-orange-900 flex items-center"
+                               title="Renovar convite"
+                             >
+                               <Mail className="h-4 w-4 mr-1" />
+                               Renovar
+                             </button>
+                           )}
+                           <button
+                             onClick={() => handleCancelInvite(invite.id)}
+                             className="text-red-600 hover:text-red-900"
+                             title="Cancelar convite"
+                           >
+                             <XCircle className="h-4 w-4" />
+                           </button>
+                         </div>
+                       </td>
+                     </tr>
+                   ))}
+                 </tbody>
+               </table>
+             </div>
+           )}
+         </div>
+       </div>
 
       {/* Invite Modal */}
       {showInviteModal && (
