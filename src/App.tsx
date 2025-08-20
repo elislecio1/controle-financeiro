@@ -400,6 +400,10 @@ function App() {
     
     const filtered = data.filter(item => {
       switch (filterType) {
+        case 'receita':
+          return item.tipo === 'receita'
+        case 'despesa':
+          return item.tipo === 'despesa'
         case 'pago':
           return item.status === 'pago'
         case 'pendente':
@@ -542,6 +546,10 @@ function App() {
     setCustomStartDate('')
     setCustomEndDate('')
     setShowCustomPeriod(false)
+    setActiveFilter(null)
+    setSearchTerm('')
+    setFilterTipo('todos')
+    setFilterStatus('todos')
     setFilteredData(data)
     setCurrentPage(1)
     setConnectionStatus({ success: true, message: 'Todos os filtros foram limpos!' })
@@ -992,7 +1000,7 @@ function App() {
             {/* Filtros no Topo - Primeiro */}
             <div className="space-y-4">
               {/* Indicador de Filtros Ativos */}
-              {(periodFilter !== 'all' || contaFilter !== 'todas') && (
+              {(periodFilter !== 'all' || contaFilter !== 'todas' || activeFilter) && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -1018,6 +1026,21 @@ function App() {
                     {contaFilter !== 'todas' && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         Conta: {contaFilter}
+                      </span>
+                    )}
+                    {activeFilter && (
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        activeFilter === 'receita' ? 'bg-green-100 text-green-800' :
+                        activeFilter === 'despesa' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {activeFilter === 'receita' ? 'Receitas' :
+                         activeFilter === 'despesa' ? 'Despesas' :
+                         activeFilter === 'pago' ? 'Pago' :
+                         activeFilter === 'pendente' ? 'Pendente' :
+                         activeFilter === 'vencido' ? 'Vencido' :
+                         activeFilter === 'pago_hoje' ? 'Pago Hoje' :
+                         activeFilter === 'vencendo_hoje' ? 'Vencendo Hoje' : activeFilter}
                       </span>
                     )}
                   </div>
@@ -1137,7 +1160,12 @@ function App() {
 
             {/* Stats Cards - Depois dos Filtros */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white overflow-hidden shadow rounded-lg">
+              <button
+                onClick={() => applyFilter('receita')}
+                className={`bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow ${
+                  activeFilter === 'receita' ? 'ring-2 ring-green-500' : ''
+                }`}
+              >
                 <div className="p-5">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
@@ -1151,9 +1179,14 @@ function App() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </button>
 
-              <div className="bg-white overflow-hidden shadow rounded-lg">
+              <button
+                onClick={() => applyFilter('despesa')}
+                className={`bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow ${
+                  activeFilter === 'despesa' ? 'ring-2 ring-red-500' : ''
+                }`}
+              >
                 <div className="p-5">
                   <div className="flex items-center">
                     <div className="flex-shrink-0">
@@ -1167,7 +1200,7 @@ function App() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </button>
 
               <div className="bg-white overflow-hidden shadow rounded-lg">
                 <div className="p-5">

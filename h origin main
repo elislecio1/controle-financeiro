@@ -1,0 +1,3 @@
+[33m0f52b15[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Adicionar script SQL final simplificado para limpeza de dados
+[33m2a1eb24[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Corrigir script SQL - adicionar verificação de tabelas existentes
+[33m8f4905b[m Corrigir API de e-mail e filtros combinados - adicionar script de limpeza de dados
