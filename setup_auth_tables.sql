@@ -76,7 +76,7 @@ CREATE TRIGGER on_auth_user_created
 -- 7. Adicionar coluna user_id em todas as tabelas principais (se não existir)
 DO $$
 DECLARE
-    table_name TEXT;
+    current_table TEXT;
     tables_to_update TEXT[] := ARRAY[
         'transactions',
         'categorias',
@@ -94,19 +94,19 @@ DECLARE
         'logs_sincronizacao'
     ];
 BEGIN
-    FOREACH table_name IN ARRAY tables_to_update
+    FOREACH current_table IN ARRAY tables_to_update
     LOOP
         -- Verificar se a tabela existe
-        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = table_name AND table_schema = 'public') THEN
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = current_table AND table_schema = 'public') THEN
             -- Adicionar coluna user_id se não existir
             IF NOT EXISTS (
                 SELECT 1 FROM information_schema.columns 
-                WHERE table_name = table_name 
+                WHERE table_name = current_table 
                 AND column_name = 'user_id' 
                 AND table_schema = 'public'
             ) THEN
-                EXECUTE format('ALTER TABLE public.%I ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE', table_name);
-                RAISE NOTICE 'Adicionada coluna user_id na tabela %', table_name;
+                EXECUTE format('ALTER TABLE public.%I ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE', current_table);
+                RAISE NOTICE 'Adicionada coluna user_id na tabela %', current_table;
             END IF;
         END IF;
     END LOOP;
@@ -188,7 +188,7 @@ ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 
 DO $$
 DECLARE
-    table_name TEXT;
+    current_table TEXT;
     tables_to_secure TEXT[] := ARRAY[
         'transactions',
         'categorias',
@@ -206,11 +206,11 @@ DECLARE
         'logs_sincronizacao'
     ];
 BEGIN
-    FOREACH table_name IN ARRAY tables_to_secure
+    FOREACH current_table IN ARRAY tables_to_secure
     LOOP
-        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = table_name AND table_schema = 'public') THEN
-            EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', table_name);
-            RAISE NOTICE 'RLS habilitado na tabela %', table_name;
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = current_table AND table_schema = 'public') THEN
+            EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', current_table);
+            RAISE NOTICE 'RLS habilitado na tabela %', current_table;
         END IF;
     END LOOP;
 END
@@ -232,7 +232,7 @@ CREATE POLICY "Users can insert own profile" ON public.user_profiles
 -- 12. Criar políticas RLS para tabelas principais
 DO $$
 DECLARE
-    table_name TEXT;
+    current_table TEXT;
     tables_to_secure TEXT[] := ARRAY[
         'transactions',
         'categorias',
@@ -250,26 +250,26 @@ DECLARE
         'logs_sincronizacao'
     ];
 BEGIN
-    FOREACH table_name IN ARRAY tables_to_secure
+    FOREACH current_table IN ARRAY tables_to_secure
     LOOP
-        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = table_name AND table_schema = 'public') THEN
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = current_table AND table_schema = 'public') THEN
             -- Política de SELECT
-            EXECUTE format('DROP POLICY IF EXISTS "Users can view own %s" ON public.%I', table_name, table_name);
-            EXECUTE format('CREATE POLICY "Users can view own %s" ON public.%I FOR SELECT USING (auth.uid() = user_id)', table_name, table_name);
+            EXECUTE format('DROP POLICY IF EXISTS "Users can view own %s" ON public.%I', current_table, current_table);
+            EXECUTE format('CREATE POLICY "Users can view own %s" ON public.%I FOR SELECT USING (auth.uid() = user_id)', current_table, current_table);
             
             -- Política de INSERT
-            EXECUTE format('DROP POLICY IF EXISTS "Users can insert own %s" ON public.%I', table_name, table_name);
-            EXECUTE format('CREATE POLICY "Users can insert own %s" ON public.%I FOR INSERT WITH CHECK (auth.uid() = user_id)', table_name, table_name);
+            EXECUTE format('DROP POLICY IF EXISTS "Users can insert own %s" ON public.%I', current_table, current_table);
+            EXECUTE format('CREATE POLICY "Users can insert own %s" ON public.%I FOR INSERT WITH CHECK (auth.uid() = user_id)', current_table, current_table);
             
             -- Política de UPDATE
-            EXECUTE format('DROP POLICY IF EXISTS "Users can update own %s" ON public.%I', table_name, table_name);
-            EXECUTE format('CREATE POLICY "Users can update own %s" ON public.%I FOR UPDATE USING (auth.uid() = user_id)', table_name, table_name);
+            EXECUTE format('DROP POLICY IF EXISTS "Users can update own %s" ON public.%I', current_table, current_table);
+            EXECUTE format('CREATE POLICY "Users can update own %s" ON public.%I FOR UPDATE USING (auth.uid() = user_id)', current_table, current_table);
             
             -- Política de DELETE
-            EXECUTE format('DROP POLICY IF EXISTS "Users can delete own %s" ON public.%I', table_name, table_name);
-            EXECUTE format('CREATE POLICY "Users can delete own %s" ON public.%I FOR DELETE USING (auth.uid() = user_id)', table_name, table_name);
+            EXECUTE format('DROP POLICY IF EXISTS "Users can delete own %s" ON public.%I', current_table, current_table);
+            EXECUTE format('CREATE POLICY "Users can delete own %s" ON public.%I FOR DELETE USING (auth.uid() = user_id)', current_table, current_table);
             
-            RAISE NOTICE 'Políticas RLS criadas para tabela %', table_name;
+            RAISE NOTICE 'Políticas RLS criadas para tabela %', current_table;
         END IF;
     END LOOP;
 END
@@ -284,7 +284,7 @@ CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON public.user_profiles(use
 
 DO $$
 DECLARE
-    table_name TEXT;
+    current_table TEXT;
     tables_to_index TEXT[] := ARRAY[
         'transactions',
         'categorias',
@@ -302,11 +302,11 @@ DECLARE
         'logs_sincronizacao'
     ];
 BEGIN
-    FOREACH table_name IN ARRAY tables_to_index
+    FOREACH current_table IN ARRAY tables_to_index
     LOOP
-        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = table_name AND table_schema = 'public') THEN
-            EXECUTE format('CREATE INDEX IF NOT EXISTS idx_%s_user_id ON public.%I(user_id)', table_name, table_name);
-            RAISE NOTICE 'Índice criado para user_id na tabela %', table_name;
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = current_table AND table_schema = 'public') THEN
+            EXECUTE format('CREATE INDEX IF NOT EXISTS idx_%s_user_id ON public.%I(user_id)', current_table, current_table);
+            RAISE NOTICE 'Índice criado para user_id na tabela %', current_table;
         END IF;
     END LOOP;
 END

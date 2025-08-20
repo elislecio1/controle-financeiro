@@ -38,26 +38,48 @@ END
 $$;
 
 -- 3. Verificar se o usuário foi criado corretamente
-SELECT 
-    u.email,
-    u.email_confirmed_at,
-    p.name,
-    p.role,
-    p.created_at
-FROM auth.users u
-LEFT JOIN public.user_profiles p ON u.id = p.user_id
-WHERE u.email = 'elislecio@gmail.com';
+DO $$
+BEGIN
+    -- Verificar se a tabela user_profiles existe
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'user_profiles' AND table_schema = 'public') THEN
+        -- Executar a consulta apenas se a tabela existir
+        PERFORM 
+            u.email,
+            u.email_confirmed_at,
+            p.name,
+            p.role,
+            p.created_at
+        FROM auth.users u
+        LEFT JOIN public.user_profiles p ON u.id = p.user_id
+        WHERE u.email = 'elislecio@gmail.com';
+        
+        RAISE NOTICE '✅ Consulta de verificação executada com sucesso!';
+    ELSE
+        RAISE NOTICE '⚠️ Tabela user_profiles ainda não existe. Execute primeiro o setup_auth_tables.sql';
+    END IF;
+END
+$$;
 
--- 4. Verificar permissões
-SELECT 
-    schemaname,
-    tablename,
-    policyname,
-    permissive,
-    roles,
-    cmd,
-    qual,
-    with_check
-FROM pg_policies 
-WHERE schemaname = 'public' 
-AND tablename = 'user_profiles';
+-- 4. Verificar permissões (apenas se a tabela existir)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'user_profiles' AND table_schema = 'public') THEN
+        PERFORM 
+            schemaname,
+            tablename,
+            policyname,
+            permissive,
+            roles,
+            cmd,
+            qual,
+            with_check
+        FROM pg_policies 
+        WHERE schemaname = 'public' 
+        AND tablename = 'user_profiles';
+        
+        RAISE NOTICE '✅ Verificação de permissões executada!';
+    ELSE
+        RAISE NOTICE '⚠️ Tabela user_profiles não existe. Execute primeiro o setup_auth_tables.sql';
+    END IF;
+END
+$$;
