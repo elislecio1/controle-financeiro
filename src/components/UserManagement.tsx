@@ -86,8 +86,8 @@ const UserManagement: React.FC = () => {
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null)
   const [editData, setEditData] = useState({
     full_name: '',
-    role: 'user' as const,
-    status: 'active' as const
+    role: 'user' as 'admin' | 'user' | 'viewer',
+    status: 'active' as 'active' | 'inactive' | 'pending'
   })
 
   useEffect(() => {
