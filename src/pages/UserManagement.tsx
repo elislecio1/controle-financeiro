@@ -18,7 +18,14 @@ import {
   XCircle,
   Clock
 } from 'lucide-react'
-import { supabase } from '../services/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+// Configurações do Supabase
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co'
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key'
+
+// Cliente Supabase
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 interface UserData {
   id: string
@@ -95,8 +102,8 @@ export const UserManagement: React.FC = () => {
       if (profilesError) throw profilesError
 
       // Combinar dados
-      const usersData: UserData[] = authUsers.users.map(authUser => {
-        const profile = profiles?.find(p => p.user_id === authUser.id)
+      const usersData: UserData[] = authUsers.users.map((authUser: any) => {
+        const profile = profiles?.find((p: any) => p.user_id === authUser.id)
         return {
           id: authUser.id,
           email: authUser.email || '',
@@ -423,7 +430,7 @@ export const UserManagement: React.FC = () => {
                               setEditForm({
                                 name: user.name,
                                 role: user.role,
-                                status: user.status
+                                status: user.status === 'pending' ? 'active' : user.status
                               })
                               setShowEditModal(true)
                             }}
