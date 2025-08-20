@@ -832,20 +832,42 @@ function App() {
                   <p className="text-sm font-medium text-gray-900">{profile?.name || user?.email}</p>
                   <p className="text-xs text-gray-500">{profile?.role === 'admin' ? 'Administrador' : 'Usuário'}</p>
                 </div>
-                <button
-                  onClick={() => setShowUserProfile(true)}
-                  className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  {profile?.avatar_url ? (
-                    <img 
-                      src={profile.avatar_url} 
-                      alt="Avatar" 
-                      className="w-8 h-8 rounded-full"
-                    />
-                  ) : (
-                    <User className="h-4 w-4" />
+                <div className="relative">
+                  <button
+                    onClick={() => setShowUserProfile(true)}
+                    className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    {profile?.avatar_url ? (
+                      <img 
+                        src={profile.avatar_url} 
+                        alt="Avatar" 
+                        className="w-8 h-8 rounded-full"
+                      />
+                    ) : (
+                      <User className="h-4 w-4" />
+                    )}
+                  </button>
+                  
+                  {/* Menu dropdown para administradores */}
+                  {profile?.role === 'admin' && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                      <button
+                        onClick={() => window.location.href = '/admin/users'}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      >
+                        <Users className="h-4 w-4 mr-2" />
+                        Gestão de Usuários
+                      </button>
+                      <button
+                        onClick={() => setShowUserProfile(true)}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        Meu Perfil
+                      </button>
+                    </div>
                   )}
-                </button>
+                </div>
               </div>
             </div>
           </div>
