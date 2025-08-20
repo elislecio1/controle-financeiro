@@ -127,11 +127,25 @@ export const UserManagement: React.FC = () => {
 
   const loadInvites = async () => {
     try {
-      // Buscar convites pendentes (implementar tabela de convites se necessário)
-      // Por enquanto, vamos simular
-      setInvites([])
+      console.log('📋 Carregando convites...')
+      
+      const { data: invitesData, error } = await supabase
+        .from('user_invites')
+        .select(`
+          *,
+          invited_by_user:user_profiles!user_invites_invited_by_fkey(name, email)
+        `)
+        .order('invited_at', { ascending: false })
+
+      if (error) {
+        console.error('❌ Erro ao carregar convites:', error)
+        return
+      }
+
+      console.log('✅ Convites carregados:', invitesData?.length || 0)
+      setInvites(invitesData || [])
     } catch (error) {
-      console.error('Erro ao carregar convites:', error)
+      console.error('❌ Erro ao carregar convites:', error)
     }
   }
 
@@ -142,18 +156,62 @@ export const UserManagement: React.FC = () => {
         return
       }
 
-      // Aqui você implementaria a lógica de convite
-      // Por enquanto, vamos simular
-      console.log('Convidando usuário:', inviteForm)
+      console.log('📧 Convidando usuário:', inviteForm)
+      
+      // Criar convite usando a função SQL
+      const { data: inviteData, error: inviteError } = await supabase
+        .rpc('create_user_invite', {
+          p_email: inviteForm.email,
+          p_name: inviteForm.name,
+          p_role: inviteForm.role,
+          p_expires_in_days: 7
+        })
+
+      if (inviteError) {
+        console.error('❌ Erro ao criar convite:', inviteError)
+        alert(`Erro ao criar convite: ${inviteError.message}`)
+        return
+      }
+
+      console.log('✅ Convite criado com sucesso:', inviteData)
+
+      // Buscar dados do convite criado
+      const { data: invite, error: fetchError } = await supabase
+        .from('user_invites')
+        .select('*')
+        .eq('id', inviteData)
+        .single()
+
+      if (fetchError) {
+        console.error('❌ Erro ao buscar convite:', fetchError)
+        alert('Convite criado mas erro ao buscar dados')
+        return
+      }
+
+      // Enviar e-mail de convite
+      try {
+        const { EmailService } = await import('../services/email')
+        const emailResult = await EmailService.sendInviteEmail(invite)
+        
+        if (emailResult.success) {
+          alert(`✅ Convite enviado com sucesso para ${inviteForm.email}`)
+        } else {
+          console.warn('⚠️ Erro ao enviar e-mail, mas convite foi criado:', emailResult.error)
+          alert(`Convite criado mas erro ao enviar e-mail: ${emailResult.error}`)
+        }
+      } catch (emailError) {
+        console.error('❌ Erro ao enviar e-mail:', emailError)
+        alert(`Convite criado mas erro ao enviar e-mail: ${emailError.message}`)
+      }
       
       setShowInviteModal(false)
       setInviteForm({ email: '', name: '', role: 'user' })
       
-      // Recarregar lista
-      await loadUsers()
+      // Recarregar lista de convites
+      await loadInvites()
     } catch (error) {
-      console.error('Erro ao convidar usuário:', error)
-      alert('Erro ao convidar usuário')
+      console.error('❌ Erro ao convidar usuário:', error)
+      alert(`Erro ao convidar usuário: ${error.message}`)
     }
   }
 
