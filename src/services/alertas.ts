@@ -92,17 +92,7 @@ class AlertasServiceImpl implements AlertasService {
   async criarAlerta(alerta: Omit<Alerta, 'id' | 'dataCriacao'>): Promise<{ success: boolean; message: string; data?: Alerta }> {
     try {
       if (!this.isSupabaseConfigured()) {
-        const novoAlerta: Alerta = {
-          ...alerta,
-          id: Date.now().toString(),
-          dataCriacao: new Date().toISOString()
-        }
-        mockAlertas.unshift(novoAlerta)
-        return {
-          success: true,
-          message: 'Alerta criado com sucesso!',
-          data: novoAlerta
-        }
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
       }
 
       const alertaData = {
@@ -139,12 +129,7 @@ class AlertasServiceImpl implements AlertasService {
   async atualizarAlerta(id: string, data: Partial<Alerta>): Promise<{ success: boolean; message: string }> {
     try {
       if (!this.isSupabaseConfigured()) {
-        const index = mockAlertas.findIndex(a => a.id === id)
-        if (index !== -1) {
-          mockAlertas[index] = { ...mockAlertas[index], ...data }
-          return { success: true, message: 'Alerta atualizado com sucesso!' }
-        }
-        return { success: false, message: 'Alerta não encontrado' }
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
       }
 
       const { error } = await supabase
@@ -182,12 +167,7 @@ class AlertasServiceImpl implements AlertasService {
   async deletarAlerta(id: string): Promise<{ success: boolean; message: string }> {
     try {
       if (!this.isSupabaseConfigured()) {
-        const index = mockAlertas.findIndex(a => a.id === id)
-        if (index !== -1) {
-          mockAlertas.splice(index, 1)
-          return { success: true, message: 'Alerta deletado com sucesso!' }
-        }
-        return { success: false, message: 'Alerta não encontrado' }
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
       }
 
       const { error } = await supabase
@@ -215,7 +195,7 @@ class AlertasServiceImpl implements AlertasService {
   async getConfiguracoes(): Promise<ConfiguracaoAlerta[]> {
     try {
       if (!this.isSupabaseConfigured()) {
-        return mockConfiguracoes
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
       }
 
       const { data, error } = await supabase
@@ -225,11 +205,11 @@ class AlertasServiceImpl implements AlertasService {
 
       if (error) {
         console.error('Erro ao buscar configurações:', error)
-        return mockConfiguracoes
+        throw new Error(`Erro ao buscar configurações: ${error.message}`)
       }
 
       if (!data) {
-        return mockConfiguracoes
+        return []
       }
 
       // Mapear dados do banco para o formato da aplicação
@@ -250,7 +230,7 @@ class AlertasServiceImpl implements AlertasService {
       return configuracoes
     } catch (error) {
       console.error('Erro ao buscar configurações:', error)
-      return mockConfiguracoes
+      return []
     }
   }
 
@@ -261,16 +241,7 @@ class AlertasServiceImpl implements AlertasService {
       console.log('🔧 URL Supabase:', SUPABASE_URL)
       
       if (!this.isSupabaseConfigured()) {
-        const novaConfig: ConfiguracaoAlerta = {
-          ...config,
-          id: Date.now().toString()
-        }
-        mockConfiguracoes.push(novaConfig)
-        return {
-          success: true,
-          message: 'Configuração salva com sucesso!',
-          data: novaConfig
-        }
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
       }
 
              // Mapear campos para o formato do banco
@@ -372,12 +343,7 @@ class AlertasServiceImpl implements AlertasService {
   async atualizarConfiguracao(id: string, data: Partial<ConfiguracaoAlerta>): Promise<{ success: boolean; message: string }> {
     try {
       if (!this.isSupabaseConfigured()) {
-        const index = mockConfiguracoes.findIndex(c => c.id === id)
-        if (index !== -1) {
-          mockConfiguracoes[index] = { ...mockConfiguracoes[index], ...data }
-          return { success: true, message: 'Configuração atualizada com sucesso!' }
-        }
-        return { success: false, message: 'Configuração não encontrada' }
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
       }
 
              // Mapear campos para o formato do banco (camelCase -> snake_case)
@@ -426,12 +392,7 @@ class AlertasServiceImpl implements AlertasService {
   async deletarConfiguracao(id: string): Promise<{ success: boolean; message: string }> {
     try {
       if (!this.isSupabaseConfigured()) {
-        const index = mockConfiguracoes.findIndex(c => c.id === id)
-        if (index !== -1) {
-          mockConfiguracoes.splice(index, 1)
-          return { success: true, message: 'Configuração deletada com sucesso!' }
-        }
-        return { success: false, message: 'Configuração não encontrada' }
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
       }
 
       const { error } = await supabase
