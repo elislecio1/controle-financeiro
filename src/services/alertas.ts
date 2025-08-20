@@ -7,40 +7,7 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJ
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// Array vazio - não usaremos dados mockados
-const mockAlertas: Alerta[] = []
-
-const mockConfiguracoes: ConfiguracaoAlerta[] = [
-  {
-    id: '1',
-    tipo: 'vencimento',
-    ativo: true,
-    diasAntes: 3,
-    categorias: ['Serviços', 'Moradia'],
-    horarioNotificacao: '09:00',
-    frequencia: 'diario',
-    canais: ['dashboard', 'email']
-  },
-  {
-    id: '2',
-    tipo: 'saldo',
-    ativo: true,
-    valorMinimo: 1000,
-    contas: ['Conta Corrente Principal'],
-    horarioNotificacao: '08:00',
-    frequencia: 'diario',
-    canais: ['dashboard', 'push']
-  },
-  {
-    id: '3',
-    tipo: 'meta',
-    ativo: true,
-    percentualMeta: 80,
-    horarioNotificacao: '18:00',
-    frequencia: 'semanal',
-    canais: ['dashboard', 'email']
-  }
-]
+// Sistema operando apenas com dados reais - sem dados simulados
 
 export interface AlertasService {
   // Alertas
@@ -78,7 +45,7 @@ class AlertasServiceImpl implements AlertasService {
   async getAlertas(): Promise<Alerta[]> {
     try {
       if (!this.isSupabaseConfigured()) {
-        return mockAlertas
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
       }
 
       const { data, error } = await supabase
@@ -88,13 +55,13 @@ class AlertasServiceImpl implements AlertasService {
 
       if (error) {
         console.error('Erro ao buscar alertas:', error)
-        return mockAlertas
+        throw new Error(`Erro ao buscar alertas: ${error.message}`)
       }
 
-      return data || mockAlertas
+      return data || []
     } catch (error) {
       console.error('Erro ao buscar alertas:', error)
-      return mockAlertas
+      throw error
     }
   }
 

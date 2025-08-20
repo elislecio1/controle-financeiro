@@ -44,268 +44,11 @@ const addUserIdToData = async (data: any) => {
   return { ...data, user_id: user.id }
 }
 
-// Dados mock para quando não há conexão
-const mockData: SheetData[] = [
-  {
-    id: '1',
-    data: '15/01/2024',
-    valor: 5000, // Receita (positivo)
-    descricao: 'Salário',
-    conta: 'Conta Corrente',
-    categoria: 'Receitas',
-    forma: 'Transferência',
-    tipo: 'receita',
-    status: 'pago',
-    dataPagamento: '15/01/2024',
-    vencimento: '15/01/2024',
-    empresa: 'Empresa ABC'
-  },
-  {
-    id: '2',
-    data: '20/01/2024',
-    valor: -1200, // Despesa (negativo)
-    descricao: 'Aluguel',
-    conta: 'Conta Corrente',
-    categoria: 'Moradia',
-    forma: 'PIX',
-    tipo: 'despesa',
-    status: 'pago',
-    dataPagamento: '20/01/2024',
-    vencimento: '20/01/2024',
-    empresa: 'Imobiliária XYZ'
-  },
-  {
-    id: '3',
-    data: '25/01/2024',
-    valor: -150, // Despesa (negativo)
-    descricao: 'Conta de Luz',
-    conta: 'Conta Corrente',
-    categoria: 'Serviços',
-    forma: 'Boleto',
-    tipo: 'despesa',
-    status: 'pendente',
-    vencimento: '25/01/2024',
-    empresa: 'Companhia de Energia'
-  }
-]
+// Sistema operando apenas com dados reais - sem dados simulados
 
-// Mock data para categorias
-const mockCategorias: Categoria[] = [
-  {
-    id: '550e8400-e29b-41d4-a716-446655440001',
-    nome: 'Alimentação',
-    tipo: 'despesa',
-    cor: '#EF4444',
-    ativo: true
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440002',
-    nome: 'Transporte',
-    tipo: 'despesa',
-    cor: '#F59E0B',
-    ativo: true
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440003',
-    nome: 'Moradia',
-    tipo: 'despesa',
-    cor: '#10B981',
-    ativo: true
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440004',
-    nome: 'Receitas',
-    tipo: 'receita',
-    cor: '#3B82F6',
-    ativo: true
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440005',
-    nome: 'Serviços',
-    tipo: 'despesa',
-    cor: '#8B5CF6',
-    ativo: true
-  }
-]
+// Sistema operando apenas com dados reais - sem dados simulados
 
-// Mock data para subcategorias
-const mockSubcategorias: Subcategoria[] = [
-  {
-    id: '660e8400-e29b-41d4-a716-446655440001',
-    nome: 'Restaurantes',
-    categoriaId: '550e8400-e29b-41d4-a716-446655440001',
-    ativo: true
-  },
-  {
-    id: '660e8400-e29b-41d4-a716-446655440002',
-    nome: 'Supermercado',
-    categoriaId: '550e8400-e29b-41d4-a716-446655440001',
-    ativo: true
-  },
-  {
-    id: '660e8400-e29b-41d4-a716-446655440003',
-    nome: 'Combustível',
-    categoriaId: '550e8400-e29b-41d4-a716-446655440002',
-    ativo: true
-  },
-  {
-    id: '660e8400-e29b-41d4-a716-446655440004',
-    nome: 'Uber/Táxi',
-    categoriaId: '550e8400-e29b-41d4-a716-446655440002',
-    ativo: true
-  },
-  {
-    id: '660e8400-e29b-41d4-a716-446655440005',
-    nome: 'Aluguel',
-    categoriaId: '550e8400-e29b-41d4-a716-446655440003',
-    ativo: true
-  },
-  {
-    id: '660e8400-e29b-41d4-a716-446655440006',
-    nome: 'Salário',
-    categoriaId: '550e8400-e29b-41d4-a716-446655440004',
-    ativo: true
-  }
-]
-
-// Mock data para investimentos
-const mockInvestimentos: Investimento[] = [
-  {
-    id: '770e8400-e29b-41d4-a716-446655440001',
-    nome: 'PETR4',
-    tipo: 'acao',
-    valor: 5000,
-    quantidade: 100,
-    precoMedio: 50,
-    dataCompra: '2024-01-15',
-    instituicao: 'XP Investimentos',
-    observacoes: 'Petrobras - Ação preferencial',
-    ativo: true,
-    dataCriacao: '2024-01-15T10:00:00Z'
-  },
-  {
-    id: '770e8400-e29b-41d4-a716-446655440002',
-    nome: 'ITUB4',
-    tipo: 'acao',
-    valor: 3000,
-    quantidade: 50,
-    precoMedio: 60,
-    dataCompra: '2024-02-01',
-    instituicao: 'Rico Investimentos',
-    observacoes: 'Itaú Unibanco - Ação preferencial',
-    ativo: true,
-    dataCriacao: '2024-02-01T14:30:00Z'
-  },
-  {
-    id: '770e8400-e29b-41d4-a716-446655440003',
-    nome: 'CDB 110% CDI',
-    tipo: 'cdb',
-    valor: 10000,
-    quantidade: 0,
-    precoMedio: 0,
-    dataCompra: '2024-01-01',
-    instituicao: 'Banco Inter',
-    observacoes: 'CDB com rendimento de 110% do CDI',
-    ativo: true,
-    dataCriacao: '2024-01-01T09:00:00Z'
-  }
-]
-
-// Mock data para contas bancárias
-const mockContas: ContaBancaria[] = [
-  {
-    id: '880e8400-e29b-41d4-a716-446655440001',
-    nome: 'Conta Corrente Principal',
-    tipo: 'conta_corrente',
-    banco: 'Banco do Brasil',
-    agencia: '1234',
-    conta: '12345-6',
-    saldo: 5000,
-    limite: 0,
-    ativo: true
-  },
-  {
-    id: '880e8400-e29b-41d4-a716-446655440002',
-    nome: 'Conta Poupança',
-    tipo: 'poupanca',
-    banco: 'Itaú',
-    agencia: '5678',
-    conta: '98765-4',
-    saldo: 15000,
-    limite: 0,
-    ativo: true
-  },
-  {
-    id: '880e8400-e29b-41d4-a716-446655440003',
-    nome: 'Carteira',
-    tipo: 'investimento',
-    banco: '',
-    agencia: '',
-    conta: '',
-    saldo: 500,
-    limite: 0,
-    ativo: true
-  }
-]
-
-// Mock data para cartões de crédito
-const mockCartoes: CartaoCredito[] = [
-  {
-    id: '990e8400-e29b-41d4-a716-446655440001',
-    nome: 'Cartão Nubank',
-    banco: 'Nubank',
-    limite: 5000,
-    vencimento: 15,
-    contaId: '880e8400-e29b-41d4-a716-446655440001',
-    ativo: true
-  },
-  {
-    id: '990e8400-e29b-41d4-a716-446655440002',
-    nome: 'Cartão Itaú',
-    banco: 'Itaú',
-    limite: 3000,
-    vencimento: 20,
-    contaId: '880e8400-e29b-41d4-a716-446655440002',
-    ativo: true
-  }
-]
-
-// Mock data para contatos
-const mockContatos: Contato[] = [
-  {
-    id: 'aa0e8400-e29b-41d4-a716-446655440001',
-    nome: 'João Silva',
-    tipo: 'cliente',
-    email: 'joao.silva@email.com',
-    telefone: '(11) 99999-9999',
-    cpfCnpj: '123.456.789-00',
-    endereco: 'Rua das Flores, 123 - São Paulo/SP',
-    observacoes: 'Cliente preferencial',
-    ativo: true
-  },
-  {
-    id: 'aa0e8400-e29b-41d4-a716-446655440002',
-    nome: 'Empresa ABC Ltda',
-    tipo: 'fornecedor',
-    email: 'contato@empresaabc.com.br',
-    telefone: '(11) 3333-3333',
-    cpfCnpj: '12.345.678/0001-90',
-    endereco: 'Av. Paulista, 1000 - São Paulo/SP',
-    observacoes: 'Fornecedor de materiais',
-    ativo: true
-  },
-  {
-    id: 'aa0e8400-e29b-41d4-a716-446655440003',
-    nome: 'Maria Santos',
-    tipo: 'cliente',
-    email: 'maria.santos@email.com',
-    telefone: '(11) 88888-8888',
-    cpfCnpj: '987.654.321-00',
-    endereco: 'Rua do Comércio, 456 - Rio de Janeiro/RJ',
-    observacoes: 'Cliente desde 2023',
-    ativo: true
-  }
-]
+// Sistema operando apenas com dados reais - sem dados simulados
 
 export interface SupabaseService {
   readonly supabase: any
@@ -1005,10 +748,10 @@ class SupabaseServiceImpl implements SupabaseService {
   // Métodos para Subcategorias
   async getSubcategorias(): Promise<Subcategoria[]> {
     try {
-      // Se o Supabase não estiver configurado, usar dados mock
+      // Se o Supabase não estiver configurado, retornar erro
       if (!isSupabaseConfigured) {
-        console.log('🔄 Supabase não configurado, usando subcategorias mock')
-        return mockSubcategorias
+        console.error('❌ Supabase não configurado')
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
       }
       
       console.log('🔍 Buscando subcategorias no Supabase...')
@@ -1020,8 +763,8 @@ class SupabaseServiceImpl implements SupabaseService {
         .order('nome')
 
       if (error) {
-        console.log('⚠️ Erro ao buscar subcategorias, usando dados mock')
-        return mockSubcategorias
+        console.error('❌ Erro ao buscar subcategorias:', error)
+        throw new Error(`Erro ao buscar subcategorias: ${error.message}`)
       }
 
       console.log('✅ Subcategorias carregadas:', data?.length || 0, 'registros')
@@ -1034,10 +777,10 @@ class SupabaseServiceImpl implements SupabaseService {
          ativo: Boolean(item.ativo)
        }))
       
-      return mappedData.length > 0 ? mappedData : mockSubcategorias
+      return mappedData
     } catch (error) {
       console.error('❌ Erro ao buscar subcategorias:', error)
-      return mockSubcategorias
+      throw error
     }
   }
 
@@ -1151,10 +894,10 @@ class SupabaseServiceImpl implements SupabaseService {
   // Métodos para Investimentos
   async getInvestimentos(): Promise<Investimento[]> {
     try {
-      // Se o Supabase não estiver configurado, usar dados mock
+      // Se o Supabase não estiver configurado, retornar erro
       if (!isSupabaseConfigured) {
-        console.log('🔄 Supabase não configurado, usando investimentos mock')
-        return mockInvestimentos
+        console.error('❌ Supabase não configurado')
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
       }
       
       console.log('🔍 Buscando investimentos no Supabase...')
@@ -1166,8 +909,8 @@ class SupabaseServiceImpl implements SupabaseService {
         .order('nome')
 
       if (error) {
-        console.log('⚠️ Erro ao buscar investimentos, usando dados mock')
-        return mockInvestimentos
+        console.error('❌ Erro ao buscar investimentos:', error)
+        throw new Error(`Erro ao buscar investimentos: ${error.message}`)
       }
 
              console.log('✅ Investimentos carregados:', data?.length || 0, 'registros')
@@ -1187,10 +930,10 @@ class SupabaseServiceImpl implements SupabaseService {
          dataCriacao: String(item.data_criacao)
        }))
        
-       return investimentosMapeados.length > 0 ? investimentosMapeados : mockInvestimentos
+       return investimentosMapeados
     } catch (error) {
       console.error('❌ Erro ao buscar investimentos:', error)
-      return mockInvestimentos
+      throw error
     }
   }
 
@@ -1298,10 +1041,10 @@ class SupabaseServiceImpl implements SupabaseService {
   // Métodos para Contas Bancárias
   async getContas(): Promise<ContaBancaria[]> {
     try {
-      // Se o Supabase não estiver configurado, usar dados mock
+      // Se o Supabase não estiver configurado, retornar erro
       if (!isSupabaseConfigured) {
-        console.log('🔄 Supabase não configurado, usando contas bancárias mock')
-        return mockContas
+        console.error('❌ Supabase não configurado')
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
       }
       
       console.log('📊 Buscando contas bancárias no Supabase...')
@@ -1313,8 +1056,8 @@ class SupabaseServiceImpl implements SupabaseService {
         .order('nome')
 
       if (error) {
-        console.log('⚠️ Erro ao buscar contas bancárias, usando dados mock')
-        return mockContas
+        console.error('❌ Erro ao buscar contas bancárias:', error)
+        throw new Error(`Erro ao buscar contas bancárias: ${error.message}`)
       }
 
              console.log('✅ Contas bancárias carregadas:', data?.length || 0, 'registros')
@@ -1332,10 +1075,10 @@ class SupabaseServiceImpl implements SupabaseService {
          ativo: Boolean(item.ativo)
        }))
        
-       return contasMapeadas.length > 0 ? contasMapeadas : mockContas
+       return contasMapeadas
     } catch (error) {
       console.error('❌ Erro ao buscar contas bancárias:', error)
-      return mockContas
+      throw error
     }
   }
 
@@ -1427,10 +1170,10 @@ class SupabaseServiceImpl implements SupabaseService {
   // Métodos para Cartões de Crédito
   async getCartoes(): Promise<CartaoCredito[]> {
     try {
-      // Se o Supabase não estiver configurado, usar dados mock
+      // Se o Supabase não estiver configurado, retornar erro
       if (!isSupabaseConfigured) {
-        console.log('🔄 Supabase não configurado, usando cartões de crédito mock')
-        return mockCartoes
+        console.error('❌ Supabase não configurado')
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
       }
       
       console.log('💳 Buscando cartões de crédito no Supabase...')
@@ -1442,15 +1185,15 @@ class SupabaseServiceImpl implements SupabaseService {
         .order('nome')
 
       if (error) {
-        console.log('⚠️ Erro ao buscar cartões de crédito, usando dados mock')
-        return mockCartoes
+        console.error('❌ Erro ao buscar cartões de crédito:', error)
+        throw new Error(`Erro ao buscar cartões de crédito: ${error.message}`)
       }
 
       console.log('✅ Cartões de crédito carregados:', data?.length || 0, 'registros')
-      return (data as unknown as CartaoCredito[]) || mockCartoes
+      return (data as unknown as CartaoCredito[]) || []
     } catch (error) {
       console.error('❌ Erro ao buscar cartões de crédito:', error)
-      return mockCartoes
+      throw error
     }
   }
 
@@ -1542,10 +1285,10 @@ class SupabaseServiceImpl implements SupabaseService {
   // Métodos para Contatos
   async getContatos(): Promise<Contato[]> {
     try {
-      // Se o Supabase não estiver configurado, usar dados mock
+      // Se o Supabase não estiver configurado, retornar erro
       if (!isSupabaseConfigured) {
-        console.log('🔄 Supabase não configurado, usando contatos mock')
-        return mockContatos
+        console.error('❌ Supabase não configurado')
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
       }
       
       console.log('🔍 Buscando contatos no Supabase...')
@@ -1557,8 +1300,8 @@ class SupabaseServiceImpl implements SupabaseService {
         .order('nome')
 
       if (error) {
-        console.log('⚠️ Erro ao buscar contatos, usando dados mock')
-        return mockContatos
+        console.error('❌ Erro ao buscar contatos:', error)
+        throw new Error(`Erro ao buscar contatos: ${error.message}`)
       }
 
       console.log('✅ Contatos carregados:', data?.length || 0, 'registros')
@@ -1576,10 +1319,10 @@ class SupabaseServiceImpl implements SupabaseService {
         ativo: item.ativo
       }))
       
-      return (contatosMapeados as unknown as Contato[]) || mockContatos
+      return (contatosMapeados as unknown as Contato[]) || []
     } catch (error) {
       console.error('❌ Erro ao buscar contatos:', error)
-      return mockContatos
+      throw error
     }
   }
 
