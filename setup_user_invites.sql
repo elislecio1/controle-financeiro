@@ -198,10 +198,9 @@ BEGIN
         RAISE EXCEPTION 'Sem permissão para cancelar este convite';
     END IF;
 
-    -- Cancelar convite
-    UPDATE public.user_invites 
-    SET status = 'cancelled' 
-    WHERE id = p_invite_id AND status = 'pending';
+    -- Excluir convite fisicamente
+    DELETE FROM public.user_invites 
+    WHERE id = p_invite_id;
 
     RETURN TRUE;
 END;

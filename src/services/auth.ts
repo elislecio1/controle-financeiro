@@ -91,6 +91,23 @@ class AuthService {
       const user = this.mapSupabaseUser(supabaseUser)
       const profile = await this.getUserProfile(user.id)
       
+      // Verificar se o usuário tem permissão para acessar o sistema
+      if (profile) {
+        const hasPermission = await this.checkUserLoginPermission(user.email)
+        if (!hasPermission) {
+          console.error('❌ Usuário sem permissão de acesso:', user.email)
+          await this.signOut()
+          this.updateAuthState({
+            user: null,
+            profile: null,
+            loading: false,
+            error: 'Acesso negado. Entre em contato com o administrador.',
+            isAuthenticated: false
+          })
+          return
+        }
+      }
+      
       this.updateAuthState({
         user,
         profile,
@@ -155,6 +172,30 @@ class AuthService {
     }
     return {
       message: error.message
+    }
+  }
+
+  // Verificar permissão de login do usuário
+  private async checkUserLoginPermission(email: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .rpc('check_user_login_permission', { user_email: email })
+
+      if (error) {
+        console.error('Erro ao verificar permissão de login:', error)
+        return false
+      }
+
+      if (data && data.length > 0) {
+        const permission = data[0]
+        console.log('🔐 Verificação de permissão:', permission)
+        return permission.can_login
+      }
+
+      return false
+    } catch (error) {
+      console.error('Erro ao verificar permissão de login:', error)
+      return false
     }
   }
 
