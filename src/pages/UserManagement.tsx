@@ -86,6 +86,16 @@ export const UserManagement: React.FC = () => {
     status: 'active' as 'active' | 'inactive'
   })
 
+  // Estados para cadastro direto de usuário
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false)
+  const [createUserForm, setCreateUserForm] = useState({
+    email: '',
+    password: '',
+    name: '',
+    role: 'user' as 'admin' | 'user' | 'viewer'
+  })
+  const [creatingUser, setCreatingUser] = useState(false)
+
   useEffect(() => {
     if (profile?.role !== 'admin') {
       navigate('/')
@@ -302,16 +312,22 @@ export const UserManagement: React.FC = () => {
   }
 
   const handleCancelInvite = async (inviteId: string) => {
-    if (!confirm('Tem certeza que deseja cancelar este convite?')) return
+    console.log('🔴 handleCancelInvite chamado com ID:', inviteId)
+    if (!confirm('Tem certeza que deseja cancelar este convite?')) {
+      console.log('🔴 Usuário cancelou a operação')
+      return
+    }
 
     try {
-      console.log('❌ Cancelando convite:', inviteId)
+      console.log('🔴 Cancelando convite:', inviteId)
       
       // Cancelar convite usando a função SQL
-      const { error } = await supabase
+      const { data, error } = await supabase
         .rpc('cancel_user_invite', {
           p_invite_id: inviteId
         })
+
+      console.log('🔴 Resposta do cancelamento:', { data, error })
 
       if (error) {
         console.error('❌ Erro ao cancelar convite:', error)
@@ -387,13 +403,22 @@ export const UserManagement: React.FC = () => {
                 <p className="text-sm text-gray-500">Gerencie usuários da empresa</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowInviteModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
-            >
-              <UserPlus className="h-4 w-4" />
-              <span>Convidar Usuário</span>
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+              >
+                <UserPlus className="h-4 w-4" />
+                <span>Convidar Usuário</span>
+              </button>
+              <button
+                onClick={() => setShowCreateUserModal(true)}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Cadastrar Usuário</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1099,6 +1124,133 @@ export const UserManagement: React.FC = () => {
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   Salvar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create User Modal */}
+      {showCreateUserModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Cadastrar Novo Usuário
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={createUserForm.email}
+                    onChange={(e) => setCreateUserForm({...createUserForm, email: e.target.value})}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="email@empresa.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Senha *
+                  </label>
+                  <input
+                    type="password"
+                    value={createUserForm.password}
+                    onChange={(e) => setCreateUserForm({...createUserForm, password: e.target.value})}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Senha"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nome Completo *
+                  </label>
+                  <input
+                    type="text"
+                    value={createUserForm.name}
+                    onChange={(e) => setCreateUserForm({...createUserForm, name: e.target.value})}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Nome do usuário"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Função
+                  </label>
+                  <select
+                    value={createUserForm.role}
+                    onChange={(e) => setCreateUserForm({...createUserForm, role: e.target.value as any})}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="user">Usuário</option>
+                    <option value="viewer">Visualizador</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowCreateUserModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!createUserForm.email || !createUserForm.password || !createUserForm.name) {
+                      alert('Preencha todos os campos obrigatórios');
+                      return;
+                    }
+                    setCreatingUser(true);
+                    try {
+                      // 1. Criar usuário no Supabase Auth
+                      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+                        email: createUserForm.email,
+                        password: createUserForm.password,
+                        email_confirm: true
+                      });
+
+                      if (authError) throw authError;
+
+                      // 2. Criar perfil do usuário
+                      const { error: profileError } = await supabase
+                        .from('user_profiles')
+                        .insert({
+                          user_id: authData.user.id,
+                          email: createUserForm.email,
+                          name: createUserForm.name,
+                          role: createUserForm.role,
+                          status: 'active',
+                          approved: true,
+                          allow_google_login: true,
+                          allow_email_login: true
+                        });
+
+                      if (profileError) throw profileError;
+
+                      alert(`✅ Usuário ${createUserForm.name} criado com sucesso!`);
+                      setShowCreateUserModal(false);
+                      setCreateUserForm({ email: '', password: '', name: '', role: 'user' });
+                      loadUsers(); // Recarregar lista de usuários
+                    } catch (error: any) {
+                      console.error('Erro ao criar usuário:', error);
+                      alert(`Erro ao criar usuário: ${error.message || 'Erro desconhecido'}`);
+                    } finally {
+                      setCreatingUser(false);
+                    }
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  disabled={creatingUser}
+                >
+                  {creatingUser ? 'Criando...' : 'Cadastrar Usuário'}
                 </button>
               </div>
             </div>

@@ -636,16 +636,24 @@ function App() {
 
   // Função para confirmar pagamento
   const handleConfirmPayment = (transaction: SheetData) => {
+    console.log('🔵 handleConfirmPayment chamado para:', transaction)
     setSelectedTransaction(transaction)
     setPaymentDate(new Date().toISOString().split('T')[0]) // Data atual
     setShowPaymentModal(true)
+    console.log('🔵 Modal de pagamento aberto')
   }
 
   // Função para salvar pagamento
   const handleSavePayment = async () => {
-    if (!selectedTransaction || !paymentDate) return
+    console.log('🔵 handleSavePayment chamado')
+    if (!selectedTransaction || !paymentDate) {
+      console.log('❌ Dados insuficientes:', { selectedTransaction, paymentDate })
+      return
+    }
     
     try {
+      console.log('🔵 Iniciando salvamento do pagamento...')
+      
       // Converter data ISO para formato brasileiro
       const converterDataParaBrasileiro = (dataISO: string): string => {
         if (!dataISO) return ''
@@ -661,8 +669,11 @@ function App() {
         situacao: 'pago' // Adicionar também o campo situacao
       }
       
+      console.log('🔵 Transação atualizada:', updatedTransaction)
+      
       // Atualizar no Supabase
       await supabaseService.updateTransaction(selectedTransaction.id, updatedTransaction)
+      console.log('✅ Transação atualizada no Supabase')
       
       // Atualizar dados locais
       const updatedData = data.map(item => 
@@ -679,7 +690,10 @@ function App() {
         success: true, 
         message: 'Pagamento confirmado com sucesso!' 
       })
+      
+      console.log('✅ Pagamento confirmado com sucesso')
     } catch (error: any) {
+      console.error('❌ Erro ao confirmar pagamento:', error)
       setConnectionStatus({ 
         success: false, 
         message: error.message || 'Erro ao confirmar pagamento' 
