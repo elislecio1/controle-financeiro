@@ -259,10 +259,10 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
           <div className="bg-green-50 p-4 rounded-lg">
             <h3 className="font-semibold text-green-800 mb-2">💰 Saldo</h3>
             <p className="text-lg font-bold text-green-600">
-              {formatCurrency(previewData.balance.balanceAmount)}
+              {formatCurrency(previewData.balance || 0)}
             </p>
             <p className="text-sm text-green-600">
-              Data: {previewData.balance.dateAsOf}
+              Data: {previewData.startDate || 'N/A'}
             </p>
           </div>
           

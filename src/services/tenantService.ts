@@ -213,10 +213,27 @@ class TenantService {
   // Incrementar métricas de uso
   async incrementUsage(tenantId: string, metric: keyof TenantLimits, value: number = 1): Promise<boolean> {
     try {
+      // Buscar limites atuais
+      const { data: currentTenant, error: fetchError } = await supabase
+        .from('tenants')
+        .select('limits')
+        .eq('id', tenantId)
+        .single();
+
+      if (fetchError) {
+        console.error('❌ Erro ao buscar tenant:', fetchError);
+        return false;
+      }
+
+      // Atualizar limites
+      const currentLimits = currentTenant?.limits || {};
+      const newValue = (currentLimits[metric] || 0) + value;
+      const updatedLimits = { ...currentLimits, [metric]: newValue };
+
       const { error } = await supabase
         .from('tenants')
         .update({
-          limits: supabase.sql`limits || jsonb_build_object('${metric}', (limits->>'${metric}')::int + ${value})`,
+          limits: updatedLimits,
           updated_at: new Date().toISOString()
         })
         .eq('id', tenantId);

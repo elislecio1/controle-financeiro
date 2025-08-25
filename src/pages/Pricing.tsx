@@ -1,36 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Container,
-  Heading,
-  Text,
-  VStack,
-  HStack,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  List,
-  ListItem,
-  ListIcon,
-  Badge,
-  useToast,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
-  useDisclosure,
-  FormControl,
-  FormLabel,
-  Input,
-  Select,
-  Textarea,
-  Switch,
-  Divider
-} from '@chakra-ui/react';
-import { CheckIcon, StarIcon } from '@chakra-ui/icons';
 import { SubscriptionPlan } from '../types/saas';
 import { tenantService } from '../services/tenantService';
 
@@ -38,8 +6,7 @@ const Pricing: React.FC = () => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const toast = useToast();
+  const [showModal, setShowModal] = useState(false);
 
   const [formData, setFormData] = useState({
     companyName: '',
@@ -64,13 +31,6 @@ const Pricing: React.FC = () => {
       setPlans(availablePlans);
     } catch (error) {
       console.error('❌ Erro ao carregar planos:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar os planos disponíveis',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +39,7 @@ const Pricing: React.FC = () => {
   const handlePlanSelect = (plan: SubscriptionPlan) => {
     setSelectedPlan(plan);
     setFormData(prev => ({ ...prev, planId: plan.id }));
-    onOpen();
+    setShowModal(true);
   };
 
   const handleInputChange = (field: string, value: string | number) => {
@@ -92,13 +52,7 @@ const Pricing: React.FC = () => {
 
       // Validar dados
       if (!formData.companyName || !formData.subdomain || !formData.email) {
-        toast({
-          title: 'Dados incompletos',
-          description: 'Preencha todos os campos obrigatórios',
-          status: 'warning',
-          duration: 3000,
-          isClosable: true,
-        });
+        alert('Preencha todos os campos obrigatórios');
         return;
       }
 
@@ -110,6 +64,7 @@ const Pricing: React.FC = () => {
         plan_id: selectedPlan.id,
         settings: {
           branding: {
+            primary_color: '#3182CE',
             company_name: formData.companyName,
             support_email: formData.email
           }
@@ -117,14 +72,8 @@ const Pricing: React.FC = () => {
       });
 
       if (tenant) {
-        toast({
-          title: 'Sucesso!',
-          description: 'Sua conta foi criada com sucesso. Em breve entraremos em contato.',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
-        onClose();
+        alert('Sua conta foi criada com sucesso! Em breve entraremos em contato.');
+        setShowModal(false);
         setFormData({
           companyName: '',
           subdomain: '',
@@ -139,13 +88,7 @@ const Pricing: React.FC = () => {
       }
     } catch (error) {
       console.error('❌ Erro ao criar tenant:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível criar sua conta. Tente novamente.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      alert('Não foi possível criar sua conta. Tente novamente.');
     }
   };
 
@@ -162,268 +105,272 @@ const Pricing: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Container maxW="container.xl" py={10}>
-        <Text>Carregando planos...</Text>
-      </Container>
+      <div className="min-h-screen bg-gray-50 py-10">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center">Carregando planos...</div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Box bg="gray.50" minH="100vh" py={10}>
-      <Container maxW="container.xl">
+    <div className="min-h-screen bg-gray-50 py-10">
+      <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
-        <VStack spacing={6} textAlign="center" mb={12}>
-          <Heading size="2xl" color="gray.800">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">
             Escolha o Plano Ideal para sua Empresa
-          </Heading>
-          <Text fontSize="lg" color="gray.600" maxW="2xl">
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Oferecemos planos flexíveis que crescem com seu negócio. 
             Comece grátis e atualize conforme necessário.
-          </Text>
-        </VStack>
+          </p>
+        </div>
 
         {/* Planos */}
-        <Box display="grid" gridTemplateColumns={{ base: "1fr", md: "repeat(auto-fit, minmax(300px, 1fr))" }} gap={6}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
           {plans.map((plan) => {
             const isPopular = plan.id === getPopularPlan()?.id;
             
             return (
-              <Card 
+              <div 
                 key={plan.id} 
-                position="relative"
-                border={isPopular ? "2px solid" : "1px solid"}
-                borderColor={isPopular ? "blue.500" : "gray.200"}
-                transform={isPopular ? "scale(1.05)" : "none"}
-                transition="all 0.3s"
-                _hover={{ transform: isPopular ? "scale(1.07)" : "scale(1.02)" }}
+                className={`relative bg-white rounded-lg shadow-lg p-6 border-2 transition-all hover:scale-105 ${
+                  isPopular ? 'border-blue-500 scale-105' : 'border-gray-200'
+                }`}
               >
                 {isPopular && (
-                  <Badge
-                    position="absolute"
-                    top={-3}
-                    left="50%"
-                    transform="translateX(-50%)"
-                    colorScheme="blue"
-                    variant="solid"
-                    px={3}
-                    py={1}
-                    borderRadius="full"
-                  >
-                    <StarIcon mr={1} />
-                    Mais Popular
-                  </Badge>
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                      ⭐ Mais Popular
+                    </span>
+                  </div>
                 )}
 
-                <CardHeader textAlign="center" pb={2}>
-                  <Heading size="md" color="gray.800">
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">
                     {plan.name}
-                  </Heading>
-                  <Text fontSize="3xl" fontWeight="bold" color="blue.600" mt={2}>
+                  </h3>
+                  <div className="text-3xl font-bold text-blue-600 mb-1">
                     {formatPrice(plan.price)}
-                    <Text as="span" fontSize="lg" color="gray.500">
-                      /{plan.interval === 'monthly' ? 'mês' : 'ano'}
-                    </Text>
-                  </Text>
-                </CardHeader>
+                  </div>
+                  <div className="text-gray-500">
+                    /{plan.interval === 'monthly' ? 'mês' : 'ano'}
+                  </div>
+                </div>
 
-                <CardBody pt={0}>
-                  <List spacing={3} mb={6}>
-                    {plan.features.map((feature) => (
-                      <ListItem key={feature.id} display="flex" alignItems="center">
-                        <ListIcon as={CheckIcon} color="green.500" />
-                        <Text fontSize="sm">
-                          {feature.description}
-                        </Text>
-                      </ListItem>
-                    ))}
-                  </List>
+                <ul className="space-y-3 mb-6">
+                  {plan.features.map((feature) => (
+                    <li key={feature.id} className="flex items-center">
+                      <span className="text-green-500 mr-2">✓</span>
+                      <span className="text-sm text-gray-600">
+                        {feature.description}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
 
-                  <Button
-                    colorScheme={isPopular ? "blue" : "gray"}
-                    size="lg"
-                    width="full"
-                    onClick={() => handlePlanSelect(plan)}
-                  >
-                    Começar Agora
-                  </Button>
-                </CardBody>
-              </Card>
+                <button
+                  onClick={() => handlePlanSelect(plan)}
+                  className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
+                    isPopular 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                      : 'bg-gray-600 text-white hover:bg-gray-700'
+                  }`}
+                >
+                  Começar Agora
+                </button>
+              </div>
             );
           })}
-        </Box>
+        </div>
 
         {/* Comparação de Recursos */}
-        <Box mt={16}>
-          <Heading size="lg" textAlign="center" mb={8}>
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-2xl font-bold text-center mb-8">
             Comparação Detalhada
-          </Heading>
+          </h2>
           
-          <Box overflowX="auto">
-            <Box as="table" width="full" borderCollapse="collapse">
-              <Box as="thead">
-                <Box as="tr" borderBottom="1px solid" borderColor="gray.200">
-                  <Box as="th" p={4} textAlign="left">Recurso</Box>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left p-4">Recurso</th>
                   {plans.map(plan => (
-                    <Box as="th" key={plan.id} p={4} textAlign="center">
+                    <th key={plan.id} className="text-center p-4">
                       {plan.name}
-                    </Box>
+                    </th>
                   ))}
-                </Box>
-              </Box>
-              <Box as="tbody">
-                <Box as="tr">
-                  <Box as="td" p={4} fontWeight="medium">Usuários</Box>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="p-4 font-medium">Usuários</td>
                   {plans.map(plan => (
-                    <Box as="td" key={plan.id} p={4} textAlign="center">
+                    <td key={plan.id} className="text-center p-4">
                       {plan.limits.users}
-                    </Box>
+                    </td>
                   ))}
-                </Box>
-                <Box as="tr" bg="gray.50">
-                  <Box as="td" p={4} fontWeight="medium">Transações/mês</Box>
+                </tr>
+                <tr className="bg-gray-50">
+                  <td className="p-4 font-medium">Transações/mês</td>
                   {plans.map(plan => (
-                    <Box as="td" key={plan.id} p={4} textAlign="center">
+                    <td key={plan.id} className="text-center p-4">
                       {plan.limits.transactions_per_month.toLocaleString()}
-                    </Box>
+                    </td>
                   ))}
-                </Box>
-                <Box as="tr">
-                  <Box as="td" p={4} fontWeight="medium">Armazenamento</Box>
+                </tr>
+                <tr>
+                  <td className="p-4 font-medium">Armazenamento</td>
                   {plans.map(plan => (
-                    <Box as="td" key={plan.id} p={4} textAlign="center">
+                    <td key={plan.id} className="text-center p-4">
                       {plan.limits.storage_mb} MB
-                    </Box>
+                    </td>
                   ))}
-                </Box>
-                <Box as="tr" bg="gray.50">
-                  <Box as="td" p={4} fontWeight="medium">Integrações</Box>
+                </tr>
+                <tr className="bg-gray-50">
+                  <td className="p-4 font-medium">Integrações</td>
                   {plans.map(plan => (
-                    <Box as="td" key={plan.id} p={4} textAlign="center">
+                    <td key={plan.id} className="text-center p-4">
                       {plan.limits.integrations}
-                    </Box>
+                    </td>
                   ))}
-                </Box>
-                <Box as="tr">
-                  <Box as="td" p={4} fontWeight="medium">Suporte</Box>
+                </tr>
+                <tr>
+                  <td className="p-4 font-medium">Suporte</td>
                   {plans.map(plan => (
-                    <Box as="td" key={plan.id} p={4} textAlign="center">
+                    <td key={plan.id} className="text-center p-4">
                       {plan.limits.support_level === 'basic' && 'Básico'}
                       {plan.limits.support_level === 'priority' && 'Prioritário'}
                       {plan.limits.support_level === 'dedicated' && 'Dedicado'}
-                    </Box>
+                    </td>
                   ))}
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-        </Box>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {/* Modal de Criação de Conta */}
-        <Modal isOpen={isOpen} onClose={onClose} size="xl">
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>Criar Nova Conta</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody pb={6}>
-              <VStack spacing={4}>
-                <FormControl isRequired>
-                  <FormLabel>Nome da Empresa</FormLabel>
-                  <Input
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-md w-full p-6">
+              <h2 className="text-xl font-bold mb-4">Criar Nova Conta</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nome da Empresa *</label>
+                  <input
+                    type="text"
                     value={formData.companyName}
                     onChange={(e) => handleInputChange('companyName', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                     placeholder="Digite o nome da sua empresa"
                   />
-                </FormControl>
+                </div>
 
-                <FormControl isRequired>
-                  <FormLabel>Subdomínio</FormLabel>
-                  <Input
+                <div>
+                  <label className="block text-sm font-medium mb-1">Subdomínio *</label>
+                  <input
+                    type="text"
                     value={formData.subdomain}
                     onChange={(e) => handleInputChange('subdomain', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                     placeholder="suaempresa"
-                    addonRight={<Text color="gray.500">.controlefinanceiro.com.br</Text>}
                   />
-                </FormControl>
+                  <p className="text-xs text-gray-500 mt-1">.controlefinanceiro.com.br</p>
+                </div>
 
-                <HStack spacing={4} width="full">
-                  <FormControl isRequired>
-                    <FormLabel>Nome do Contato</FormLabel>
-                    <Input
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Nome do Contato *</label>
+                    <input
+                      type="text"
                       value={formData.contactName}
                       onChange={(e) => handleInputChange('contactName', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                       placeholder="Seu nome completo"
                     />
-                  </FormControl>
+                  </div>
 
-                  <FormControl isRequired>
-                    <FormLabel>Email</FormLabel>
-                    <Input
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Email *</label>
+                    <input
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                       placeholder="seu@email.com"
                     />
-                  </FormControl>
-                </HStack>
+                  </div>
+                </div>
 
-                <FormControl>
-                  <FormLabel>Telefone</FormLabel>
-                  <Input
+                <div>
+                  <label className="block text-sm font-medium mb-1">Telefone</label>
+                  <input
+                    type="text"
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                     placeholder="(11) 99999-9999"
                   />
-                </FormControl>
+                </div>
 
-                <FormControl>
-                  <FormLabel>Número de Usuários</FormLabel>
-                  <Select
+                <div>
+                  <label className="block text-sm font-medium mb-1">Número de Usuários</label>
+                  <select
                     value={formData.users}
                     onChange={(e) => handleInputChange('users', parseInt(e.target.value))}
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                   >
                     <option value={1}>1 usuário</option>
                     <option value={5}>5 usuários</option>
                     <option value={10}>10 usuários</option>
                     <option value={20}>20 usuários</option>
                     <option value={50}>50+ usuários</option>
-                  </Select>
-                </FormControl>
+                  </select>
+                </div>
 
-                <FormControl>
-                  <FormLabel>Observações</FormLabel>
-                  <Textarea
+                <div>
+                  <label className="block text-sm font-medium mb-1">Observações</label>
+                  <textarea
                     value={formData.notes}
                     onChange={(e) => handleInputChange('notes', e.target.value)}
-                    placeholder="Alguma observação especial ou necessidade específica..."
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                     rows={3}
+                    placeholder="Alguma observação especial..."
                   />
-                </FormControl>
+                </div>
 
-                <Divider />
-
-                <Box width="full" p={4} bg="blue.50" borderRadius="md">
-                  <Text fontWeight="medium" mb={2}>
+                <div className="bg-blue-50 p-4 rounded">
+                  <p className="font-medium mb-1">
                     Plano Selecionado: {selectedPlan?.name}
-                  </Text>
-                  <Text fontSize="lg" fontWeight="bold" color="blue.600">
+                  </p>
+                  <p className="text-lg font-bold text-blue-600">
                     {selectedPlan && formatPrice(selectedPlan.price)}/{selectedPlan?.interval === 'monthly' ? 'mês' : 'ano'}
-                  </Text>
-                </Box>
+                  </p>
+                </div>
 
-                <HStack spacing={4} width="full">
-                  <Button onClick={onClose} variant="outline" flex={1}>
+                <div className="flex space-x-4">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="flex-1 py-2 px-4 border border-gray-300 rounded hover:bg-gray-50"
+                  >
                     Cancelar
-                  </Button>
-                  <Button onClick={handleSubmit} colorScheme="blue" flex={1}>
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    className="flex-1 py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
                     Criar Conta
-                  </Button>
-                </HStack>
-              </VStack>
-            </ModalBody>
-          </ModalContent>
-        </Modal>
-      </Container>
-    </Box>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
