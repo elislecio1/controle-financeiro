@@ -2,32 +2,42 @@ import { createClient } from '@supabase/supabase-js'
 import { SheetData, NewTransaction, Categoria, Subcategoria, Investimento, ContaBancaria, CartaoCredito, Contato } from '../types'
 import { formatarMoeda, formatarData, parsearDataBrasileira, parsearValorBrasileiro } from '../utils/formatters'
 
-// Configurações do Supabase
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co'
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key'
+// Configurações do Supabase - App Frameworks
+const SUPABASE_URL = import.meta.env.NEXT_PUBLIC_SUPABASE_URL || 
+                    import.meta.env.VITE_SUPABASE_URL || 
+                    'https://eshaahpcddqkeevxpgfk.supabase.co'
 
-// Verificar se as credenciais estão configuradas
-const isSupabaseConfigured = SUPABASE_URL !== 'https://your-project.supabase.co' && SUPABASE_ANON_KEY !== 'your-anon-key'
+const SUPABASE_ANON_KEY = import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || 
+                         import.meta.env.VITE_SUPABASE_ANON_KEY || 
+                         'sb_publishable_SV3lBKi83O1jhjIYPW_bjQ_m5vK9lBD'
 
-// Cliente Supabase - Instância única para evitar múltiplas instâncias
-let supabaseInstance: ReturnType<typeof createClient> | null = null
-
-const getSupabaseClient = () => {
-  if (!supabaseInstance) {
-    supabaseInstance = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        persistSession: true,
-        storageKey: 'controle-financeiro-auth',
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-      }
-    })
-  }
-  return supabaseInstance
+// Verificar se as configurações são válidas
+if (SUPABASE_URL === 'https://your-project.supabase.co' || SUPABASE_ANON_KEY === 'your-anon-key') {
+  throw new Error('Supabase não configurado. Configure as variáveis de ambiente.')
 }
 
-// Cliente Supabase
-const supabase = getSupabaseClient()
+// Criar uma única instância do cliente Supabase
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    storageKey: 'controle-financeiro-auth',
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'controle-financeiro-app'
+    }
+  }
+})
+
+// Exportar a única instância
+export const supabase = supabaseClient
 
 // Função para verificar se o usuário está autenticado
 const ensureAuthenticated = async () => {
@@ -103,8 +113,8 @@ class SupabaseServiceImpl implements SupabaseService {
   async getData(): Promise<SheetData[]> {
     try {
       // Se o Supabase não estiver configurado, retornar erro
-      if (!isSupabaseConfigured) {
-        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY')
+      if (SUPABASE_URL === 'https://your-project.supabase.co' || SUPABASE_ANON_KEY === 'your-anon-key') {
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY')
       }
       
       console.log('🔍 Conectando com Supabase...')
@@ -453,10 +463,10 @@ class SupabaseServiceImpl implements SupabaseService {
   async testConnection(): Promise<{ success: boolean; message: string; data?: any }> {
     try {
       // Se o Supabase não estiver configurado, retornar erro
-      if (!isSupabaseConfigured) {
+      if (SUPABASE_URL === 'https://your-project.supabase.co' || SUPABASE_ANON_KEY === 'your-anon-key') {
         return {
           success: false,
-          message: 'Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY',
+          message: 'Supabase não configurado. Configure as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY',
           data: { 
             mode: 'error',
             error: 'missing_config'
@@ -615,8 +625,8 @@ class SupabaseServiceImpl implements SupabaseService {
   async getCategorias(): Promise<Categoria[]> {
     try {
       // Se o Supabase não estiver configurado, retornar erro
-      if (!isSupabaseConfigured) {
-        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY')
+      if (SUPABASE_URL === 'https://your-project.supabase.co' || SUPABASE_ANON_KEY === 'your-anon-key') {
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY')
       }
       
       console.log('🔍 Buscando categorias no Supabase...')
@@ -749,9 +759,9 @@ class SupabaseServiceImpl implements SupabaseService {
   async getSubcategorias(): Promise<Subcategoria[]> {
     try {
       // Se o Supabase não estiver configurado, retornar erro
-      if (!isSupabaseConfigured) {
+      if (SUPABASE_URL === 'https://your-project.supabase.co' || SUPABASE_ANON_KEY === 'your-anon-key') {
         console.error('❌ Supabase não configurado')
-        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY.')
       }
       
       console.log('🔍 Buscando subcategorias no Supabase...')
@@ -895,9 +905,9 @@ class SupabaseServiceImpl implements SupabaseService {
   async getInvestimentos(): Promise<Investimento[]> {
     try {
       // Se o Supabase não estiver configurado, retornar erro
-      if (!isSupabaseConfigured) {
+      if (SUPABASE_URL === 'https://your-project.supabase.co' || SUPABASE_ANON_KEY === 'your-anon-key') {
         console.error('❌ Supabase não configurado')
-        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY.')
       }
       
       console.log('🔍 Buscando investimentos no Supabase...')
@@ -1042,9 +1052,9 @@ class SupabaseServiceImpl implements SupabaseService {
   async getContas(): Promise<ContaBancaria[]> {
     try {
       // Se o Supabase não estiver configurado, retornar erro
-      if (!isSupabaseConfigured) {
+      if (SUPABASE_URL === 'https://your-project.supabase.co' || SUPABASE_ANON_KEY === 'your-anon-key') {
         console.error('❌ Supabase não configurado')
-        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY.')
       }
       
       console.log('📊 Buscando contas bancárias no Supabase...')
@@ -1171,9 +1181,9 @@ class SupabaseServiceImpl implements SupabaseService {
   async getCartoes(): Promise<CartaoCredito[]> {
     try {
       // Se o Supabase não estiver configurado, retornar erro
-      if (!isSupabaseConfigured) {
+      if (SUPABASE_URL === 'https://your-project.supabase.co' || SUPABASE_ANON_KEY === 'your-anon-key') {
         console.error('❌ Supabase não configurado')
-        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY.')
       }
       
       console.log('💳 Buscando cartões de crédito no Supabase...')
@@ -1286,9 +1296,9 @@ class SupabaseServiceImpl implements SupabaseService {
   async getContatos(): Promise<Contato[]> {
     try {
       // Se o Supabase não estiver configurado, retornar erro
-      if (!isSupabaseConfigured) {
+      if (SUPABASE_URL === 'https://your-project.supabase.co' || SUPABASE_ANON_KEY === 'your-anon-key') {
         console.error('❌ Supabase não configurado')
-        throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
+        throw new Error('Supabase não configurado. Configure as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY.')
       }
       
       console.log('🔍 Buscando contatos no Supabase...')

@@ -11,19 +11,8 @@ import {
   UserPreferences
 } from '../types'
 
-// Configurações do Supabase
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co'
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key'
-
-// Cliente Supabase para autenticação
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: true,
-    storageKey: 'controle-financeiro-auth',
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  }
-})
+// Importar a única instância do Supabase
+import { supabase } from './supabase'
 
 class AuthService {
   private authState: AuthState = {

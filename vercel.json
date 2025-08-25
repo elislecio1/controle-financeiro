@@ -1,29 +1,12 @@
 {
-  "version": 2,
-  "functions": {
-    "api/banco-inter.js": {
-      "maxDuration": 30
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/api/banco-inter",
-      "destination": "/api/banco-inter.js"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/auth/callback",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        }
-      ]
-    }
-  ]
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "installCommand": "npm install",
+  "env": {
+    "VITE_SUPABASE_URL": "https://eshaahpcddqkeevxpgfk.supabase.co",
+    "VITE_SUPABASE_ANON_KEY": "sb_publishable_SV3lBKi83O1jhjIYPW_bjQ_m5vK9lBD",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://eshaahpcddqkeevxpgfk.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY": "sb_publishable_SV3lBKi83O1jhjIYPW_bjQ_m5vK9lBD"
+  }
 }
