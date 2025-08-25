@@ -25,6 +25,9 @@ export interface OFXAccount {
 export interface OFXData {
   account: OFXAccount;
   transactions: OFXTransaction[];
+  balance?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface OFXImportResult {
@@ -34,6 +37,8 @@ export interface OFXImportResult {
   errorCount: number;
   errors: string[];
   data?: OFXData;
+  updatedCount?: number;
+  skippedCount?: number;
 }
 
 export interface SimilarTransaction {
@@ -63,9 +68,115 @@ export interface ImportResult {
     similarTransactions: SimilarTransaction[];
   }[];
   needsReconciliation?: boolean;
+  updatedCount?: number;
+  skippedCount?: number;
 }
 
 class OFXService {
+  // Parsear arquivo OFX
+  async parseOFXFile(file: File): Promise<OFXData> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        try {
+          const content = e.target?.result as string;
+          const ofxData = this.parseOFXContent(content);
+          resolve(ofxData);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+      reader.readAsText(file);
+    });
+  }
+
+  // Parsear conteúdo OFX
+  private parseOFXContent(content: string): OFXData {
+    // Implementação simplificada do parser OFX
+    const lines = content.split('\n');
+    const transactions: OFXTransaction[] = [];
+    let account: OFXAccount = {
+      bankId: '',
+      accountId: '',
+      accountType: '',
+      balance: 0,
+      dateAsOf: new Date().toISOString()
+    };
+
+    // Parsear informações básicas
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      if (line.includes('<BANKID>')) {
+        account.bankId = line.replace('<BANKID>', '').replace('</BANKID>', '');
+      } else if (line.includes('<ACCTID>')) {
+        account.accountId = line.replace('<ACCTID>', '').replace('</ACCTID>', '');
+      } else if (line.includes('<STMTTRN>')) {
+        // Parsear transação
+        const transaction = this.parseTransaction(lines, i);
+        if (transaction) {
+          transactions.push(transaction);
+        }
+      }
+    }
+
+    return {
+      account,
+      transactions,
+      balance: account.balance,
+      startDate: transactions.length > 0 ? transactions[0].datePosted : new Date().toISOString(),
+      endDate: transactions.length > 0 ? transactions[transactions.length - 1].datePosted : new Date().toISOString()
+    };
+  }
+
+  // Parsear transação individual
+  private parseTransaction(lines: string[], startIndex: number): OFXTransaction | null {
+    const transaction: Partial<OFXTransaction> = {
+      fitId: '',
+      name: '',
+      amount: 0,
+      datePosted: new Date().toISOString()
+    };
+
+    for (let i = startIndex; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      if (line.includes('</STMTTRN>')) {
+        break;
+      } else if (line.includes('<FITID>')) {
+        transaction.fitId = line.replace('<FITID>', '').replace('</FITID>', '');
+      } else if (line.includes('<NAME>')) {
+        transaction.name = line.replace('<NAME>', '').replace('</NAME>', '');
+      } else if (line.includes('<MEMO>')) {
+        transaction.memo = line.replace('<MEMO>', '').replace('</MEMO>', '');
+      } else if (line.includes('<TRNAMT>')) {
+        const amount = line.replace('<TRNAMT>', '').replace('</TRNAMT>', '');
+        transaction.amount = parseFloat(amount) || 0;
+      } else if (line.includes('<DTPOSTED>')) {
+        const dateStr = line.replace('<DTPOSTED>', '').replace('</DTPOSTED>', '');
+        transaction.datePosted = this.parseOFXDate(dateStr);
+      }
+    }
+
+    return transaction as OFXTransaction;
+  }
+
+  // Parsear data OFX
+  private parseOFXDate(dateStr: string): string {
+    try {
+      // Formato OFX: YYYYMMDDHHMMSS
+      const year = dateStr.substring(0, 4);
+      const month = dateStr.substring(4, 6);
+      const day = dateStr.substring(6, 8);
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      return new Date().toISOString();
+    }
+  }
+
   // Verificar se uma transação já existe
   async checkExistingTransaction(
     transaction: OFXTransaction, 
@@ -352,6 +463,8 @@ class OFXService {
       result.errors = errors;
       result.message = `Importação concluída: ${importedCount} transações importadas, ${errorCount} erros`;
       result.data = ofxData;
+      result.updatedCount = 0;
+      result.skippedCount = 0;
       
       console.log('✅ Importação OFX concluída:', result);
       
