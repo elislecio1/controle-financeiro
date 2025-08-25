@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { OFXTransaction, OFXAccount, OFXImportResult } from '../types';
 
 // Importar a única instância do Supabase
 import { supabase } from './supabase'
@@ -620,7 +619,7 @@ export class OFXService {
            };
            
            // Log das sugestões aplicadas
-           if (suggestions.categoria || suggestions.contato || suggestions.forma) {
+           if (suggestions && (suggestions.categoria || suggestions.contato || suggestions.forma)) {
              console.log(`💡 Sugestões aplicadas para "${novaTransacao.descricao}":`, suggestions);
            }
           
@@ -751,9 +750,9 @@ export class OFXService {
              valor: Math.abs(transaction.amount),
              descricao: transaction.memo || transaction.name || 'Transação OFX',
              conta: contaBancariaId,
-             categoria: transaction.categoria || suggestions.categoria || (transaction.amount > 0 ? 'Receitas' : 'Despesas'),
-             contato: transaction.contato || suggestions.contato || null,
-             forma: transaction.forma || suggestions.forma || 'PIX', // Usar sugestão ou valor padrão
+             categoria: transaction.categoria || (suggestions?.categoria) || (transaction.amount > 0 ? 'Receitas' : 'Despesas'),
+             contato: transaction.contato || (suggestions?.contato) || null,
+             forma: transaction.forma || (suggestions?.forma) || 'PIX', // Usar sugestão ou valor padrão
              tipo: transaction.amount > 0 ? 'receita' : 'despesa',
              vencimento: transaction.datePosted, // Usar a data da transação como vencimento
              situacao: 'pago', // Transações OFX já foram processadas
@@ -764,7 +763,7 @@ export class OFXService {
            };
            
            // Log das sugestões aplicadas
-           if (suggestions.categoria || suggestions.contato || suggestions.forma) {
+           if (suggestions && (suggestions.categoria || suggestions.contato || suggestions.forma)) {
              console.log(`💡 Sugestões aplicadas para "${novaTransacao.descricao}":`, suggestions);
            }
           

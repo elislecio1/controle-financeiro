@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import { LogEntry, LogLevel, LogCategory } from '../types'
 
 // Importar a única instância do Supabase
 import { supabase } from './supabase'

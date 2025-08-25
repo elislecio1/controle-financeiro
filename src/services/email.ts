@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import { EmailConfig, EmailTemplate, EmailStatus } from '../types'
 
 // Importar a única instância do Supabase
 import { supabase } from './supabase'
