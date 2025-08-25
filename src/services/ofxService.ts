@@ -1,11 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import { OFXTransaction, OFXAccount, OFXImportResult } from '../types';
 
-// Configurações do Supabase
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
-
-// Cliente Supabase
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Importar a única instância do Supabase
+import { supabase } from './supabase'
 
 export interface OFXTransaction {
   id: string;
@@ -622,14 +619,19 @@ export class OFXService {
              updated_at: new Date().toISOString()
            };
            
-           const { error: insertError } = await supabase
-             .from('transactions')
-             .insert(novaTransacao);
-           
-           if (insertError) {
-             console.error('❌ Erro ao importar transação:', insertError);
-             return { success: false, message: `Erro ao importar: ${insertError.message}` };
+           // Log das sugestões aplicadas
+           if (suggestions.categoria || suggestions.contato || suggestions.forma) {
+             console.log(`💡 Sugestões aplicadas para "${novaTransacao.descricao}":`, suggestions);
            }
+          
+          const { error: insertError } = await supabase
+            .from('transactions')
+            .insert(novaTransacao);
+          
+          if (insertError) {
+            console.error('❌ Erro ao inserir transação:', insertError);
+            return { success: false, message: `Erro ao importar: ${insertError.message}` };
+          }
            
            return { success: true, message: 'Transação importada com sucesso' };
            

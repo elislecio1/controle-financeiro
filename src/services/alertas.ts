@@ -1,11 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { Alerta, ConfiguracaoAlerta, Notificacao, SheetData, Meta, Orcamento, ContaBancaria } from '../types'
 
-// Configurações do Supabase
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://eshaahpcddqkeevxpgfk.supabase.co'
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaGFhaHBjZGRxa2VldnhwZ2ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NzI4MDAsImV4cCI6MjA1MDU0ODgwMH0.REAL_KEY_HERE'
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+// Importar a única instância do Supabase
+import { supabase } from './supabase'
 
 // Sistema operando apenas com dados reais - sem dados simulados
 
@@ -238,7 +235,7 @@ class AlertasServiceImpl implements AlertasService {
     try {
       console.log('🔧 Salvando configuração:', config)
       console.log('🔧 Supabase configurado:', this.isSupabaseConfigured())
-      console.log('🔧 URL Supabase:', SUPABASE_URL)
+      console.log('🔧 URL Supabase:', import.meta.env.VITE_SUPABASE_URL)
       
       if (!this.isSupabaseConfigured()) {
         throw new Error('Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.')
@@ -285,7 +282,7 @@ class AlertasServiceImpl implements AlertasService {
         // Tentar com service_role key (se disponível)
         const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
         if (serviceRoleKey) {
-          const supabaseAdmin = createClient(SUPABASE_URL, serviceRoleKey);
+          const supabaseAdmin = createClient(import.meta.env.VITE_SUPABASE_URL, serviceRoleKey);
           const adminResult = await supabaseAdmin
             .from(this.TABLE_CONFIGURACOES)
             .insert([configData])

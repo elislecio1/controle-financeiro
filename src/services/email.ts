@@ -1,11 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
+import { EmailConfig, EmailTemplate, EmailStatus } from '../types'
 
-// Configurações do Supabase
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co'
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key'
-
-// Cliente Supabase
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+// Importar a única instância do Supabase
+import { supabase } from './supabase'
 
 export interface InviteData {
   email: string
