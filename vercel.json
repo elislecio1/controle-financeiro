@@ -9,20 +9,6 @@
       "destination": "/index.html"
     }
   ],
-  "routes": [
-    {
-      "src": "/pricing",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/admin/users",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/auth/callback",
-      "dest": "/index.html"
-    }
-  ],
   "env": {
     "VITE_SUPABASE_URL": "https://eshaahpcddqkeevxpgfk.supabase.co",
     "VITE_SUPABASE_ANON_KEY": "sb_publishable_SV3lBKi83O1jhjIYPW_bjQ_m5vK9lBD",
