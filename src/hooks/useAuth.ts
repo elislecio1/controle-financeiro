@@ -42,6 +42,7 @@ export const useAuth = () => {
     signIn: authService.signIn.bind(authService),
     signUp: authService.signUp.bind(authService),
     signOut: authService.signOut.bind(authService),
+    signInWithGoogle: authService.signInWithGoogle.bind(authService),
 
     resetPassword: authService.resetPassword.bind(authService),
     updatePassword: authService.updatePassword.bind(authService),

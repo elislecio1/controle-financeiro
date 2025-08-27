@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Conexão Supabase</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { border-color: #4CAF50; background-color: #f1f8e9; }
+        .error { border-color: #f44336; background-color: #ffebee; }
+        .warning { border-color: #ff9800; background-color: #fff3e0; }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1976D2; }
+        .log {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Teste de Conexão Supabase</h1>
+        
+        <div class="test-section">
+            <h3>Configurações</h3>
+            <p><strong>URL:</strong> https://eshaahpcddqkeevxpgfk.supabase.co</p>
+            <p><strong>Chave:</strong> sb_publishable_SV3lBKi83O1jhjIYPW_bjQ_m5vK9lBD</p>
+        </div>
+
+        <div class="test-section">
+            <h3>Testes</h3>
+            <button onclick="testarConexao()">🧪 Testar Conexão</button>
+            <button onclick="testarAuth()">🔐 Testar Autenticação</button>
+            <button onclick="testarTabelas()">📊 Verificar Tabelas</button>
+            <button onclick="limparLog()">🗑️ Limpar Log</button>
+        </div>
+
+        <div class="test-section">
+            <h3>Log de Resultados</h3>
+            <div id="log" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configurações do Supabase
+        const SUPABASE_URL = 'https://eshaahpcddqkeevxpgfk.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_SV3lBKi83O1jhjIYPW_bjQ_m5vK9lBD';
+
+        // Criar cliente Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logDiv.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function limparLog() {
+            document.getElementById('log').textContent = '';
+        }
+
+        async function testarConexao() {
+            log('🔍 Iniciando teste de conexão...');
+            
+            try {
+                // Teste básico de conexão
+                const { data, error } = await supabase.from('user_profiles').select('count').limit(1);
+                
+                if (error) {
+                    log(`Erro na conexão: ${error.message}`, 'error');
+                } else {
+                    log('✅ Conexão básica funcionando!', 'success');
+                }
+                
+            } catch (error) {
+                log(`Erro geral: ${error.message}`, 'error');
+            }
+        }
+
+        async function testarAuth() {
+            log('🔐 Testando autenticação...');
+            
+            try {
+                const { data, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    log(`Erro na autenticação: ${error.message}`, 'error');
+                } else {
+                    log('✅ Autenticação funcionando!', 'success');
+                    log(`Sessão atual: ${data.session ? 'Ativa' : 'Nenhuma sessão'}`);
+                }
+                
+            } catch (error) {
+                log(`Erro na autenticação: ${error.message}`, 'error');
+            }
+        }
+
+        async function testarTabelas() {
+            log('📊 Verificando tabelas...');
+            
+            try {
+                // Tentar acessar diferentes tabelas
+                const tabelas = ['user_profiles', 'transactions', 'categories', 'accounts'];
+                
+                for (const tabela of tabelas) {
+                    try {
+                        const { data, error } = await supabase.from(tabela).select('count').limit(1);
+                        
+                        if (error) {
+                            log(`Tabela ${tabela}: ${error.message}`, 'warning');
+                        } else {
+                            log(`✅ Tabela ${tabela}: OK`, 'success');
+                        }
+                    } catch (err) {
+                        log(`Tabela ${tabela}: ${err.message}`, 'error');
+                    }
+                }
+                
+            } catch (error) {
+                log(`Erro ao verificar tabelas: ${error.message}`, 'error');
+            }
+        }
+
+        // Teste automático ao carregar a página
+        window.onload = function() {
+            log('🚀 Página carregada. Clique nos botões para testar.');
+        };
+    </script>
+</body>
+</html>

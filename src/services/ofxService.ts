@@ -122,7 +122,7 @@ class OFXService {
         }
       }
     }
-
+    
     return {
       account,
       transactions,
@@ -176,18 +176,18 @@ class OFXService {
       return new Date().toISOString();
     }
   }
-
+  
   // Verificar se uma transação já existe
   async checkExistingTransaction(
-    transaction: OFXTransaction, 
-    contaBancariaId: string
-  ): Promise<{
-    exists: boolean;
-    similarTransactions: SimilarTransaction[];
+     transaction: OFXTransaction, 
+     contaBancariaId: string
+   ): Promise<{ 
+     exists: boolean; 
+     similarTransactions: SimilarTransaction[]; 
     exactMatch: boolean;
-    isExactDuplicate: boolean;
+     isExactDuplicate: boolean;
     suggestions: any;
-  }> {
+   }> {
     try {
       const { data: existingTransactions, error } = await supabase
         .from('transactions')
@@ -196,18 +196,18 @@ class OFXService {
         .eq('valor', Math.abs(transaction.amount))
         .gte('vencimento', this.subtractDays(transaction.datePosted, 7))
         .lte('vencimento', this.addDays(transaction.datePosted, 7));
-
-      if (error) {
+      
+             if (error) {
         console.error('❌ Erro ao verificar transações existentes:', error);
-        return {
-          exists: false,
-          similarTransactions: [],
+         return { 
+           exists: false, 
+           similarTransactions: [], 
           exactMatch: false,
-          isExactDuplicate: false,
-          suggestions: {}
-        };
-      }
-
+           isExactDuplicate: false,
+           suggestions: {}
+         };
+       }
+       
       const similarTransactions: SimilarTransaction[] = (existingTransactions || [])
         .map(t => ({
           id: t.id,
@@ -226,26 +226,26 @@ class OFXService {
       );
 
       const isExactDuplicate = exactMatch;
-
-      return {
-        exists: similarTransactions.length > 0,
-        similarTransactions,
-        exactMatch,
-        isExactDuplicate,
+       
+       return {
+         exists: similarTransactions.length > 0,
+         similarTransactions,
+         exactMatch,
+         isExactDuplicate,
         suggestions: {}
-      };
-    } catch (error) {
-      console.error('❌ Erro ao verificar transação existente:', error);
-      return {
-        exists: false,
-        similarTransactions: [],
+       };
+         } catch (error) {
+       console.error('❌ Erro ao verificar transação existente:', error);
+       return { 
+         exists: false, 
+         similarTransactions: [], 
         exactMatch: false,
-        isExactDuplicate: false,
-        suggestions: {}
-      };
-    }
-  }
-
+         isExactDuplicate: false,
+         suggestions: {}
+       };
+     }
+   }
+  
   // Verificar similaridade entre descrições
   private isDescriptionSimilar(desc1: string, desc2: string): boolean {
     const clean1 = desc1.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -254,7 +254,7 @@ class OFXService {
     const similarity = this.calculateSimilarity(clean1, clean2);
     return similarity > 0.7; // 70% de similaridade
   }
-
+  
   // Calcular similaridade entre strings
   private calculateSimilarity(str1: string, str2: string): number {
     const matrix: number[][] = [];
@@ -284,7 +284,7 @@ class OFXService {
     const maxLength = Math.max(str1.length, str2.length);
     return maxLength === 0 ? 1 : (maxLength - matrix[str2.length][str1.length]) / maxLength;
   }
-
+  
   // Adicionar dias a uma data
   private addDays(dateStr: string, days: number): string {
     try {
@@ -295,105 +295,105 @@ class OFXService {
       return dateStr;
     }
   }
-
-  // Subtrair dias de uma data
-  private subtractDays(dateStr: string, days: number): string {
-    return this.addDays(dateStr, -days);
-  }
-
-  // Processar ações de conciliação
-  async processReconciliation(
-    ofxTransaction: OFXTransaction, 
-    reconciliationOption: ReconciliationOption,
-    contaBancariaId: string
-  ): Promise<{ success: boolean; message: string }> {
-    try {
-      switch (reconciliationOption.action) {
-        case 'conciliar':
-          if (reconciliationOption.transactionId) {
-            const { error } = await supabase
-              .from('transactions')
-              .update({ 
-                status: 'pago',
-                situacao: 'conciliada',
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', reconciliationOption.transactionId);
-            
-            if (error) {
-              console.error('❌ Erro ao conciliar transação:', error);
-              return { success: false, message: `Erro ao conciliar: ${error.message}` };
-            }
-            
-            return { success: true, message: 'Transação conciliada com sucesso' };
-          }
-          break;
-          
-        case 'marcar_pago':
-          if (reconciliationOption.transactionId) {
-            const { error } = await supabase
-              .from('transactions')
-              .update({ 
-                status: 'pago',
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', reconciliationOption.transactionId);
-            
-            if (error) {
-              console.error('❌ Erro ao marcar como pago:', error);
-              return { success: false, message: `Erro ao marcar como pago: ${error.message}` };
-            }
-            
-            return { success: true, message: 'Transação marcada como paga' };
-          }
-          break;
-          
-        case 'importar':
-          const novaTransacao = {
-            valor: Math.abs(ofxTransaction.amount),
-            descricao: ofxTransaction.memo || ofxTransaction.name || 'Transação OFX',
-            conta: contaBancariaId,
-            categoria: ofxTransaction.categoria || (ofxTransaction.amount > 0 ? 'Receitas' : 'Despesas'),
-            contato: ofxTransaction.contato || null,
-            forma: ofxTransaction.forma || 'PIX',
-            tipo: ofxTransaction.amount > 0 ? 'receita' : 'despesa',
-            vencimento: ofxTransaction.datePosted,
-            situacao: 'pago',
-            status: 'pago',
-            observacoes: `OFX Import - ${ofxTransaction.fitId || 'sem ID'}`,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          
-          const { error: insertError } = await supabase
-            .from('transactions')
-            .insert(novaTransacao);
-          
-          if (insertError) {
+  
+     // Subtrair dias de uma data
+   private subtractDays(dateStr: string, days: number): string {
+     return this.addDays(dateStr, -days);
+   }
+  
+     // Processar ações de conciliação
+   async processReconciliation(
+     ofxTransaction: OFXTransaction, 
+     reconciliationOption: ReconciliationOption,
+     contaBancariaId: string
+   ): Promise<{ success: boolean; message: string }> {
+     try {
+       switch (reconciliationOption.action) {
+         case 'conciliar':
+           if (reconciliationOption.transactionId) {
+             const { error } = await supabase
+               .from('transactions')
+               .update({ 
+                 status: 'pago',
+                 situacao: 'conciliada',
+                 updated_at: new Date().toISOString()
+               })
+               .eq('id', reconciliationOption.transactionId);
+             
+             if (error) {
+               console.error('❌ Erro ao conciliar transação:', error);
+               return { success: false, message: `Erro ao conciliar: ${error.message}` };
+             }
+             
+             return { success: true, message: 'Transação conciliada com sucesso' };
+           }
+           break;
+           
+         case 'marcar_pago':
+           if (reconciliationOption.transactionId) {
+             const { error } = await supabase
+               .from('transactions')
+               .update({ 
+                 status: 'pago',
+                 updated_at: new Date().toISOString()
+               })
+               .eq('id', reconciliationOption.transactionId);
+             
+             if (error) {
+               console.error('❌ Erro ao marcar como pago:', error);
+               return { success: false, message: `Erro ao marcar como pago: ${error.message}` };
+             }
+             
+             return { success: true, message: 'Transação marcada como paga' };
+           }
+           break;
+           
+         case 'importar':
+           const novaTransacao = {
+             valor: Math.abs(ofxTransaction.amount),
+             descricao: ofxTransaction.memo || ofxTransaction.name || 'Transação OFX',
+             conta: contaBancariaId,
+             categoria: ofxTransaction.categoria || (ofxTransaction.amount > 0 ? 'Receitas' : 'Despesas'),
+             contato: ofxTransaction.contato || null,
+             forma: ofxTransaction.forma || 'PIX',
+             tipo: ofxTransaction.amount > 0 ? 'receita' : 'despesa',
+             vencimento: ofxTransaction.datePosted,
+             situacao: 'pago',
+             status: 'pago',
+             observacoes: `OFX Import - ${ofxTransaction.fitId || 'sem ID'}`,
+             created_at: new Date().toISOString(),
+             updated_at: new Date().toISOString()
+           };
+           
+           const { error: insertError } = await supabase
+             .from('transactions')
+             .insert(novaTransacao);
+           
+           if (insertError) {
             console.error('❌ Erro ao inserir transação:', insertError);
-            return { success: false, message: `Erro ao importar: ${insertError.message}` };
-          }
-          
-          return { success: true, message: 'Transação importada com sucesso' };
-          
-        case 'pular':
-          return { success: true, message: 'Transação pulada' };
-          
-        default:
-          return { success: false, message: 'Ação de conciliação inválida' };
-      }
-      
-      return { success: false, message: 'Ação não processada' };
-      
-    } catch (error) {
-      console.error('❌ Erro ao processar conciliação:', error);
-      return { 
-        success: false, 
-        message: `Erro ao processar conciliação: ${error instanceof Error ? error.message : 'Erro desconhecido'}` 
-      };
-    }
-  }
-
+             return { success: false, message: `Erro ao importar: ${insertError.message}` };
+           }
+           
+           return { success: true, message: 'Transação importada com sucesso' };
+           
+         case 'pular':
+           return { success: true, message: 'Transação pulada' };
+           
+         default:
+           return { success: false, message: 'Ação de conciliação inválida' };
+       }
+       
+       return { success: false, message: 'Ação não processada' };
+       
+     } catch (error) {
+       console.error('❌ Erro ao processar conciliação:', error);
+       return { 
+         success: false, 
+         message: `Erro ao processar conciliação: ${error instanceof Error ? error.message : 'Erro desconhecido'}` 
+       };
+     }
+   }
+   
   // Importar transações OFX para o sistema
   async importOFXTransactions(ofxData: OFXData, contaBancariaId: string): Promise<ImportResult> {
     try {
@@ -413,29 +413,29 @@ class OFXService {
         return result;
       }
       
-      let importedCount = 0;
+             let importedCount = 0;
       let errorCount = 0;
-      const errors: string[] = [];
+       const errors: string[] = [];
       
       for (const transaction of ofxData.transactions) {
         try {
           console.log(`🔍 Processando transação: ${transaction.memo || transaction.name} - R$ ${transaction.amount}`);
           
-          const novaTransacao = {
-            valor: Math.abs(transaction.amount),
-            descricao: transaction.memo || transaction.name || 'Transação OFX',
-            conta: contaBancariaId,
+           const novaTransacao = {
+             valor: Math.abs(transaction.amount),
+             descricao: transaction.memo || transaction.name || 'Transação OFX',
+             conta: contaBancariaId,
             categoria: transaction.categoria || (transaction.amount > 0 ? 'Receitas' : 'Despesas'),
             contato: transaction.contato || null,
             forma: transaction.forma || 'PIX',
-            tipo: transaction.amount > 0 ? 'receita' : 'despesa',
+             tipo: transaction.amount > 0 ? 'receita' : 'despesa',
             vencimento: transaction.datePosted,
             situacao: 'pago',
             status: 'pago',
-            observacoes: `OFX Import - ${transaction.fitId || 'sem ID'}`,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
+             observacoes: `OFX Import - ${transaction.fitId || 'sem ID'}`,
+             created_at: new Date().toISOString(),
+             updated_at: new Date().toISOString()
+           };
           
           const { error: insertError } = await supabase
             .from('transactions')
@@ -457,12 +457,12 @@ class OFXService {
         }
       }
       
-      result.success = true;
-      result.importedCount = importedCount;
+             result.success = true;
+       result.importedCount = importedCount;
       result.errorCount = errorCount;
-      result.errors = errors;
+       result.errors = errors;
       result.message = `Importação concluída: ${importedCount} transações importadas, ${errorCount} erros`;
-      result.data = ofxData;
+       result.data = ofxData;
       result.updatedCount = 0;
       result.skippedCount = 0;
       
@@ -482,7 +482,7 @@ class OFXService {
       };
     }
   }
-
+  
   // Validar arquivo OFX
   validateOFXFile(file: File): { valid: boolean; errors: string[] } {
     const errors: string[] = [];

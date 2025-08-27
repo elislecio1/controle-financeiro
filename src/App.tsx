@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
-import { TrendingUp, Users, DollarSign, Activity, Database, Settings, RefreshCw, Calendar, Filter, Search, Plus, Download, Upload, CheckCircle, XCircle, Trash2, Edit, Bell, User } from 'lucide-react'
+import { TrendingUp, Users, DollarSign, Activity, Database, Settings, RefreshCw, Calendar, Filter, Search, Plus, Download, Upload, CheckCircle, XCircle, Trash2, Edit, Bell, User, Shield, Clock } from 'lucide-react'
 import { SheetData, Categoria, Subcategoria, CentroCusto, Meta, Orcamento, Investimento, ContaBancaria, CartaoCredito, Contato, Alerta } from './types'
 import { supabaseService } from './services/supabase'
 import TransactionForm from './components/TransactionForm'
@@ -955,6 +955,16 @@ function App() {
                        <button
                          onClick={() => {
                            setShowUserMenu(false)
+                           navigate('/admin/user-management')
+                         }}
+                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                       >
+                         <Shield className="h-4 w-4 mr-2" />
+                         Administração de Usuários
+                       </button>
+                       <button
+                         onClick={() => {
+                           setShowUserMenu(false)
                            setShowSystemLogs(true)
                          }}
                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
@@ -1044,186 +1054,202 @@ function App() {
 
         {/* General Dashboard */}
         {activeTab === 'geral' && !loading && (
-          <div className="space-y-6">
-            {/* Filtros no Topo - Primeiro */}
-            <div className="space-y-4">
-              {/* Indicador de Filtros Ativos */}
-              {(periodFilter !== 'all' || contaFilter !== 'todas' || activeFilter) && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Filter className="h-5 w-5 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-800">Filtros Ativos:</span>
-                    </div>
-                    <button
-                      onClick={clearAllFilters}
-                      className="text-sm text-blue-600 hover:text-blue-800 underline"
-                    >
-                      Limpar Todos
-                    </button>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {periodFilter !== 'all' && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        Período: {periodFilter === 'current_month' ? 'Mês Atual' : 
-                                  periodFilter === 'last_month' ? 'Mês Anterior' :
-                                  periodFilter === 'current_year' ? 'Ano Atual' :
-                                  periodFilter === 'last_year' ? 'Ano Anterior' : periodFilter}
-                      </span>
-                    )}
-                    {contaFilter !== 'todas' && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Conta: {contaFilter}
-                      </span>
-                    )}
-                    {activeFilter && (
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        activeFilter === 'receita' ? 'bg-green-100 text-green-800' :
-                        activeFilter === 'despesa' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {activeFilter === 'receita' ? 'Receitas' :
-                         activeFilter === 'despesa' ? 'Despesas' :
-                         activeFilter === 'pago' ? 'Pago' :
-                         activeFilter === 'pendente' ? 'Pendente' :
-                         activeFilter === 'vencido' ? 'Vencido' :
-                         activeFilter === 'pago_hoje' ? 'Pago Hoje' :
-                         activeFilter === 'vencendo_hoje' ? 'Vencendo Hoje' : activeFilter}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-              {/* Conta Filter - Primeiro */}
-              <div className="bg-white shadow rounded-lg p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Filtro por Conta Bancária</h3>
-                
-                <div className="flex flex-wrap gap-4">
-                  {[
-                    { value: 'todas', label: 'Todas as Contas' },
-                    ...contas.map(conta => ({
-                      value: conta.nome,
-                      label: `${conta.nome} - ${conta.banco}`
-                    }))
-                  ].map((conta) => (
-                    <button
-                      key={conta.value}
-                      onClick={() => applyContaFilter(conta.value)}
-                      className={`px-4 py-2 rounded-md text-sm font-medium ${
-                        contaFilter === conta.value
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {conta.label}
-                    </button>
-                  ))}
-                </div>
+          <div className="space-y-8">
+            {/* Filtro de Conta Bancária - NO TOPO */}
+            <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <Database className="h-5 w-5 text-blue-600" />
+                  Filtro por Conta Bancária
+                </h3>
+                <button
+                  onClick={clearAllFilters}
+                  className="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100 flex items-center gap-1 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Limpar Filtros
+                </button>
               </div>
-
-              {/* Period Filters - Segundo */}
-              <div className="bg-white shadow rounded-lg p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">Filtros de Período</h3>
-                  <button
-                    onClick={clearAllFilters}
-                    className="px-3 py-1 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200 flex items-center gap-1"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Limpar Filtros
-                  </button>
-                </div>
-                
-                <div className="flex flex-wrap gap-4">
-                  {[
-                    { value: 'all', label: 'Todos os Períodos' },
-                    { value: 'current_month', label: 'Mês Atual' },
-                    { value: 'last_month', label: 'Mês Anterior' },
-                    { value: 'current_year', label: 'Ano Atual' },
-                    { value: 'last_year', label: 'Ano Anterior' }
-                  ].map((period) => (
-                    <button
-                      key={period.value}
-                      onClick={() => applyPeriodFilter(period.value)}
-                      className={`px-4 py-2 rounded-md text-sm font-medium ${
-                        periodFilter === period.value
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {period.label}
-                    </button>
+              
+              <div className="flex items-center gap-4">
+                <label className="text-sm font-medium text-gray-700 min-w-[120px]">
+                  Selecione a Conta:
+                </label>
+                <select
+                  value={contaFilter}
+                  onChange={(e) => applyContaFilter(e.target.value)}
+                  className="flex-1 max-w-md px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                >
+                  <option value="todas">Todas as Contas</option>
+                  {contas.map(conta => (
+                    <option key={conta.nome} value={conta.nome}>
+                      {conta.nome} - {conta.banco}
+                    </option>
                   ))}
-                  
-                  <button
-                    onClick={() => setShowCustomPeriod(!showCustomPeriod)}
-                    className="px-4 py-2 rounded-md text-sm font-medium bg-purple-100 text-purple-700 hover:bg-purple-200"
-                  >
-                    Período Customizado
-                  </button>
-                </div>
-
-                {showCustomPeriod && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-md">
-                    <div className="flex items-center space-x-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Data Início</label>
-                        <input
-                          type="text"
-                          placeholder="DD/MM/AAAA"
-                          value={customStartDate}
-                          onChange={(e) => {
-                            const formatted = formatDateInput(e.target.value)
-                            setCustomStartDate(formatted)
-                          }}
-                          onFocus={(e) => e.target.select()}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Data Fim</label>
-                        <input
-                          type="text"
-                          placeholder="DD/MM/AAAA"
-                          value={customEndDate}
-                          onChange={(e) => {
-                            const formatted = formatDateInput(e.target.value)
-                            setCustomEndDate(formatted)
-                          }}
-                          onFocus={(e) => e.target.select()}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                      <button
-                        onClick={applyCustomPeriodFilter}
-                        className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                      >
-                        Aplicar
-                      </button>
-                    </div>
-                  </div>
-                )}
+                </select>
               </div>
             </div>
 
+            {/* Indicador de Filtros Ativos */}
+            {(periodFilter !== 'all' || contaFilter !== 'todas' || activeFilter) && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-5 w-5 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-800">Filtros Ativos:</span>
+                  </div>
+                  <button
+                    onClick={clearAllFilters}
+                    className="text-sm text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Limpar Todos
+                  </button>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {periodFilter !== 'all' && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      Período: {periodFilter === 'current_month' ? 'Mês Atual' : 
+                                periodFilter === 'last_month' ? 'Mês Anterior' :
+                                periodFilter === 'current_year' ? 'Ano Atual' :
+                                periodFilter === 'last_year' ? 'Ano Anterior' : periodFilter}
+                    </span>
+                  )}
+                  {contaFilter !== 'todas' && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Conta: {contaFilter}
+                    </span>
+                  )}
+                  {activeFilter && (
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      activeFilter === 'receita' ? 'bg-green-100 text-green-800' :
+                      activeFilter === 'despesa' ? 'bg-red-100 text-red-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {activeFilter === 'receita' ? 'Receitas' :
+                       activeFilter === 'despesa' ? 'Despesas' :
+                       activeFilter === 'pago' ? 'Pago' :
+                       activeFilter === 'pendente' ? 'Pendente' :
+                       activeFilter === 'vencido' ? 'Vencido' :
+                       activeFilter === 'pago_hoje' ? 'Pago Hoje' :
+                       activeFilter === 'vencendo_hoje' ? 'Vencendo Hoje' : activeFilter}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Filtros de Período */}
+            <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-purple-600" />
+                  Filtros de Período
+                </h3>
+              </div>
+                
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {[
+                  { value: 'all', label: 'Todos os Períodos', icon: '📅' },
+                  { value: 'current_month', label: 'Mês Atual', icon: '📆' },
+                  { value: 'last_month', label: 'Mês Anterior', icon: '📅' },
+                  { value: 'current_year', label: 'Ano Atual', icon: '📊' },
+                  { value: 'last_year', label: 'Ano Anterior', icon: '📈' }
+                ].map((period) => (
+                  <button
+                    key={period.value}
+                    onClick={() => applyPeriodFilter(period.value)}
+                    className={`p-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      periodFilter === period.value
+                        ? 'bg-purple-600 text-white shadow-lg transform scale-105'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100 hover:shadow-md'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-lg">{period.icon}</span>
+                      <span className="text-xs">{period.label}</span>
+                    </div>
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => setShowCustomPeriod(!showCustomPeriod)}
+                  className={`p-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    showCustomPeriod
+                      ? 'bg-purple-600 text-white shadow-lg'
+                      : 'bg-purple-50 text-purple-700 hover:bg-purple-100 hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-lg">⚙️</span>
+                    <span className="text-xs">Customizado</span>
+                  </div>
+                </button>
+              </div>
+
+              {showCustomPeriod && (
+                <div className="mt-6 p-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-purple-600" />
+                    Período Personalizado
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Data Início</label>
+                      <input
+                        type="text"
+                        placeholder="DD/MM/AAAA"
+                        value={customStartDate}
+                        onChange={(e) => {
+                          const formatted = formatDateInput(e.target.value)
+                          setCustomStartDate(formatted)
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Data Fim</label>
+                      <input
+                        type="text"
+                        placeholder="DD/MM/AAAA"
+                        value={customEndDate}
+                        onChange={(e) => {
+                          const formatted = formatDateInput(e.target.value)
+                          setCustomEndDate(formatted)
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      />
+                    </div>
+                    <button
+                      onClick={applyCustomPeriodFilter}
+                      className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium shadow-md hover:shadow-lg"
+                    >
+                      Aplicar Filtro
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Stats Cards - Depois dos Filtros */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               <button
                 onClick={() => applyFilter('receita')}
-                className={`bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow ${
-                  activeFilter === 'receita' ? 'ring-2 ring-green-500' : ''
+                className={`bg-white overflow-hidden shadow-lg rounded-xl hover:shadow-xl transition-all duration-300 transform hover:scale-105 border border-gray-100 ${
+                  activeFilter === 'receita' ? 'ring-4 ring-green-200 shadow-green-200' : ''
                 }`}
               >
-                <div className="p-5">
-                  <div className="flex items-center">
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
                     <div className="flex-shrink-0">
-                      <TrendingUp className="h-6 w-6 text-green-600" />
+                      <div className="p-3 bg-green-100 rounded-full">
+                        <TrendingUp className="h-8 w-8 text-green-600" />
+                      </div>
                     </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">Receitas</dt>
-                        <dd className="text-lg font-medium text-gray-900">{formatarMoeda(totalReceitas)}</dd>
-                      </dl>
+                    <div className="text-right">
+                      <dt className="text-sm font-medium text-gray-500 truncate">Receitas</dt>
+                      <dd className="text-2xl font-bold text-gray-900">{formatarMoeda(totalReceitas)}</dd>
                     </div>
                   </div>
                 </div>
@@ -1231,35 +1257,39 @@ function App() {
 
               <button
                 onClick={() => applyFilter('despesa')}
-                className={`bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow ${
-                  activeFilter === 'despesa' ? 'ring-2 ring-red-500' : ''
+                className={`bg-white overflow-hidden shadow-lg rounded-xl hover:shadow-xl transition-all duration-300 transform hover:scale-105 border border-gray-100 ${
+                  activeFilter === 'despesa' ? 'ring-4 ring-red-200 shadow-red-200' : ''
                 }`}
               >
-                <div className="p-5">
-                  <div className="flex items-center">
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
                     <div className="flex-shrink-0">
-                      <Activity className="h-6 w-6 text-red-600" />
+                      <div className="p-3 bg-red-100 rounded-full">
+                        <Activity className="h-8 w-8 text-red-600" />
+                      </div>
                     </div>
-                    <div className="ml-5 w-0 flex-1">
+                    <div className="text-right">
                       <dl>
                         <dt className="text-sm font-medium text-gray-500 truncate">Despesas</dt>
-                        <dd className="text-lg font-medium text-gray-900">{formatarMoeda(totalDespesas)}</dd>
+                        <dd className="text-2xl font-bold text-gray-900">{formatarMoeda(totalDespesas)}</dd>
                       </dl>
                     </div>
                   </div>
                 </div>
               </button>
 
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
+              <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
                     <div className="flex-shrink-0">
-                      <DollarSign className="h-6 w-6 text-blue-600" />
+                      <div className="p-3 bg-blue-100 rounded-full">
+                        <DollarSign className="h-8 w-8 text-blue-600" />
+                      </div>
                     </div>
-                    <div className="ml-5 w-0 flex-1">
+                    <div className="text-right">
                       <dl>
                         <dt className="text-sm font-medium text-gray-500 truncate">Saldo</dt>
-                        <dd className={`text-lg font-medium ${getClasseValor(saldo)}`}>
+                        <dd className={`text-2xl font-bold ${getClasseValor(saldo)}`}>
                           {formatarMoeda(saldo)}
                         </dd>
                       </dl>
@@ -1268,16 +1298,18 @@ function App() {
                 </div>
               </div>
 
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
+              <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
                     <div className="flex-shrink-0">
-                      <Users className="h-6 w-6 text-purple-600" />
+                      <div className="p-3 bg-purple-100 rounded-full">
+                        <Users className="h-8 w-8 text-purple-600" />
+                      </div>
                     </div>
-                    <div className="ml-5 w-0 flex-1">
+                    <div className="text-right">
                       <dl>
                         <dt className="text-sm font-medium text-gray-500 truncate">Total Registros</dt>
-                        <dd className="text-lg font-medium text-gray-900">{filteredData.length}</dd>
+                        <dd className="text-2xl font-bold text-gray-900">{filteredData.length}</dd>
                       </dl>
                     </div>
                   </div>
@@ -1286,55 +1318,79 @@ function App() {
             </div>
 
             {/* Filter Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
               {[
-                { label: 'Total Pago', value: totalPago, color: 'green', filter: 'pago' },
-                { label: 'Total Pendente', value: totalPendente, color: 'yellow', filter: 'pendente' },
-                { label: 'Total Vencido', value: totalVencido, color: 'red', filter: 'vencido' },
-                { label: 'Pago Hoje', value: totalPagoHoje, color: 'blue', filter: 'pago_hoje' },
-                { label: 'Vencendo Hoje', value: totalVencendoHoje, color: 'orange', filter: 'vencendo_hoje' }
+                { label: 'Total Pago', value: totalPago, color: 'green', filter: 'pago', icon: CheckCircle },
+                { label: 'Total Pendente', value: totalPendente, color: 'yellow', filter: 'pendente', icon: Clock },
+                { label: 'Total Vencido', value: totalVencido, color: 'red', filter: 'vencido', icon: XCircle },
+                { label: 'Pago Hoje', value: totalPagoHoje, color: 'blue', filter: 'pago_hoje', icon: CheckCircle },
+                { label: 'Vencendo Hoje', value: totalVencendoHoje, color: 'orange', filter: 'vencendo_hoje', icon: Calendar }
               ].map((card) => (
                 <button
                   key={card.filter}
                   onClick={() => applyFilter(card.filter)}
-                  className={`bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow ${
-                    activeFilter === card.filter ? 'ring-2 ring-blue-500' : ''
+                  className={`bg-white overflow-hidden shadow-lg rounded-xl hover:shadow-xl transition-all duration-300 transform hover:scale-105 border border-gray-100 ${
+                    activeFilter === card.filter ? `ring-4 ring-${card.color}-200 shadow-${card.color}-200` : ''
                   }`}
                 >
-                  <div className="text-sm font-medium text-gray-500">{card.label}</div>
-                  <div className={`text-2xl font-bold text-${card.color}-600`}>
-                    {formatarMoeda(card.value)}
+                  <div className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-shrink-0">
+                        <div className={`p-3 bg-${card.color}-50 rounded-full`}>
+                          <card.icon className={`h-8 w-8 text-${card.color}-600`} />
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-medium text-gray-500">{card.label}</div>
+                        <div className={`text-2xl font-bold text-${card.color}-600`}>
+                          {formatarMoeda(card.value)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </button>
               ))}
             </div>
 
             {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Line Chart */}
-              <div className="bg-white shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Evolução por Status</h3>
-                  <ResponsiveContainer width="100%" height={300}>
+              <div className="bg-white shadow-lg rounded-xl border border-gray-100">
+                <div className="px-6 py-6">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                    Evolução por Status
+                  </h3>
+                  <ResponsiveContainer width="100%" height={350}>
                     <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="mes" />
-                      <YAxis />
-                      <Tooltip />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                      <XAxis dataKey="mes" stroke="#6b7280" />
+                      <YAxis stroke="#6b7280" />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
                       <Legend />
-                      <Line type="monotone" dataKey="pago" stroke="#10B981" name="Pago" />
-                      <Line type="monotone" dataKey="pendente" stroke="#F59E0B" name="Pendente" />
-                      <Line type="monotone" dataKey="vencido" stroke="#EF4444" name="Vencido" />
+                      <Line type="monotone" dataKey="pago" stroke="#10B981" name="Pago" strokeWidth={3} />
+                      <Line type="monotone" dataKey="pendente" stroke="#F59E0B" name="Pendente" strokeWidth={3} />
+                      <Line type="monotone" dataKey="vencido" stroke="#EF4444" name="Vencido" strokeWidth={3} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
               {/* Pie Chart */}
-              <div className="bg-white shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Distribuição por Status</h3>
-                  <ResponsiveContainer width="100%" height={300}>
+              <div className="bg-white shadow-lg rounded-xl border border-gray-100">
+                <div className="px-6 py-6">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                    <BarChart className="h-5 w-5 text-purple-600" />
+                    Distribuição por Status
+                  </h3>
+                  <ResponsiveContainer width="100%" height={350}>
                     <PieChart>
                       <Pie
                         data={pieData}
@@ -1342,7 +1398,7 @@ function App() {
                         cy="50%"
                         labelLine={false}
                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
+                        outerRadius={100}
                         fill="#8884d8"
                         dataKey="value"
                       >
@@ -1350,7 +1406,14 @@ function App() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -1358,13 +1421,16 @@ function App() {
             </div>
 
             {/* Tabela de Transações responsiva */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-4 sm:px-6 py-4 sm:py-6">
-                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-4">Transações</h3>
+            <div className="bg-white shadow-lg rounded-xl border border-gray-100">
+              <div className="px-6 py-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                  <Database className="h-5 w-5 text-gray-600" />
+                  Transações
+                </h3>
                 
                 {/* Filtros responsivos */}
-                <div className="mb-4 sm:mb-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                       <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Buscar</label>
                       <input
@@ -1372,7 +1438,7 @@ function App() {
                         placeholder="Descrição, categoria..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                       />
                     </div>
                     
@@ -1381,7 +1447,7 @@ function App() {
                       <select
                         value={filterTipo}
                         onChange={(e) => setFilterTipo(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                       >
                         <option value="todos">Todos</option>
                         <option value="receita">Receitas</option>
@@ -1395,7 +1461,7 @@ function App() {
                       <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                       >
                         <option value="todos">Todos</option>
                         <option value="pendente">Pendente</option>
@@ -1409,7 +1475,7 @@ function App() {
                       <select
                         value={itemsPerPage}
                         onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                       >
                         <option value={10}>10</option>
                         <option value={25}>25</option>
@@ -1421,7 +1487,7 @@ function App() {
                 </div>
 
                 {/* Tabela responsiva */}
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-lg border border-gray-200">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
@@ -1743,103 +1809,103 @@ function App() {
           </div>
         )}
 
-                 {/* Modal de Confirmação de Pagamento */}
-         {showPaymentModal && selectedTransaction && (
-           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-             <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-               <div className="mt-3">
-                 <h3 className="text-lg font-medium text-gray-900 mb-4">
-                   Confirmar Pagamento
-                 </h3>
-                 <div className="mb-4">
-                   <p className="text-sm text-gray-600 mb-2">
-                     <strong>Descrição:</strong> {selectedTransaction.descricao}
-                   </p>
-                   <p className="text-sm text-gray-600 mb-2">
-                     <strong>Valor:</strong> {formatarValorTabela(selectedTransaction.valor)}
-                   </p>
-                   <p className="text-sm text-gray-600 mb-4">
-                     <strong>Vencimento:</strong> {selectedTransaction.data}
-                   </p>
-                 </div>
-                 <div className="mb-4">
-                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                     Data do Pagamento
-                   </label>
-                   <input
-                     type="date"
-                     value={paymentDate}
-                     onChange={(e) => setPaymentDate(e.target.value)}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                   />
-                 </div>
-                 <div className="flex justify-end space-x-3">
-                   <button
-                     onClick={() => {
-                       setShowPaymentModal(false)
-                       setSelectedTransaction(null)
-                       setPaymentDate('')
-                     }}
-                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                   >
-                     Cancelar
-                   </button>
-                   <button
-                     onClick={handleSavePayment}
-                     className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
-                   >
-                     Confirmar Pagamento
-                   </button>
-                 </div>
-               </div>
-             </div>
-           </div>
-         )}
+        {/* Modal de Confirmação de Pagamento */}
+        {showPaymentModal && selectedTransaction && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Confirmar Pagamento
+                </h3>
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 mb-2">
+                    <strong>Descrição:</strong> {selectedTransaction.descricao}
+                  </p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    <strong>Valor:</strong> {formatarValorTabela(selectedTransaction.valor)}
+                  </p>
+                  <p className="text-sm text-gray-600 mb-4">
+                    <strong>Vencimento:</strong> {selectedTransaction.vencimento}
+                  </p>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Data do Pagamento
+                  </label>
+                  <input
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowPaymentModal(false)
+                      setSelectedTransaction(null)
+                      setPaymentDate('')
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSavePayment}
+                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+                  >
+                    Confirmar Pagamento
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-         {/* Modal de Importação OFX */}
-         {showOFXModal && (
-           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-             <div className="relative top-10 mx-auto p-4 w-full max-w-4xl shadow-lg rounded-md bg-white">
-               <div className="mt-3">
-                 <div className="flex justify-between items-center mb-4">
-                   <h3 className="text-lg font-medium text-gray-900">
-                     Importação de Arquivo OFX
-                   </h3>
-                   <button
-                     onClick={() => setShowOFXModal(false)}
-                     className="text-gray-400 hover:text-gray-600"
-                   >
-                     <span className="text-2xl">×</span>
-                   </button>
-                 </div>
-                 <OFXImporter 
-                   onImportComplete={(result) => {
-                     console.log('Importação OFX concluída:', result);
-                     if (result.success) {
-                       loadData(); // Recarregar dados após importação
-                     }
-                   }}
-                 />
-               </div>
-             </div>
-           </div>
-         )}
+        {/* Modal de Importação OFX */}
+        {showOFXModal && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-10 mx-auto p-4 w-full max-w-4xl shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Importação de Arquivo OFX
+                  </h3>
+                  <button
+                    onClick={() => setShowOFXModal(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <span className="text-2xl">×</span>
+                  </button>
+                </div>
+                <OFXImporter 
+                  onImportComplete={(result) => {
+                    console.log('Importação OFX concluída:', result);
+                    if (result.success) {
+                      loadData(); // Recarregar dados após importação
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal do Perfil do Usuário */}
+        <UserProfile 
+          isOpen={showUserProfile}
+          onClose={() => setShowUserProfile(false)}
+        />
+
+        {/* Modal dos Logs do Sistema */}
+        <SystemLogs
+          isOpen={showSystemLogs}
+          onClose={() => setShowSystemLogs(false)}
+        />
       </main>
-      
-             {/* Modal do Perfil do Usuário */}
-       <UserProfile 
-         isOpen={showUserProfile}
-         onClose={() => setShowUserProfile(false)}
-       />
-
-       {/* Modal dos Logs do Sistema */}
-       <SystemLogs
-         isOpen={showSystemLogs}
-         onClose={() => setShowSystemLogs(false)}
-       />
-     </div>
-   )
- }
+    </div>
+  )
+}
 
 // Componente App protegido por autenticação
 const ProtectedApp: React.FC = () => {

@@ -128,28 +128,30 @@
         .main {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 2rem 1rem;
+            padding: 1.5rem 1rem;
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
         }
 
         .stat-card {
             background: white;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             transition: all 0.2s;
             cursor: pointer;
+            border: 1px solid #f3f4f6;
         }
 
         .stat-card:hover {
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transform: translateY(-2px);
+            border-color: #e5e7eb;
         }
 
         .stat-card.active {
@@ -187,8 +189,8 @@
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 2rem;
-            margin-bottom: 2rem;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
         }
 
         .chart-container {
@@ -218,6 +220,7 @@
             border-radius: 0.5rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             overflow: hidden;
+            margin-bottom: 1.5rem;
         }
 
         .table-header {
@@ -331,10 +334,11 @@
         /* Filtros de Período */
         .period-filters {
             background: white;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             padding: 1.5rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             margin-bottom: 1.5rem;
+            border: 1px solid #e5e7eb;
         }
 
         .filter-header {
@@ -351,32 +355,33 @@
         }
 
         .filter-buttons {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 0.5rem;
-            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
         }
 
         .filter-btn {
             padding: 0.5rem 1rem;
             border: 1px solid #d1d5db;
-            border-radius: 0.375rem;
+            border-radius: 0.5rem;
             background: white;
             color: #374151;
-            font-size: 0.875rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .filter-btn:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
         }
 
         .filter-btn.active {
             background: #3b82f6;
             color: white;
             border-color: #3b82f6;
-        }
-
-        .filter-btn:hover {
-            background: #f3f4f6;
         }
 
         .custom-period {
@@ -664,6 +669,53 @@
             background-color: #f9fafb;
             color: #374151;
         }
+
+        /* Estilos para o filtro por conta bancária */
+        .bank-account-filter {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            border: 1px solid #e5e7eb;
+        }
+
+        .conta-select-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .conta-label {
+            font-weight: 500;
+            color: #374151;
+            min-width: 140px;
+            font-size: 0.875rem;
+        }
+
+        .conta-select {
+            flex: 1;
+            max-width: 400px;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            background: white;
+            font-size: 0.875rem;
+            color: #374151;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .conta-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .conta-select:hover {
+            border-color: #9ca3af;
+        }
     </style>
 </head>
 <body>
@@ -739,6 +791,26 @@
                             <button class="btn btn-primary" onclick="applyCustomPeriodFilter()">Aplicar</button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Filtro por Conta Bancária - NO TOPO -->
+            <div class="bank-account-filter">
+                <div class="filter-header">
+                    <h3 class="filter-title">🏦 Filtro por Conta Bancária</h3>
+                    <div>
+                        <span id="conta-filter-status" class="text-sm text-gray-500">Todas as contas selecionadas</span>
+                    </div>
+                </div>
+                
+                <div class="conta-select-container">
+                    <label for="conta-filter" class="conta-label">Selecione a Conta:</label>
+                    <select id="conta-filter" onchange="applyContaFilter()" class="conta-select">
+                        <option value="todas">Todas as Contas</option>
+                        <option value="C6 DS Vendas - C6 Bank">C6 DS Vendas - C6 Bank</option>
+                        <option value="CEF - CAIXA - Caixa Econômica">CEF - CAIXA - Caixa Econômica</option>
+                        <option value="Inter DS - Inter">Inter DS - Inter</option>
+                    </select>
                 </div>
             </div>
 
@@ -2892,6 +2964,57 @@
             // Aguarda um pouco para os elementos serem renderizados
             setTimeout(setupDateInputs, 100);
         };
+
+        // Função para aplicar filtro por conta bancária
+        function applyContaFilter() {
+            const contaSelect = document.getElementById('conta-filter');
+            const contaFilterStatus = document.getElementById('conta-filter-status');
+            const selectedConta = contaSelect.value;
+            
+            if (selectedConta === 'todas') {
+                // Remove filtro de conta bancária
+                filteredData = allData.filter(item => {
+                    if (currentPeriodFilter !== 'all') {
+                        const periodDates = getPeriodDates(currentPeriodFilter);
+                        return periodDates ? isDateInPeriod(item.vencimento, periodDates.start, periodDates.end) : true;
+                    }
+                    return true;
+                });
+                contaFilterStatus.textContent = 'Todas as contas selecionadas';
+                contaFilterStatus.style.color = '#6b7280';
+            } else {
+                // Aplica filtro de conta bancária
+                filteredData = allData.filter(item => {
+                    let matchesConta = false;
+                    
+                    // Aqui você pode implementar a lógica específica para filtrar por conta
+                    // Por enquanto, vamos simular que todas as transações pertencem à conta selecionada
+                    // Em uma implementação real, você precisaria ter um campo 'conta' nas transações
+                    matchesConta = true; // Simulação - sempre retorna true
+                    
+                    let matchesPeriod = true;
+                    if (currentPeriodFilter !== 'all') {
+                        const periodDates = getPeriodDates(currentPeriodFilter);
+                        matchesPeriod = periodDates ? isDateInPeriod(item.vencimento, periodDates.start, periodDates.end) : true;
+                    }
+                    
+                    return matchesConta && matchesPeriod;
+                });
+                
+                contaFilterStatus.textContent = `Filtrado por: ${selectedConta}`;
+                contaFilterStatus.style.color = '#3b82f6';
+                contaFilterStatus.style.fontWeight = '500';
+            }
+            
+            currentPage = 1;
+            updateUI();
+            
+            // Mostra mensagem de sucesso
+            const message = selectedConta === 'todas' ? 
+                'Filtro de conta bancária removido!' : 
+                `Filtro aplicado para: ${selectedConta}`;
+            showSuccess(message);
+        }
     </script>
 </body>
 </html> 

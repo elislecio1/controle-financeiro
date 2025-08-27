@@ -233,6 +233,32 @@ class AuthService {
     }
   }
 
+  // Login com Google
+  async signInWithGoogle(): Promise<{ success: boolean; error?: string }> {
+    try {
+      this.updateAuthState({ loading: true, error: null })
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+
+      if (error) {
+        const authError = this.formatError(error)
+        this.updateAuthState({ loading: false, error: authError.message })
+        return { success: false, error: authError.message }
+      }
+
+      return { success: true }
+    } catch (error) {
+      const errorMsg = 'Erro inesperado ao fazer login com Google'
+      this.updateAuthState({ loading: false, error: errorMsg })
+      return { success: false, error: errorMsg }
+    }
+  }
+
 
 
   // Registro de novo usuário
