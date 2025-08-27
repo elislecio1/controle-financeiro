@@ -33,13 +33,19 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
 
   const loadContasBancarias = async () => {
     try {
+      console.log('🔄 Carregando contas bancárias...');
       const contas = await supabaseService.getContas();
+      console.log('✅ Contas carregadas:', contas);
       setContasBancarias(contas);
       if (contas.length > 0) {
         setSelectedConta(contas[0].id);
+        console.log('✅ Conta selecionada:', contas[0].nome);
+      } else {
+        console.log('⚠️ Nenhuma conta bancária encontrada');
       }
     } catch (error) {
-      console.error('Erro ao carregar contas bancárias:', error);
+      console.error('❌ Erro ao carregar contas bancárias:', error);
+      alert('Erro ao carregar contas bancárias. Verifique se há contas cadastradas.');
     }
   };
 
@@ -286,13 +292,23 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
             value={selectedConta}
             onChange={(e) => setSelectedConta(e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            disabled={contasBancarias.length === 0}
           >
-            {contasBancarias.map(conta => (
-              <option key={conta.id} value={conta.id}>
-                {conta.nome} - {conta.banco}
-              </option>
-            ))}
+            {contasBancarias.length === 0 ? (
+              <option value="">Nenhuma conta bancária cadastrada</option>
+            ) : (
+              contasBancarias.map(conta => (
+                <option key={conta.id} value={conta.id}>
+                  {conta.nome} - {conta.banco}
+                </option>
+              ))
+            )}
           </select>
+          {contasBancarias.length === 0 && (
+            <p className="text-sm text-red-600 mt-1">
+              ⚠️ Cadastre pelo menos uma conta bancária antes de importar OFX
+            </p>
+          )}
         </div>
 
         {/* Prévia das Transações */}

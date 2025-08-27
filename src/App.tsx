@@ -160,12 +160,14 @@ function App() {
       const contasData = await supabaseService.getContas()
       const cartoesData = await supabaseService.getCartoes()
       const contatosData = await supabaseService.getContatos()
+      const centrosCustoData = await supabaseService.getCentrosCusto()
       
       setCategorias(categoriasData)
       setSubcategorias(subcategoriasData)
       setContas(contasData)
       setCartoes(cartoesData)
       setContatos(contatosData)
+      setCentrosCusto(centrosCustoData)
       
       // Carregar dados do Módulo 3
       const investimentosData = await supabaseService.getInvestimentos()
@@ -213,6 +215,8 @@ function App() {
       setSubcategorias([])
       setContas([])
       setCartoes([])
+      setContatos([])
+      setCentrosCusto([])
       setInvestimentos([])
     } finally {
       setLoading(false)

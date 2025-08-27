@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { SheetData, NewTransaction, Categoria, Subcategoria, Investimento, ContaBancaria, CartaoCredito, Contato } from '../types'
+import { SheetData, NewTransaction, Categoria, Subcategoria, Investimento, ContaBancaria, CartaoCredito, Contato, CentroCusto } from '../types'
 import { formatarMoeda, formatarData, parsearDataBrasileira, parsearValorBrasileiro } from '../utils/formatters'
 
 // Configurações do Supabase - App Frameworks
@@ -101,6 +101,12 @@ export interface SupabaseService {
   saveContato(contato: Omit<Contato, 'id'>): Promise<{ success: boolean; message: string; data?: Contato }>
   updateContato(id: string, data: Partial<Contato>): Promise<{ success: boolean; message: string }>
   deleteContato(id: string): Promise<{ success: boolean; message: string }>
+
+  // Métodos para Centros de Custo
+  getCentrosCusto(): Promise<CentroCusto[]>
+  saveCentroCusto(centro: Omit<CentroCusto, 'id'>): Promise<{ success: boolean; message: string; data?: CentroCusto }>
+  updateCentroCusto(id: string, data: Partial<CentroCusto>): Promise<{ success: boolean; message: string }>
+  deleteCentroCusto(id: string): Promise<{ success: boolean; message: string }>
 }
 
 class SupabaseServiceImpl implements SupabaseService {
@@ -1440,6 +1446,125 @@ class SupabaseServiceImpl implements SupabaseService {
       return {
         success: false,
         message: 'Erro ao deletar contato: ' + error.message
+      }
+    }
+  }
+
+  // Métodos para Centros de Custo
+  async getCentrosCusto(): Promise<CentroCusto[]> {
+    try {
+      console.log('📊 Buscando centros de custo no Supabase...')
+      
+      const { data, error } = await supabase
+        .from('centros_custo')
+        .select('*')
+        .eq('ativo', true)
+        .order('nome')
+
+      if (error) {
+        console.error('❌ Erro ao buscar centros de custo:', error)
+        throw new Error(`Erro ao buscar centros de custo: ${error.message}`)
+      }
+
+      console.log('✅ Centros de custo carregados:', data?.length || 0, 'registros')
+      
+      // Converter dados unknown para CentroCusto[]
+      const centrosMapeados: CentroCusto[] = (data || []).map(item => ({
+        id: String(item.id),
+        nome: String(item.nome),
+        tipo: String(item.tipo) as 'custo' | 'lucro' | 'ambos',
+        descricao: String(item.descricao || ''),
+        ativo: Boolean(item.ativo)
+      }))
+      
+      return centrosMapeados
+    } catch (error) {
+      console.error('❌ Erro ao buscar centros de custo:', error)
+      throw error
+    }
+  }
+
+  async saveCentroCusto(centro: Omit<CentroCusto, 'id'>): Promise<{ success: boolean; message: string; data?: CentroCusto }> {
+    try {
+      console.log('💾 Salvando centro de custo no Supabase...')
+      
+      const { data, error } = await supabase
+        .from('centros_custo')
+        .insert([centro])
+        .select()
+        .single()
+
+      if (error) {
+        console.error('❌ Erro ao salvar centro de custo:', error)
+        return {
+          success: false,
+          message: 'Erro ao salvar centro de custo: ' + error.message
+        }
+      }
+
+      console.log('✅ Centro de custo salvo com sucesso')
+      return {
+        success: true,
+        message: 'Centro de custo salvo com sucesso!',
+        data: data as unknown as CentroCusto
+      }
+    } catch (error: any) {
+      console.error('❌ Erro ao salvar centro de custo:', error)
+      return {
+        success: false,
+        message: 'Erro ao salvar centro de custo: ' + error.message
+      }
+    }
+  }
+
+  async updateCentroCusto(id: string, data: Partial<CentroCusto>): Promise<{ success: boolean; message: string }> {
+    try {
+      const { error } = await supabase
+        .from('centros_custo')
+        .update(data)
+        .eq('id', id)
+
+      if (error) {
+        return {
+          success: false,
+          message: 'Erro ao atualizar centro de custo: ' + error.message
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Centro de custo atualizado com sucesso!'
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Erro ao atualizar centro de custo: ' + error.message
+      }
+    }
+  }
+
+  async deleteCentroCusto(id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const { error } = await supabase
+        .from('centros_custo')
+        .delete()
+        .eq('id', id)
+
+      if (error) {
+        return {
+          success: false,
+          message: 'Erro ao deletar centro de custo: ' + error.message
+        }
+      }
+
+      return {
+        success: true,
+        message: 'Centro de custo deletado com sucesso!'
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Erro ao deletar centro de custo: ' + error.message
       }
     }
   }

@@ -113,7 +113,7 @@ export interface Subcategoria {
 export interface CentroCusto {
   id: string
   nome: string
-  tipo: 'custo' | 'lucro'
+  tipo: 'custo' | 'lucro' | 'ambos'
   descricao?: string
   ativo: boolean
 }

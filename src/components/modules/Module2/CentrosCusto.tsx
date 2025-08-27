@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Plus, Edit, Trash2, Save, X, Building, TrendingUp, TrendingDown } from 'lucide-react'
 import { CentroCusto } from '../../../types'
+import { supabaseService } from '../../../services/supabase'
 
 interface CentrosCustoProps {
   centrosCusto: CentroCusto[]
@@ -13,42 +14,77 @@ export default function CentrosCusto({
 }: CentrosCustoProps) {
   const [editingCentro, setEditingCentro] = useState<CentroCusto | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const [formData, setFormData] = useState({
     nome: '',
-    tipo: 'custo' as 'custo' | 'lucro',
+    tipo: 'custo' as 'custo' | 'lucro' | 'ambos',
     descricao: ''
   })
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.nome.trim()) return
 
-    if (editingCentro) {
-      // Editar centro existente
-      const updatedCentros = centrosCusto.map(centro =>
-        centro.id === editingCentro.id
-          ? { ...centro, ...formData }
-          : centro
-      )
-      onCentroCustoChange(updatedCentros)
-      setEditingCentro(null)
-    } else {
-      // Adicionar novo centro
-      const newCentro: CentroCusto = {
-        id: Date.now().toString(),
-        ...formData,
-        ativo: true
+    setLoading(true)
+    try {
+      if (editingCentro) {
+        // Editar centro existente
+        const result = await supabaseService.updateCentroCusto(editingCentro.id, formData)
+        if (result.success) {
+          // Recarregar dados do banco
+          const updatedCentros = await supabaseService.getCentrosCusto()
+          onCentroCustoChange(updatedCentros)
+          setEditingCentro(null)
+          setFormData({ nome: '', tipo: 'custo', descricao: '' })
+          setShowForm(false)
+        } else {
+          alert(`Erro ao atualizar: ${result.message}`)
+        }
+      } else {
+        // Adicionar novo centro
+        const result = await supabaseService.saveCentroCusto({
+          ...formData,
+          ativo: true
+        })
+        if (result.success) {
+          // Recarregar dados do banco
+          const updatedCentros = await supabaseService.getCentrosCusto()
+          onCentroCustoChange(updatedCentros)
+          setFormData({ nome: '', tipo: 'custo', descricao: '' })
+          setShowForm(false)
+        } else {
+          alert(`Erro ao salvar: ${result.message}`)
+        }
       }
-      onCentroCustoChange([...centrosCusto, newCentro])
+    } catch (error) {
+      console.error('Erro ao salvar centro de custo:', error)
+      alert('Erro ao salvar centro de custo. Tente novamente.')
+    } finally {
+      setLoading(false)
     }
-
-    setFormData({ nome: '', tipo: 'custo', descricao: '' })
-    setShowForm(false)
   }
 
-  const handleDelete = (id: string) => {
-    const updatedCentros = centrosCusto.filter(centro => centro.id !== id)
-    onCentroCustoChange(updatedCentros)
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir este centro de custo?')) {
+      return
+    }
+
+    setLoading(true)
+    try {
+      const result = await supabaseService.deleteCentroCusto(id)
+      if (result.success) {
+        // Recarregar dados do banco
+        const updatedCentros = await supabaseService.getCentrosCusto()
+        onCentroCustoChange(updatedCentros)
+      } else {
+        alert(`Erro ao excluir: ${result.message}`)
+      }
+    } catch (error) {
+      console.error('Erro ao excluir centro de custo:', error)
+      alert('Erro ao excluir centro de custo. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleEdit = (centro: CentroCusto) => {
@@ -61,12 +97,22 @@ export default function CentrosCusto({
     setShowForm(true)
   }
 
-  const getTipoIcon = (tipo: 'custo' | 'lucro') => {
-    return tipo === 'custo' ? TrendingDown : TrendingUp
+  const getTipoIcon = (tipo: 'custo' | 'lucro' | 'ambos') => {
+    if (tipo === 'custo') return TrendingDown
+    if (tipo === 'lucro') return TrendingUp
+    return Building // Ícone para "ambos"
   }
 
-  const getTipoColor = (tipo: 'custo' | 'lucro') => {
-    return tipo === 'custo' ? 'text-red-600' : 'text-green-600'
+  const getTipoColor = (tipo: 'custo' | 'lucro' | 'ambos') => {
+    if (tipo === 'custo') return 'text-red-600'
+    if (tipo === 'lucro') return 'text-green-600'
+    return 'text-purple-600' // Cor para "ambos"
+  }
+
+  const getTipoLabel = (tipo: 'custo' | 'lucro' | 'ambos') => {
+    if (tipo === 'custo') return 'Custo'
+    if (tipo === 'lucro') return 'Lucro'
+    return 'Custo e Lucro'
   }
 
   return (
@@ -80,7 +126,8 @@ export default function CentrosCusto({
             </h3>
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              disabled={loading}
+              className="flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
               <Plus className="h-4 w-4 mr-2" />
               Novo Centro
@@ -104,20 +151,22 @@ export default function CentrosCusto({
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEdit(centro)}
-                        className="text-gray-400 hover:text-gray-600"
+                        disabled={loading}
+                        className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(centro.id)}
-                        className="text-gray-400 hover:text-red-600"
+                        disabled={loading}
+                        className="text-gray-400 hover:text-red-600 disabled:opacity-50"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
                   <div className="text-sm text-gray-500">
-                    Tipo: {centro.tipo === 'custo' ? 'Custo' : 'Lucro'}
+                    Tipo: {getTipoLabel(centro.tipo)}
                   </div>
                   {centro.descricao && (
                     <div className="text-sm text-gray-500 mt-1">
@@ -171,11 +220,12 @@ export default function CentrosCusto({
                   </label>
                   <select
                     value={formData.tipo}
-                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value as 'custo' | 'lucro' })}
+                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value as 'custo' | 'lucro' | 'ambos' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="custo">Custo</option>
                     <option value="lucro">Lucro</option>
+                    <option value="ambos">Ambos (Custo e Lucro)</option>
                   </select>
                 </div>
 
@@ -200,17 +250,19 @@ export default function CentrosCusto({
                     setEditingCentro(null)
                     setFormData({ nome: '', tipo: 'custo', descricao: '' })
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  disabled={loading}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
                 >
                   <X className="h-4 w-4 mr-2 inline" />
                   Cancelar
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                  disabled={loading}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
                   <Save className="h-4 w-4 mr-2 inline" />
-                  Salvar
+                  {loading ? 'Salvando...' : 'Salvar'}
                 </button>
               </div>
             </div>
