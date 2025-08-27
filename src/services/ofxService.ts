@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 // Importar a única instância do Supabase
 import { supabase } from './supabase'
+import { supabaseService } from './supabase';
 
 export interface OFXTransaction {
   fitId: string;
@@ -174,6 +175,19 @@ class OFXService {
       return `${year}-${month}-${day}`;
     } catch (error) {
       return new Date().toISOString();
+    }
+  }
+
+  // Formatar data OFX para o formato brasileiro
+  private formatOFXDateForBrazil(dateStr: string): string {
+    try {
+      const date = new Date(dateStr);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = String(date.getFullYear());
+      return `${day}/${month}/${year}`; // Formato brasileiro DD/MM/YYYY
+    } catch (error) {
+      return dateStr; // Retorna a data original em caso de erro
     }
   }
   
@@ -413,37 +427,46 @@ class OFXService {
         return result;
       }
       
-             let importedCount = 0;
+      let importedCount = 0;
       let errorCount = 0;
-       const errors: string[] = [];
+      const errors: string[] = [];
       
       for (const transaction of ofxData.transactions) {
         try {
           console.log(`🔍 Processando transação: ${transaction.memo || transaction.name} - R$ ${transaction.amount}`);
           
-           const novaTransacao = {
-             valor: Math.abs(transaction.amount),
-             descricao: transaction.memo || transaction.name || 'Transação OFX',
-             conta: contaBancariaId,
+          // Converter a data OFX para formato brasileiro
+          const dataFormatada = this.formatOFXDateForBrazil(transaction.datePosted);
+          
+          const novaTransacao = {
+            valor: Math.abs(transaction.amount),
+            descricao: transaction.memo || transaction.name || 'Transação OFX',
+            conta: contaBancariaId,
             categoria: transaction.categoria || (transaction.amount > 0 ? 'Receitas' : 'Despesas'),
-            contato: transaction.contato || null,
+            contato: transaction.contato || undefined,
             forma: transaction.forma || 'PIX',
-             tipo: transaction.amount > 0 ? 'receita' : 'despesa',
-            vencimento: transaction.datePosted,
+            tipo: (transaction.amount > 0 ? 'receita' : 'despesa') as 'receita' | 'despesa' | 'transferencia' | 'investimento',
+            data: dataFormatada, // Usar a data formatada
+            vencimento: dataFormatada, // Usar a data formatada
             situacao: 'pago',
             status: 'pago',
-             observacoes: `OFX Import - ${transaction.fitId || 'sem ID'}`,
-             created_at: new Date().toISOString(),
-             updated_at: new Date().toISOString()
-           };
+            observacoes: `OFX Import - ${transaction.fitId || 'sem ID'}`,
+            dataCompetencia: dataFormatada, // Adicionar data de competência
+            numeroDocumento: transaction.fitId || undefined,
+            tags: ['OFX Import'],
+            projeto: undefined,
+            centro: undefined,
+            contaTransferencia: undefined,
+            cartao: undefined,
+            subcategoria: undefined
+          };
           
-          const { error: insertError } = await supabase
-            .from('transactions')
-            .insert(novaTransacao);
+          // Usar o supabaseService.saveTransaction que tem a lógica correta para datas
+          const { success, message } = await supabaseService.saveTransaction(novaTransacao);
           
-          if (insertError) {
-            console.error('❌ Erro ao inserir transação:', insertError);
-            errors.push(`Erro ao inserir: ${transaction.memo || transaction.name} - ${insertError.message}`);
+          if (!success) {
+            console.error('❌ Erro ao inserir transação:', message);
+            errors.push(`Erro ao inserir: ${transaction.memo || transaction.name} - ${message}`);
             errorCount++;
           } else {
             importedCount++;
@@ -457,12 +480,12 @@ class OFXService {
         }
       }
       
-             result.success = true;
-       result.importedCount = importedCount;
+      result.success = true;
+      result.importedCount = importedCount;
       result.errorCount = errorCount;
-       result.errors = errors;
+      result.errors = errors;
       result.message = `Importação concluída: ${importedCount} transações importadas, ${errorCount} erros`;
-       result.data = ofxData;
+      result.data = ofxData;
       result.updatedCount = 0;
       result.skippedCount = 0;
       

@@ -31,12 +31,17 @@ export default function CentrosCusto({
         // Editar centro existente
         const result = await supabaseService.updateCentroCusto(editingCentro.id, formData)
         if (result.success) {
-          // Recarregar dados do banco
-          const updatedCentros = await supabaseService.getCentrosCusto()
+          // Atualizar o estado local em vez de recarregar do banco
+          const updatedCentros = centrosCusto.map(centro => 
+            centro.id === editingCentro.id 
+              ? { ...centro, ...formData }
+              : centro
+          )
           onCentroCustoChange(updatedCentros)
           setEditingCentro(null)
           setFormData({ nome: '', tipo: 'custo', descricao: '' })
           setShowForm(false)
+          alert('Centro de custo atualizado com sucesso!')
         } else {
           alert(`Erro ao atualizar: ${result.message}`)
         }
@@ -46,12 +51,19 @@ export default function CentrosCusto({
           ...formData,
           ativo: true
         })
-        if (result.success) {
-          // Recarregar dados do banco
-          const updatedCentros = await supabaseService.getCentrosCusto()
-          onCentroCustoChange(updatedCentros)
+        if (result.success && result.data) {
+          // Adicionar o novo centro ao estado local
+          const newCentro: CentroCusto = {
+            id: result.data.id,
+            nome: formData.nome,
+            tipo: formData.tipo,
+            descricao: formData.descricao,
+            ativo: true
+          }
+          onCentroCustoChange([...centrosCusto, newCentro])
           setFormData({ nome: '', tipo: 'custo', descricao: '' })
           setShowForm(false)
+          alert('Centro de custo salvo com sucesso!')
         } else {
           alert(`Erro ao salvar: ${result.message}`)
         }
@@ -73,9 +85,10 @@ export default function CentrosCusto({
     try {
       const result = await supabaseService.deleteCentroCusto(id)
       if (result.success) {
-        // Recarregar dados do banco
-        const updatedCentros = await supabaseService.getCentrosCusto()
+        // Remover do estado local em vez de recarregar do banco
+        const updatedCentros = centrosCusto.filter(centro => centro.id !== id)
         onCentroCustoChange(updatedCentros)
+        alert('Centro de custo excluído com sucesso!')
       } else {
         alert(`Erro ao excluir: ${result.message}`)
       }
