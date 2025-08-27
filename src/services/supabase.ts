@@ -1455,6 +1455,9 @@ class SupabaseServiceImpl implements SupabaseService {
     try {
       console.log('📊 Buscando centros de custo no Supabase...')
       
+      // Verificar autenticação
+      await ensureAuthenticated()
+      
       const { data, error } = await supabase
         .from('centros_custo')
         .select('*')
@@ -1488,9 +1491,12 @@ class SupabaseServiceImpl implements SupabaseService {
     try {
       console.log('💾 Salvando centro de custo no Supabase...')
       
+      // Adicionar user_id automaticamente
+      const centroComUserId = await addUserIdToData(centro)
+      
       const { data, error } = await supabase
         .from('centros_custo')
-        .insert([centro])
+        .insert([centroComUserId])
         .select()
         .single()
 
@@ -1519,6 +1525,9 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async updateCentroCusto(id: string, data: Partial<CentroCusto>): Promise<{ success: boolean; message: string }> {
     try {
+      // Verificar autenticação
+      await ensureAuthenticated()
+      
       const { error } = await supabase
         .from('centros_custo')
         .update(data)
@@ -1545,6 +1554,9 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async deleteCentroCusto(id: string): Promise<{ success: boolean; message: string }> {
     try {
+      // Verificar autenticação
+      await ensureAuthenticated()
+      
       const { error } = await supabase
         .from('centros_custo')
         .delete()
