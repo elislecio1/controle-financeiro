@@ -427,6 +427,21 @@ class OFXService {
         return result;
       }
       
+      // Buscar o nome da conta bancária pelo ID
+      let nomeConta = 'Conta Bancária';
+      try {
+        const contas = await supabaseService.getContas();
+        const contaEncontrada = contas.find(conta => conta.id === contaBancariaId);
+        if (contaEncontrada) {
+          nomeConta = contaEncontrada.nome;
+          console.log(`🏦 Usando conta: ${nomeConta} (ID: ${contaBancariaId})`);
+        } else {
+          console.warn(`⚠️ Conta bancária com ID ${contaBancariaId} não encontrada`);
+        }
+      } catch (error) {
+        console.error('❌ Erro ao buscar conta bancária:', error);
+      }
+      
       let importedCount = 0;
       let errorCount = 0;
       const errors: string[] = [];
@@ -441,7 +456,7 @@ class OFXService {
           const novaTransacao = {
             valor: Math.abs(transaction.amount),
             descricao: transaction.memo || transaction.name || 'Transação OFX',
-            conta: contaBancariaId,
+            conta: nomeConta, // Usar o nome da conta em vez do ID
             categoria: transaction.categoria || (transaction.amount > 0 ? 'Receitas' : 'Despesas'),
             contato: transaction.contato || undefined,
             forma: transaction.forma || 'PIX',
