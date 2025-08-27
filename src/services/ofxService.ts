@@ -203,16 +203,17 @@ class OFXService {
      suggestions: any;
     }> {
      try {
+       console.log(`🔍 Verificando duplicatas para: ${transaction.memo || transaction.name} - R$ ${transaction.amount} na conta ${nomeConta}`);
+       
+       // Primeiro, buscar por transações com o mesmo valor na mesma conta
        const { data: existingTransactions, error } = await supabase
          .from('transactions')
          .select('*')
          .eq('conta', nomeConta)
-         .eq('valor', Math.abs(transaction.amount))
-         .gte('vencimento', this.subtractDays(transaction.datePosted, 7))
-         .lte('vencimento', this.addDays(transaction.datePosted, 7));
-      
-             if (error) {
-        console.error('❌ Erro ao verificar transações existentes:', error);
+         .eq('valor', Math.abs(transaction.amount));
+       
+       if (error) {
+         console.error('❌ Erro ao verificar transações existentes:', error);
          return { 
            exists: false, 
            similarTransactions: [], 
@@ -222,33 +223,106 @@ class OFXService {
          };
        }
        
-      const similarTransactions: SimilarTransaction[] = (existingTransactions || [])
-        .map(t => ({
-          id: t.id,
-          descricao: t.descricao,
-          valor: t.valor,
-          data: t.vencimento,
-          categoria: t.categoria,
-          contato: t.contato,
-          forma: t.forma
-        }))
-        .filter(t => this.isDescriptionSimilar(t.descricao, transaction.memo || transaction.name));
-
-      const exactMatch = similarTransactions.some(t => 
-        t.descricao.toLowerCase() === (transaction.memo || transaction.name).toLowerCase() &&
-        t.valor === Math.abs(transaction.amount)
-      );
-
-      const isExactDuplicate = exactMatch;
+       console.log(`📊 Encontradas ${existingTransactions?.length || 0} transações com o mesmo valor`);
+       
+       if (!existingTransactions || existingTransactions.length === 0) {
+         return {
+           exists: false,
+           similarTransactions: [],
+           exactMatch: false,
+           isExactDuplicate: false,
+           suggestions: {}
+         };
+       }
+       
+       // Mapear transações existentes
+       const mappedTransactions: SimilarTransaction[] = existingTransactions.map(t => ({
+         id: t.id,
+         descricao: t.descricao,
+         valor: t.valor,
+         data: t.vencimento,
+         categoria: t.categoria,
+         contato: t.contato,
+         forma: t.forma
+       }));
+       
+       // Verificar se há transações com descrição similar
+       const similarTransactions = mappedTransactions.filter(t => 
+         this.isDescriptionSimilar(t.descricao, transaction.memo || transaction.name)
+       );
+       
+       console.log(`🔍 Transações similares encontradas: ${similarTransactions.length}`);
+       
+       // Verificar se há transações com descrição exata
+       const exactMatch = mappedTransactions.some(t => 
+         t.descricao.toLowerCase() === (transaction.memo || transaction.name).toLowerCase()
+       );
+       
+       // Considerar como duplicata se:
+       // 1. Mesmo valor E mesma descrição (exata), OU
+       // 2. Mesmo valor E descrição similar (60% similaridade), OU  
+       // 3. Mesmo valor E data próxima (±30 dias)
+       const dataFormatada = this.formatOFXDateForBrazil(transaction.datePosted);
+       const transactionsWithSimilarDate = mappedTransactions.filter(t => {
+         const dateDiff = this.getDaysDifference(t.data, dataFormatada);
+         return Math.abs(dateDiff) <= 30; // ±30 dias
+       });
+       
+       console.log(`📅 Transações com data similar (±30 dias): ${transactionsWithSimilarDate.length}`);
+       
+       // Verificar se há transações com mesmo valor e data próxima
+       const isDuplicateByDate = transactionsWithSimilarDate.length > 0;
+       
+       // Verificar se há transações com mesmo valor e descrição similar
+       const isDuplicateByDescription = similarTransactions.length > 0;
+       
+       // Verificar se há transação com mesmo valor e descrição exata
+       const isExactDuplicate = exactMatch;
+       
+       // Lógica melhorada para detecção de duplicatas:
+       // Se há transações com mesmo valor, verificar se alguma delas é uma duplicata
+       let isDuplicate = false;
+       
+       if (mappedTransactions.length > 0) {
+         // Se há transações com mesmo valor, verificar critérios de duplicata
+         if (isExactDuplicate) {
+           // Mesmo valor + descrição exata = duplicata
+           isDuplicate = true;
+           console.log(`✅ Duplicata detectada: mesmo valor + descrição exata`);
+         } else if (isDuplicateByDescription) {
+           // Mesmo valor + descrição similar = duplicata
+           isDuplicate = true;
+           console.log(`✅ Duplicata detectada: mesmo valor + descrição similar`);
+         } else if (isDuplicateByDate) {
+           // Mesmo valor + data próxima = duplicata
+           isDuplicate = true;
+           console.log(`✅ Duplicata detectada: mesmo valor + data próxima`);
+         } else {
+           // Mesmo valor mas sem outros critérios - verificar se é realmente uma duplicata
+           // Para valores altos (> R$ 100), considerar como duplicata mesmo sem outros critérios
+           if (Math.abs(transaction.amount) > 100) {
+             isDuplicate = true;
+             console.log(`✅ Duplicata detectada: mesmo valor alto (> R$ 100) sem outros critérios`);
+           } else {
+             console.log(`⚠️ Mesmo valor encontrado, mas não considerado duplicata (valor baixo)`);
+           }
+         }
+       }
+       
+       // Retornar todas as transações com mesmo valor como candidatas
+       const allSimilarTransactions = mappedTransactions;
+       
+       console.log(`✅ Resultado: ${isDuplicate ? 'DUPLICATA ENCONTRADA' : 'NOVA TRANSAÇÃO'}`);
        
        return {
-         exists: similarTransactions.length > 0,
-         similarTransactions,
+         exists: isDuplicate,
+         similarTransactions: allSimilarTransactions, // Retornar todas as transações com mesmo valor
          exactMatch,
          isExactDuplicate,
-        suggestions: {}
+         suggestions: {}
        };
-         } catch (error) {
+       
+     } catch (error) {
        console.error('❌ Erro ao verificar transação existente:', error);
        return { 
          exists: false, 
@@ -260,14 +334,39 @@ class OFXService {
      }
    }
   
-  // Verificar similaridade entre descrições
-  private isDescriptionSimilar(desc1: string, desc2: string): boolean {
-    const clean1 = desc1.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const clean2 = desc2.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    const similarity = this.calculateSimilarity(clean1, clean2);
-    return similarity > 0.7; // 70% de similaridade
-  }
+     // Verificar similaridade entre descrições
+   private isDescriptionSimilar(desc1: string, desc2: string): boolean {
+     const clean1 = desc1.toLowerCase().replace(/[^a-z0-9]/g, '');
+     const clean2 = desc2.toLowerCase().replace(/[^a-z0-9]/g, '');
+     
+     const similarity = this.calculateSimilarity(clean1, clean2);
+     return similarity > 0.6; // Reduzido para 60% de similaridade para ser menos restritivo
+   }
+   
+   // Calcular diferença de dias entre duas datas
+   private getDaysDifference(date1: string, date2: string): number {
+     try {
+       // Converter datas do formato DD/MM/YYYY para Date
+       const parseDate = (dateStr: string) => {
+         const parts = dateStr.split('/');
+         if (parts.length === 3) {
+           return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+         }
+         return new Date(dateStr);
+       };
+       
+       const d1 = parseDate(date1);
+       const d2 = parseDate(date2);
+       
+       const diffTime = Math.abs(d2.getTime() - d1.getTime());
+       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+       
+       return diffDays;
+     } catch (error) {
+       console.error('❌ Erro ao calcular diferença de dias:', error);
+       return 999; // Retornar um valor alto para indicar que não são próximas
+     }
+   }
   
   // Calcular similaridade entre strings
   private calculateSimilarity(str1: string, str2: string): number {
