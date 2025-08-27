@@ -99,7 +99,26 @@ export const OFXImporter: React.FC<OFXImporterProps> = ({ onImportComplete }) =>
         }))
       };
 
-      const result = await ofxService.importOFXTransactions(modifiedData, selectedConta);
+      // Usar o novo método com opções de atualização
+      const result = await ofxService.importOFXTransactionsWithOptions(
+        modifiedData, 
+        selectedConta,
+        {
+          updateExisting: true, // Atualizar transações existentes
+          updateFields: [
+            'descricao', 
+            'categoria', 
+            'contato', 
+            'forma', 
+            'observacoes', 
+            'dataCompetencia', 
+            'numeroDocumento', 
+            'tags'
+          ],
+          skipDuplicates: false // Não pular duplicatas, mas atualizar
+        }
+      );
+      
       setImportResult(result);
       setStep('complete');
       

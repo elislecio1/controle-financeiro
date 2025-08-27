@@ -191,25 +191,25 @@ class OFXService {
     }
   }
   
-  // Verificar se uma transação já existe
-  async checkExistingTransaction(
-     transaction: OFXTransaction, 
-     contaBancariaId: string
-   ): Promise<{ 
-     exists: boolean; 
-     similarTransactions: SimilarTransaction[]; 
-    exactMatch: boolean;
-     isExactDuplicate: boolean;
-    suggestions: any;
-   }> {
-    try {
-      const { data: existingTransactions, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('conta', contaBancariaId)
-        .eq('valor', Math.abs(transaction.amount))
-        .gte('vencimento', this.subtractDays(transaction.datePosted, 7))
-        .lte('vencimento', this.addDays(transaction.datePosted, 7));
+     // Verificar se uma transação já existe
+   async checkExistingTransaction(
+      transaction: OFXTransaction, 
+      nomeConta: string
+    ): Promise<{ 
+      exists: boolean; 
+      similarTransactions: SimilarTransaction[]; 
+     exactMatch: boolean;
+      isExactDuplicate: boolean;
+     suggestions: any;
+    }> {
+     try {
+       const { data: existingTransactions, error } = await supabase
+         .from('transactions')
+         .select('*')
+         .eq('conta', nomeConta)
+         .eq('valor', Math.abs(transaction.amount))
+         .gte('vencimento', this.subtractDays(transaction.datePosted, 7))
+         .lte('vencimento', this.addDays(transaction.datePosted, 7));
       
              if (error) {
         console.error('❌ Erro ao verificar transações existentes:', error);
@@ -418,7 +418,9 @@ class OFXService {
         message: '',
         importedCount: 0,
         errorCount: 0,
-        errors: []
+        errors: [],
+        updatedCount: 0,
+        skippedCount: 0
       };
       
       if (ofxData.transactions.length === 0) {
@@ -444,6 +446,8 @@ class OFXService {
       
       let importedCount = 0;
       let errorCount = 0;
+      let updatedCount = 0;
+      let skippedCount = 0;
       const errors: string[] = [];
       
       for (const transaction of ofxData.transactions) {
@@ -453,39 +457,75 @@ class OFXService {
           // Converter a data OFX para formato brasileiro
           const dataFormatada = this.formatOFXDateForBrazil(transaction.datePosted);
           
-          const novaTransacao = {
-            valor: Math.abs(transaction.amount),
-            descricao: transaction.memo || transaction.name || 'Transação OFX',
-            conta: nomeConta, // Usar o nome da conta em vez do ID
-            categoria: transaction.categoria || (transaction.amount > 0 ? 'Receitas' : 'Despesas'),
-            contato: transaction.contato || undefined,
-            forma: transaction.forma || 'PIX',
-            tipo: (transaction.amount > 0 ? 'receita' : 'despesa') as 'receita' | 'despesa' | 'transferencia' | 'investimento',
-            data: dataFormatada, // Usar a data formatada
-            vencimento: dataFormatada, // Usar a data formatada
-            situacao: 'pago',
-            status: 'pago',
-            observacoes: `OFX Import - ${transaction.fitId || 'sem ID'}`,
-            dataCompetencia: dataFormatada, // Adicionar data de competência
-            numeroDocumento: transaction.fitId || undefined,
-            tags: ['OFX Import'],
-            projeto: undefined,
-            centro: undefined,
-            contaTransferencia: undefined,
-            cartao: undefined,
-            subcategoria: undefined
-          };
+          // Verificar se já existe uma transação similar
+          const existingCheck = await this.checkExistingTransaction(transaction, nomeConta);
           
-          // Usar o supabaseService.saveTransaction que tem a lógica correta para datas
-          const { success, message } = await supabaseService.saveTransaction(novaTransacao);
-          
-          if (!success) {
-            console.error('❌ Erro ao inserir transação:', message);
-            errors.push(`Erro ao inserir: ${transaction.memo || transaction.name} - ${message}`);
-            errorCount++;
+          if (existingCheck.exists && existingCheck.similarTransactions.length > 0) {
+            // Transação similar encontrada - oferecer opção de atualizar
+            const similarTransaction = existingCheck.similarTransactions[0]; // Pegar a primeira similar
+            
+            console.log(`🔄 Transação similar encontrada: ${similarTransaction.descricao} (ID: ${similarTransaction.id})`);
+            
+            // Preparar dados para atualização
+            const updateData = {
+              descricao: transaction.memo || transaction.name || 'Transação OFX',
+              categoria: transaction.categoria || (transaction.amount > 0 ? 'Receitas' : 'Despesas'),
+              contato: transaction.contato || undefined,
+              forma: transaction.forma || 'PIX',
+              observacoes: `OFX Import - ${transaction.fitId || 'sem ID'}`,
+              dataCompetencia: dataFormatada,
+              numeroDocumento: transaction.fitId || undefined,
+              tags: ['OFX Import'],
+              updated_at: new Date().toISOString()
+            };
+            
+            // Atualizar a transação existente
+            const { success, message } = await supabaseService.updateTransaction(similarTransaction.id, updateData);
+            
+            if (success) {
+              updatedCount++;
+              console.log(`✅ Transação atualizada: ${updateData.descricao}`);
+            } else {
+              console.error('❌ Erro ao atualizar transação:', message);
+              errors.push(`Erro ao atualizar: ${transaction.memo || transaction.name} - ${message}`);
+              errorCount++;
+            }
           } else {
-            importedCount++;
-            console.log(`✅ Nova transação importada: ${novaTransacao.descricao}`);
+            // Nova transação - inserir normalmente
+            const novaTransacao = {
+              valor: Math.abs(transaction.amount),
+              descricao: transaction.memo || transaction.name || 'Transação OFX',
+              conta: nomeConta, // Usar o nome da conta em vez do ID
+              categoria: transaction.categoria || (transaction.amount > 0 ? 'Receitas' : 'Despesas'),
+              contato: transaction.contato || undefined,
+              forma: transaction.forma || 'PIX',
+              tipo: (transaction.amount > 0 ? 'receita' : 'despesa') as 'receita' | 'despesa' | 'transferencia' | 'investimento',
+              data: dataFormatada, // Usar a data formatada
+              vencimento: dataFormatada, // Usar a data formatada
+              situacao: 'pago',
+              status: 'pago',
+              observacoes: `OFX Import - ${transaction.fitId || 'sem ID'}`,
+              dataCompetencia: dataFormatada, // Adicionar data de competência
+              numeroDocumento: transaction.fitId || undefined,
+              tags: ['OFX Import'],
+              projeto: undefined,
+              centro: undefined,
+              contaTransferencia: undefined,
+              cartao: undefined,
+              subcategoria: undefined
+            };
+            
+            // Usar o supabaseService.saveTransaction que tem a lógica correta para datas
+            const { success, message } = await supabaseService.saveTransaction(novaTransacao);
+            
+            if (!success) {
+              console.error('❌ Erro ao inserir transação:', message);
+              errors.push(`Erro ao inserir: ${transaction.memo || transaction.name} - ${message}`);
+              errorCount++;
+            } else {
+              importedCount++;
+              console.log(`✅ Nova transação importada: ${novaTransacao.descricao}`);
+            }
           }
           
         } catch (error) {
@@ -498,11 +538,11 @@ class OFXService {
       result.success = true;
       result.importedCount = importedCount;
       result.errorCount = errorCount;
+      result.updatedCount = updatedCount;
+      result.skippedCount = skippedCount;
       result.errors = errors;
-      result.message = `Importação concluída: ${importedCount} transações importadas, ${errorCount} erros`;
+      result.message = `Importação concluída: ${importedCount} transações importadas, ${updatedCount} atualizadas, ${errorCount} erros`;
       result.data = ofxData;
-      result.updatedCount = 0;
-      result.skippedCount = 0;
       
       console.log('✅ Importação OFX concluída:', result);
       
@@ -521,27 +561,225 @@ class OFXService {
     }
   }
   
-  // Validar arquivo OFX
-  validateOFXFile(file: File): { valid: boolean; errors: string[] } {
-    const errors: string[] = [];
-    
-    if (!file.name.toLowerCase().endsWith('.ofx')) {
-      errors.push('Arquivo deve ter extensão .ofx');
-    }
-    
-    if (file.size > 10 * 1024 * 1024) {
-      errors.push('Arquivo muito grande (máximo 10MB)');
-    }
-    
-    if (!file.type.includes('text') && file.type !== '') {
-      errors.push('Arquivo deve ser um arquivo de texto OFX válido');
-    }
-    
-    return {
-      valid: errors.length === 0,
-      errors
-    };
-  }
+     // Importar transações OFX com opções de atualização
+   async importOFXTransactionsWithOptions(
+     ofxData: OFXData, 
+     contaBancariaId: string,
+     options: {
+       updateExisting?: boolean;
+       updateFields?: string[];
+       skipDuplicates?: boolean;
+     } = {}
+   ): Promise<ImportResult> {
+     try {
+       console.log('📥 Iniciando importação de transações OFX com opções...');
+       
+       const result: ImportResult = {
+         success: false,
+         message: '',
+         importedCount: 0,
+         errorCount: 0,
+         errors: [],
+         updatedCount: 0,
+         skippedCount: 0
+       };
+       
+       if (ofxData.transactions.length === 0) {
+         result.message = 'Nenhuma transação encontrada no arquivo OFX';
+         result.success = true;
+         return result;
+       }
+       
+       // Buscar o nome da conta bancária pelo ID
+       let nomeConta = 'Conta Bancária';
+       try {
+         const contas = await supabaseService.getContas();
+         const contaEncontrada = contas.find(conta => conta.id === contaBancariaId);
+         if (contaEncontrada) {
+           nomeConta = contaEncontrada.nome;
+           console.log(`🏦 Usando conta: ${nomeConta} (ID: ${contaBancariaId})`);
+         } else {
+           console.warn(`⚠️ Conta bancária com ID ${contaBancariaId} não encontrada`);
+         }
+       } catch (error) {
+         console.error('❌ Erro ao buscar conta bancária:', error);
+       }
+       
+       let importedCount = 0;
+       let errorCount = 0;
+       let updatedCount = 0;
+       let skippedCount = 0;
+       const errors: string[] = [];
+       
+       for (const transaction of ofxData.transactions) {
+         try {
+           console.log(`🔍 Processando transação: ${transaction.memo || transaction.name} - R$ ${transaction.amount}`);
+           
+           // Converter a data OFX para formato brasileiro
+           const dataFormatada = this.formatOFXDateForBrazil(transaction.datePosted);
+           
+           // Verificar se já existe uma transação similar
+           const existingCheck = await this.checkExistingTransaction(transaction, nomeConta);
+           
+           if (existingCheck.exists && existingCheck.similarTransactions.length > 0) {
+             // Transação similar encontrada
+             const similarTransaction = existingCheck.similarTransactions[0];
+             
+             if (options.skipDuplicates) {
+               // Pular transações duplicadas
+               skippedCount++;
+               console.log(`⏭️ Transação pulada (duplicada): ${transaction.memo || transaction.name}`);
+               continue;
+             }
+             
+             if (options.updateExisting) {
+               // Atualizar transação existente
+               console.log(`🔄 Atualizando transação existente: ${similarTransaction.descricao} (ID: ${similarTransaction.id})`);
+               
+               const updateData: any = {};
+               
+               // Atualizar apenas os campos especificados ou todos os campos relevantes
+               const fieldsToUpdate = options.updateFields || [
+                 'descricao', 'categoria', 'contato', 'forma', 'observacoes', 
+                 'dataCompetencia', 'numeroDocumento', 'tags'
+               ];
+               
+               if (fieldsToUpdate.includes('descricao')) {
+                 updateData.descricao = transaction.memo || transaction.name || 'Transação OFX';
+               }
+               if (fieldsToUpdate.includes('categoria')) {
+                 updateData.categoria = transaction.categoria || (transaction.amount > 0 ? 'Receitas' : 'Despesas');
+               }
+               if (fieldsToUpdate.includes('contato')) {
+                 updateData.contato = transaction.contato || undefined;
+               }
+               if (fieldsToUpdate.includes('forma')) {
+                 updateData.forma = transaction.forma || 'PIX';
+               }
+               if (fieldsToUpdate.includes('observacoes')) {
+                 updateData.observacoes = `OFX Import - ${transaction.fitId || 'sem ID'}`;
+               }
+               if (fieldsToUpdate.includes('dataCompetencia')) {
+                 updateData.dataCompetencia = dataFormatada;
+               }
+               if (fieldsToUpdate.includes('numeroDocumento')) {
+                 updateData.numeroDocumento = transaction.fitId || undefined;
+               }
+               if (fieldsToUpdate.includes('tags')) {
+                 updateData.tags = ['OFX Import'];
+               }
+               
+               updateData.updated_at = new Date().toISOString();
+               
+               // Atualizar a transação existente
+               const { success, message } = await supabaseService.updateTransaction(similarTransaction.id, updateData);
+               
+               if (success) {
+                 updatedCount++;
+                 console.log(`✅ Transação atualizada: ${updateData.descricao || similarTransaction.descricao}`);
+               } else {
+                 console.error('❌ Erro ao atualizar transação:', message);
+                 errors.push(`Erro ao atualizar: ${transaction.memo || transaction.name} - ${message}`);
+                 errorCount++;
+               }
+             } else {
+               // Pular transação existente
+               skippedCount++;
+               console.log(`⏭️ Transação pulada (já existe): ${transaction.memo || transaction.name}`);
+             }
+           } else {
+             // Nova transação - inserir normalmente
+             const novaTransacao = {
+               valor: Math.abs(transaction.amount),
+               descricao: transaction.memo || transaction.name || 'Transação OFX',
+               conta: nomeConta,
+               categoria: transaction.categoria || (transaction.amount > 0 ? 'Receitas' : 'Despesas'),
+               contato: transaction.contato || undefined,
+               forma: transaction.forma || 'PIX',
+               tipo: (transaction.amount > 0 ? 'receita' : 'despesa') as 'receita' | 'despesa' | 'transferencia' | 'investimento',
+               data: dataFormatada,
+               vencimento: dataFormatada,
+               situacao: 'pago',
+               status: 'pago',
+               observacoes: `OFX Import - ${transaction.fitId || 'sem ID'}`,
+               dataCompetencia: dataFormatada,
+               numeroDocumento: transaction.fitId || undefined,
+               tags: ['OFX Import'],
+               projeto: undefined,
+               centro: undefined,
+               contaTransferencia: undefined,
+               cartao: undefined,
+               subcategoria: undefined
+             };
+             
+             const { success, message } = await supabaseService.saveTransaction(novaTransacao);
+             
+             if (!success) {
+               console.error('❌ Erro ao inserir transação:', message);
+               errors.push(`Erro ao inserir: ${transaction.memo || transaction.name} - ${message}`);
+               errorCount++;
+             } else {
+               importedCount++;
+               console.log(`✅ Nova transação importada: ${novaTransacao.descricao}`);
+             }
+           }
+           
+         } catch (error) {
+           console.error('❌ Erro ao processar transação:', error);
+           errors.push(`Erro ao processar: ${transaction.memo || transaction.name} - ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+           errorCount++;
+         }
+       }
+       
+       result.success = true;
+       result.importedCount = importedCount;
+       result.errorCount = errorCount;
+       result.updatedCount = updatedCount;
+       result.skippedCount = skippedCount;
+       result.errors = errors;
+       result.message = `Importação concluída: ${importedCount} transações importadas, ${updatedCount} atualizadas, ${skippedCount} puladas, ${errorCount} erros`;
+       result.data = ofxData;
+       
+       console.log('✅ Importação OFX com opções concluída:', result);
+       
+       return result;
+       
+     } catch (error) {
+       console.error('❌ Erro na importação OFX com opções:', error);
+       
+       return {
+         success: false,
+         message: `Erro na importação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+         importedCount: 0,
+         errorCount: ofxData.transactions.length,
+         errors: [error instanceof Error ? error.message : 'Erro desconhecido'],
+         updatedCount: 0,
+         skippedCount: 0
+       };
+     }
+   }
+   
+   // Validar arquivo OFX
+   validateOFXFile(file: File): { valid: boolean; errors: string[] } {
+     const errors: string[] = [];
+     
+     if (!file.name.toLowerCase().endsWith('.ofx')) {
+       errors.push('Arquivo deve ter extensão .ofx');
+     }
+     
+     if (file.size > 10 * 1024 * 1024) {
+       errors.push('Arquivo muito grande (máximo 10MB)');
+     }
+     
+     if (!file.type.includes('text') && file.type !== '') {
+       errors.push('Arquivo deve ser um arquivo de texto OFX válido');
+     }
+     
+     return {
+       valid: errors.length === 0,
+       errors
+     };
+   }
 }
 
 export const ofxService = new OFXService();
