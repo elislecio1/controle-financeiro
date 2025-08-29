@@ -150,15 +150,56 @@ export default function CadastroTransacoes({
     handleInputChange('valor', valorFormatado);
   };
 
-  // Função para formatar data no input
+  // Função para formatar data no input - VERSÃO CORRIGIDA
   const handleDateChange = (field: string, value: string) => {
-    let formattedValue = value.replace(/\D/g, '');
+    // Remove tudo que não é número
+    let numericValue = value.replace(/\D/g, '');
     
-    if (formattedValue.length >= 2) {
-      formattedValue = formattedValue.substring(0, 2) + '/' + formattedValue.substring(2);
+    // Limita a 8 dígitos (DDMMAAAA)
+    if (numericValue.length > 8) {
+      numericValue = numericValue.substring(0, 8);
     }
-    if (formattedValue.length >= 5) {
-      formattedValue = formattedValue.substring(0, 5) + '/' + formattedValue.substring(2, 6);
+    
+    let formattedValue = '';
+    
+    // Aplica formatação progressiva
+    if (numericValue.length >= 1) {
+      formattedValue = numericValue.substring(0, 1);
+    }
+    if (numericValue.length >= 2) {
+      formattedValue = numericValue.substring(0, 2);
+    }
+    if (numericValue.length >= 3) {
+      formattedValue = numericValue.substring(0, 2) + '/' + numericValue.substring(2, 3);
+    }
+    if (numericValue.length >= 4) {
+      formattedValue = numericValue.substring(0, 2) + '/' + numericValue.substring(2, 4);
+    }
+    if (numericValue.length >= 5) {
+      formattedValue = numericValue.substring(0, 2) + '/' + numericValue.substring(2, 4) + '/' + numericValue.substring(4, 5);
+    }
+    if (numericValue.length >= 6) {
+      formattedValue = numericValue.substring(0, 2) + '/' + numericValue.substring(2, 4) + '/' + numericValue.substring(4, 6);
+    }
+    if (numericValue.length >= 7) {
+      formattedValue = numericValue.substring(0, 2) + '/' + numericValue.substring(2, 4) + '/' + numericValue.substring(4, 7);
+    }
+    if (numericValue.length >= 8) {
+      formattedValue = numericValue.substring(0, 2) + '/' + numericValue.substring(2, 4) + '/' + numericValue.substring(4, 8);
+    }
+    
+    // Valida se a data é válida
+    if (formattedValue.length === 10) {
+      const [dia, mes, ano] = formattedValue.split('/');
+      const diaNum = parseInt(dia);
+      const mesNum = parseInt(mes);
+      const anoNum = parseInt(ano);
+      
+      // Validações básicas
+      if (diaNum < 1 || diaNum > 31 || mesNum < 1 || mesNum > 12 || anoNum < 1900 || anoNum > 2100) {
+        // Se a data é inválida, mantém o valor anterior
+        return;
+      }
     }
     
     handleInputChange(field, formattedValue);
