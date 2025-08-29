@@ -183,7 +183,7 @@ class SupabaseServiceImpl implements SupabaseService {
     }
   }
 
-  async saveTransaction(transaction: NewTransaction): Promise<{ success: boolean; message: string; data?: SheetData }> {
+  async saveTransaction(transaction: NewTransaction, ignoreSimilarCheck: boolean = false): Promise<{ success: boolean; message: string; data?: SheetData }> {
     try {
       console.log('💾 Salvando transação no Supabase...')
       console.log('📋 Dados recebidos:', transaction)
@@ -199,17 +199,22 @@ class SupabaseServiceImpl implements SupabaseService {
       }
       console.log('✅ Validação de campos concluída')
 
-      // Verificar se já existe transação similar
-      console.log('🔍 Verificando transação similar...')
-      const transacaoSimilar = await this.checkSimilarTransaction(transaction)
-      if (transacaoSimilar) {
-        console.log('⚠️ Transação similar encontrada:', transacaoSimilar)
-        return {
-          success: false,
-          message: `Já existe uma transação similar: ${transacaoSimilar.descricao} - ${formatarMoeda(transacaoSimilar.valor)} em ${transacaoSimilar.data}. Deseja cadastrar mesmo assim?`
+      // Verificar se já existe transação similar (apenas se não estiver ignorando)
+      if (!ignoreSimilarCheck) {
+        console.log('🔍 Verificando transação similar...')
+        const transacaoSimilar = await this.checkSimilarTransaction(transaction)
+        if (transacaoSimilar) {
+          console.log('⚠️ Transação similar encontrada:', transacaoSimilar)
+          return {
+            success: false,
+            message: `Já existe uma transação similar: ${transacaoSimilar.descricao} - ${formatarMoeda(transacaoSimilar.valor)} em ${transacaoSimilar.data}. Deseja cadastrar mesmo assim?`,
+            data: transacaoSimilar
+          }
         }
+        console.log('✅ Nenhuma transação similar encontrada')
+      } else {
+        console.log('⚠️ Ignorando verificação de transação similar')
       }
-      console.log('✅ Nenhuma transação similar encontrada')
       
       // Criar transação principal com user_id
       console.log('👤 Adicionando user_id aos dados...')

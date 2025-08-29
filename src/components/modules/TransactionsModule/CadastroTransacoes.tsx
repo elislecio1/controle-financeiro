@@ -66,6 +66,9 @@ export default function CadastroTransacoes({
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [showSimilarTransactionModal, setShowSimilarTransactionModal] = useState(false);
+  const [similarTransaction, setSimilarTransaction] = useState<any>(null);
+  const [pendingTransaction, setPendingTransaction] = useState<any>(null);
 
   // Filtrar subcategorias baseadas na categoria selecionada
   const subcategoriasFiltradas = useMemo(() => {
@@ -344,6 +347,12 @@ export default function CadastroTransacoes({
         setShowForm(false);
         setErrors({});
         alert('Transação cadastrada com sucesso! Para ver a transação na lista, navegue para a aba "Transações".');
+      } else if (result && !result.success && result.message && result.message.includes('Já existe uma transação similar')) {
+        // Transação similar encontrada - mostrar modal de confirmação
+        console.log('⚠️ Transação similar encontrada, mostrando modal de confirmação');
+        setSimilarTransaction(result.data);
+        setPendingTransaction(novaTransacao);
+        setShowSimilarTransactionModal(true);
       } else {
         console.error('❌ Erro ao salvar transação:', result?.message || 'Erro desconhecido');
         alert(`Erro ao cadastrar: ${result?.message || 'Erro desconhecido'}`);
@@ -380,6 +389,69 @@ export default function CadastroTransacoes({
       tags: []
     });
     setErrors({});
+  };
+
+  // Função para confirmar cadastro mesmo com transação similar
+  const handleConfirmSimilarTransaction = async () => {
+    if (!pendingTransaction) return;
+    
+    setLoading(true);
+    setShowSimilarTransactionModal(false);
+    
+    try {
+      // Forçar o salvamento ignorando a verificação de similaridade
+      const result = await supabaseService.saveTransaction(pendingTransaction, true); // true = ignorar verificação
+      
+      if (result && result.success && result.data) {
+        console.log('✅ Transação salva com sucesso (ignorando similaridade):', result.data);
+        
+        // Limpar formulário
+        setFormData({
+          data: '',
+          vencimento: '',
+          valor: '',
+          descricao: '',
+          conta: '',
+          categoria: '',
+          forma: '',
+          tipo: 'despesa',
+          subcategoria: '',
+          contato: '',
+          centroCusto: '',
+          projeto: '',
+          numeroDocumento: '',
+          observacoes: '',
+          dataCompetencia: '',
+          cartao: '',
+          contaTransferencia: '',
+          parcelas: '1',
+          situacao: 'pendente',
+          tags: []
+        });
+        
+        setShowForm(false);
+        setErrors({});
+        alert('Transação cadastrada com sucesso! Para ver a transação na lista, navegue para a aba "Transações".');
+      } else {
+        console.error('❌ Erro ao salvar transação:', result?.message || 'Erro desconhecido');
+        alert(`Erro ao cadastrar: ${result?.message || 'Erro desconhecido'}`);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao cadastrar transação:', error);
+      alert(`Erro ao cadastrar transação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    } finally {
+      setLoading(false);
+      setPendingTransaction(null);
+      setSimilarTransaction(null);
+    }
+  };
+
+  // Função para cancelar cadastro quando transação similar
+  const handleCancelSimilarTransaction = () => {
+    setShowSimilarTransactionModal(false);
+    setPendingTransaction(null);
+    setSimilarTransaction(null);
+    setLoading(false);
   };
 
   // Definir data atual quando o formulário é aberto
@@ -826,6 +898,59 @@ export default function CadastroTransacoes({
           </form>
         )}
       </div>
+
+      {/* Modal de Confirmação para Transação Similar */}
+      {showSimilarTransactionModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+                <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg leading-6 font-medium text-gray-900 mt-4">
+                Transação Similar Encontrada
+              </h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500">
+                  Já existe uma transação similar no sistema:
+                </p>
+                {similarTransaction && (
+                  <div className="mt-3 p-3 bg-gray-100 rounded-lg text-left">
+                    <p className="text-sm font-medium text-gray-700">
+                      {similarTransaction.descricao}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Valor: R$ {Math.abs(similarTransaction.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Data: {similarTransaction.data}
+                    </p>
+                  </div>
+                )}
+                <p className="text-sm text-gray-500 mt-3">
+                  Deseja cadastrar mesmo assim?
+                </p>
+              </div>
+              <div className="items-center px-4 py-3">
+                <button
+                  onClick={handleConfirmSimilarTransaction}
+                  className="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                >
+                  Sim
+                </button>
+                <button
+                  onClick={handleCancelSimilarTransaction}
+                  className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-24 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                >
+                  Não
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
