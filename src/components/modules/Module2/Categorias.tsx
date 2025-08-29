@@ -45,13 +45,18 @@ export default function Categorias({
       return
     }
 
+    console.log('🔄 Iniciando salvamento de categoria...')
+    console.log('📤 Dados da categoria:', categoriaForm)
+    
     setLoading(true)
     setMessage(null)
 
     try {
       if (editingCategoria) {
+        console.log('🔄 Editando categoria existente:', editingCategoria.id)
         // Editar categoria existente
         const result = await supabaseService.updateCategoria(editingCategoria.id, categoriaForm)
+        console.log('📥 Resultado do updateCategoria:', result)
         
         if (result.success) {
           const updatedCategorias = categorias.map(cat =>
@@ -66,19 +71,32 @@ export default function Categorias({
           setMessage({ type: 'error', text: result.message })
         }
       } else {
+        console.log('🔄 Adicionando nova categoria...')
         // Adicionar nova categoria
         const newCategoria: Omit<Categoria, 'id'> = {
           ...categoriaForm,
           ativo: true
         }
         
-        const result = await supabaseService.saveCategoria(newCategoria)
+        console.log('📤 Nova categoria a ser salva:', newCategoria)
         
-        if (result.success && result.data) {
+        // Usar try-catch específico para identificar o problema
+        let result;
+        try {
+          result = await supabaseService.saveCategoria(newCategoria)
+          console.log('📥 Resultado do saveCategoria:', result)
+        } catch (saveError) {
+          console.error('❌ Erro específico no saveCategoria:', saveError)
+          throw saveError
+        }
+        
+        if (result && result.success && result.data) {
+          console.log('✅ Categoria salva com sucesso:', result.data)
           onCategoriaChange([...categorias, result.data])
           setMessage({ type: 'success', text: 'Categoria salva com sucesso!' })
         } else {
-          setMessage({ type: 'error', text: result.message })
+          console.error('❌ Erro ao salvar categoria:', result?.message || 'Erro desconhecido')
+          setMessage({ type: 'error', text: result?.message || 'Erro desconhecido' })
         }
       }
 
@@ -87,12 +105,14 @@ export default function Categorias({
       
       // Notificar que uma categoria foi salva
       if (onCategoriaSaved) {
+        console.log('🔄 Chamando onCategoriaSaved...')
         onCategoriaSaved()
       }
     } catch (error: any) {
-      console.error('Erro ao salvar categoria:', error)
-      setMessage({ type: 'error', text: 'Erro ao salvar categoria. Tente novamente.' })
+      console.error('❌ Erro ao salvar categoria:', error)
+      setMessage({ type: 'error', text: `Erro ao salvar categoria: ${error.message || 'Erro desconhecido'}` })
     } finally {
+      console.log('✅ Finalizando salvamento de categoria...')
       setLoading(false)
     }
   }

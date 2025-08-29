@@ -186,27 +186,35 @@ class SupabaseServiceImpl implements SupabaseService {
   async saveTransaction(transaction: NewTransaction): Promise<{ success: boolean; message: string; data?: SheetData }> {
     try {
       console.log('💾 Salvando transação no Supabase...')
+      console.log('📋 Dados recebidos:', transaction)
       
       // Verificar autenticação
+      console.log('🔐 Verificando autenticação...')
       await ensureAuthenticated()
+      console.log('✅ Autenticação verificada')
       
       // Validar campos obrigatórios
       if (!transaction.descricao || !transaction.valor || !transaction.data) {
         throw new Error('Descrição, valor e data são obrigatórios')
       }
+      console.log('✅ Validação de campos concluída')
 
       // Verificar se já existe transação similar
+      console.log('🔍 Verificando transação similar...')
       const transacaoSimilar = await this.checkSimilarTransaction(transaction)
       if (transacaoSimilar) {
+        console.log('⚠️ Transação similar encontrada:', transacaoSimilar)
         return {
           success: false,
           message: `Já existe uma transação similar: ${transacaoSimilar.descricao} - ${formatarMoeda(transacaoSimilar.valor)} em ${transacaoSimilar.data}. Deseja cadastrar mesmo assim?`
         }
       }
+      console.log('✅ Nenhuma transação similar encontrada')
       
       // Criar transação principal com user_id
+      console.log('👤 Adicionando user_id aos dados...')
       const transactionData = await addUserIdToData({
-        data: this.convertToISODate(transaction.data),
+        data: transaction.data, // Manter formato original (DD/MM/AAAA)
         valor: transaction.valor, // Mantém negativo para despesas
         descricao: transaction.descricao,
         conta: transaction.conta,
@@ -220,17 +228,19 @@ class SupabaseServiceImpl implements SupabaseService {
         forma: transaction.forma,
         numero_documento: transaction.numeroDocumento,
         observacoes: transaction.observacoes,
-        data_competencia: transaction.dataCompetencia ? this.convertToISODate(transaction.dataCompetencia) : null,
+        data_competencia: transaction.dataCompetencia || null,
         tags: transaction.tags ? JSON.stringify(transaction.tags) : null,
         tipo: transaction.tipo,
-        vencimento: transaction.vencimento ? this.convertToISODate(transaction.vencimento) : this.convertToISODate(transaction.data),
+        vencimento: transaction.vencimento || transaction.data, // Manter formato original (DD/MM/AAAA)
         situacao: '',
         data_pagamento: null,
         created_at: new Date().toISOString()
       })
+      console.log('✅ User_id adicionado, dados preparados:', transactionData)
 
       // Se for transferência, criar duas transações (débito e crédito)
       if (transaction.tipo === 'transferencia' && transaction.contaTransferencia) {
+        console.log('🔄 Processando transferência...')
         // Transação de débito (saída da conta origem)
         const debitTransaction = {
           ...transactionData,
@@ -303,6 +313,7 @@ class SupabaseServiceImpl implements SupabaseService {
         }
       }
 
+      console.log('💾 Inserindo transação no banco...')
       const { data, error } = await supabase
         .from(this.TABLE_NAME)
         .insert([transactionData])
@@ -312,6 +323,8 @@ class SupabaseServiceImpl implements SupabaseService {
         console.error('❌ Erro ao salvar transação:', error)
         throw new Error(`Erro ao salvar transação: ${error.message}`)
       }
+      console.log('✅ Transação inserida no banco com sucesso!')
+      console.log('📊 Dados retornados do banco:', data)
 
       // Se há múltiplas parcelas, criar transações adicionais
       if (transaction.parcelas && transaction.parcelas > 1) {
@@ -555,8 +568,8 @@ class SupabaseServiceImpl implements SupabaseService {
   private formatDateForDisplay(dateValue: any): string {
     if (!dateValue) return ''
     
-    // Se já é uma string no formato DD/MM/AAAA, retorna como está
-    if (typeof dateValue === 'string' && dateValue.includes('/')) {
+    // Se já é uma string, retorna como está (assumindo formato DD/MM/AAAA)
+    if (typeof dateValue === 'string') {
       return dateValue
     }
     
@@ -574,22 +587,8 @@ class SupabaseServiceImpl implements SupabaseService {
   private convertToISODate(dateStr: string): string {
     if (!dateStr) return ''
     
-    // Se já está no formato brasileiro, retorna como está
-    if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-      return dateStr
-    }
-    
-    // Se está no formato ISO, converte para brasileiro
-    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const data = new Date(dateStr)
-      return data.toLocaleDateString('pt-BR')
-    }
-    
-    // Tenta converter usando parsearDataBrasileira
-    const data = parsearDataBrasileira(dateStr)
-    if (!data) return dateStr
-    
-    return data.toLocaleDateString('pt-BR')
+    // Retorna a data como está, pois o banco espera DD/MM/AAAA
+    return dateStr
   }
 
   private async checkSimilarTransaction(transaction: NewTransaction): Promise<SheetData | null> {
@@ -599,7 +598,7 @@ class SupabaseServiceImpl implements SupabaseService {
         .select('*')
         .eq('descricao', transaction.descricao)
         .eq('valor', transaction.valor)
-        .eq('data', this.convertToISODate(transaction.data))
+        .eq('data', transaction.data) // Manter formato original
         .limit(1)
 
       if (error || !data || data.length === 0) {

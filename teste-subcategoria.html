@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Campo Subcategoria</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group select:disabled {
+            background-color: #f5f5f5;
+            color: #999;
+        }
+        .info-box {
+            background-color: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .error {
+            color: #d32f2f;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .success {
+            color: #388e3c;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Teste Campo Subcategoria</h1>
+        
+        <div class="info-box">
+            <h3>ℹ️ Informações do Teste</h3>
+            <p><strong>Status:</strong> ✅ Campo implementado e funcionando</p>
+            <p><strong>Localização:</strong> Quarta linha do formulário, após o campo Categoria</p>
+            <p><strong>Funcionalidade:</strong> Filtra automaticamente baseado na categoria selecionada</p>
+        </div>
+
+        <h2>📋 Formulário de Teste</h2>
+        
+        <form>
+            <!-- Primeira linha -->
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Tipo *</label>
+                    <select id="tipo" onchange="filtrarCategorias()">
+                        <option value="">Selecione o tipo</option>
+                        <option value="despesa">Despesa</option>
+                        <option value="receita">Receita</option>
+                        <option value="transferencia">Transferência</option>
+                        <option value="investimento">Investimento</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Data *</label>
+                    <input type="text" placeholder="DD/MM/AAAA" maxlength="10">
+                </div>
+            </div>
+
+            <!-- Segunda linha -->
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Valor *</label>
+                    <input type="text" placeholder="0,00">
+                </div>
+                <div class="form-group">
+                    <label>Descrição *</label>
+                    <input type="text" placeholder="Descrição da transação">
+                </div>
+            </div>
+
+            <!-- Terceira linha -->
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Conta *</label>
+                    <select>
+                        <option value="">Selecione uma conta</option>
+                        <option value="conta1">Conta Corrente - Banco A</option>
+                        <option value="conta2">Poupança - Banco B</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Forma de Pagamento *</label>
+                    <select>
+                        <option value="">Selecione a forma</option>
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="cartao">Cartão</option>
+                        <option value="pix">PIX</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- QUARTA LINHA - CATEGORIA E SUBCATEGORIA -->
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Categoria *</label>
+                    <select id="categoria" onchange="filtrarSubcategorias()">
+                        <option value="">Selecione uma categoria</option>
+                        <option value="alimentacao">Alimentação</option>
+                        <option value="transporte">Transporte</option>
+                        <option value="saude">Saúde</option>
+                        <option value="educacao">Educação</option>
+                        <option value="lazer">Lazer</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Subcategoria</label>
+                    <select id="subcategoria" disabled>
+                        <option value="">Selecione uma subcategoria (opcional)</option>
+                        <!-- Opções serão preenchidas dinamicamente -->
+                    </select>
+                    <div id="subcategoria-info" class="success" style="display: none;">
+                        Subcategorias disponíveis para esta categoria
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quinta linha -->
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Centro de Custo</label>
+                    <select>
+                        <option value="">Selecione um centro de custo</option>
+                        <option value="centro1">Centro A (Custo)</option>
+                        <option value="centro2">Centro B (Lucro)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Projeto</label>
+                    <input type="text" placeholder="Nome do projeto">
+                </div>
+            </div>
+
+            <!-- Sexta linha -->
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Cliente/Fornecedor</label>
+                    <input type="text" placeholder="Nome do cliente ou fornecedor">
+                </div>
+                <div class="form-group">
+                    <label>Número do Documento</label>
+                    <input type="text" placeholder="NF, recibo, etc.">
+                </div>
+            </div>
+
+            <!-- Sétima linha -->
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Data de Competência</label>
+                    <input type="text" placeholder="DD/MM/AAAA" maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label>Cartão</label>
+                    <select>
+                        <option value="">Selecione um cartão</option>
+                        <option value="cartao1">Cartão A - Banco X</option>
+                        <option value="cartao2">Cartão B - Banco Y</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Oitava linha -->
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Parcelas</label>
+                    <input type="number" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Situação</label>
+                    <select>
+                        <option value="pendente">Pendente</option>
+                        <option value="pago">Pago</option>
+                        <option value="vencido">Vencido</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Observações -->
+            <div class="form-group">
+                <label>Observações</label>
+                <textarea rows="3" placeholder="Observações adicionais..."></textarea>
+            </div>
+
+            <button type="submit" style="background: #3b82f6; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer;">
+                Salvar Transação
+            </button>
+        </form>
+
+        <div class="info-box">
+            <h3>🔍 Debug do Campo Subcategoria</h3>
+            <p><strong>Categoria selecionada:</strong> <span id="categoria-selecionada">Nenhuma</span></p>
+            <p><strong>Subcategorias filtradas:</strong> <span id="subcategorias-filtradas">0</span></p>
+            <p><strong>Campo habilitado:</strong> <span id="campo-habilitado">Não</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Dados simulados de subcategorias
+        const subcategoriasData = {
+            alimentacao: [
+                { id: 1, nome: 'Supermercado' },
+                { id: 2, nome: 'Restaurante' },
+                { id: 3, nome: 'Delivery' },
+                { id: 4, nome: 'Padaria' }
+            ],
+            transporte: [
+                { id: 5, nome: 'Combustível' },
+                { id: 6, nome: 'Ônibus/Metrô' },
+                { id: 7, nome: 'Táxi/Uber' },
+                { id: 8, nome: 'Manutenção' }
+            ],
+            saude: [
+                { id: 9, nome: 'Médico' },
+                { id: 10, nome: 'Farmácia' },
+                { id: 11, nome: 'Exames' },
+                { id: 12, nome: 'Plano de Saúde' }
+            ],
+            educacao: [
+                { id: 13, nome: 'Escola/Universidade' },
+                { id: 14, nome: 'Cursos' },
+                { id: 15, nome: 'Livros' },
+                { id: 16, nome: 'Material Escolar' }
+            ],
+            lazer: [
+                { id: 17, nome: 'Cinema' },
+                { id: 18, nome: 'Teatro' },
+                { id: 19, nome: 'Viagens' },
+                { id: 20, nome: 'Hobbies' }
+            ]
+        };
+
+        function filtrarCategorias() {
+            const tipo = document.getElementById('tipo').value;
+            const categoriaSelect = document.getElementById('categoria');
+            
+            // Limpar categoria e subcategoria quando tipo muda
+            categoriaSelect.value = '';
+            filtrarSubcategorias();
+            
+            // Aqui você pode implementar filtro por tipo se necessário
+            console.log('Tipo selecionado:', tipo);
+        }
+
+        function filtrarSubcategorias() {
+            const categoria = document.getElementById('categoria').value;
+            const subcategoriaSelect = document.getElementById('subcategoria');
+            const infoDiv = document.getElementById('subcategoria-info');
+            
+            // Atualizar debug
+            document.getElementById('categoria-selecionada').textContent = categoria || 'Nenhuma';
+            
+            if (categoria && subcategoriasData[categoria]) {
+                const subcategorias = subcategoriasData[categoria];
+                
+                // Limpar opções existentes
+                subcategoriaSelect.innerHTML = '<option value="">Selecione uma subcategoria (opcional)</option>';
+                
+                // Adicionar novas opções
+                subcategorias.forEach(sub => {
+                    const option = document.createElement('option');
+                    option.value = sub.id;
+                    option.textContent = sub.nome;
+                    subcategoriaSelect.appendChild(option);
+                });
+                
+                // Habilitar campo
+                subcategoriaSelect.disabled = false;
+                infoDiv.style.display = 'block';
+                infoDiv.textContent = `${subcategorias.length} subcategorias disponíveis para esta categoria`;
+                
+                // Atualizar debug
+                document.getElementById('subcategorias-filtradas').textContent = subcategorias.length;
+                document.getElementById('campo-habilitado').textContent = 'Sim';
+                
+            } else {
+                // Desabilitar campo
+                subcategoriaSelect.disabled = true;
+                subcategoriaSelect.innerHTML = '<option value="">Selecione uma subcategoria (opcional)</option>';
+                infoDiv.style.display = 'none';
+                
+                // Atualizar debug
+                document.getElementById('subcategorias-filtradas').textContent = '0';
+                document.getElementById('campo-habilitado').textContent = 'Não';
+            }
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ Teste do campo Subcategoria carregado com sucesso!');
+            console.log('🔍 O campo está na QUARTA LINHA do formulário, após o campo Categoria');
+            console.log('📋 Funcionalidades implementadas:');
+            console.log('   - Filtro automático baseado na categoria selecionada');
+            console.log('   - Campo habilitado/desabilitado dinamicamente');
+            console.log('   - Mensagens informativas');
+        });
+    </script>
+</body>
+</html>

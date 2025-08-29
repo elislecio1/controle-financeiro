@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Plus, 
   Save, 
@@ -9,9 +9,16 @@ import {
   User,
   Building,
   CreditCard,
-  Tag
+  Tag,
+  Target,
+  MapPin,
+  Briefcase,
+  Hash,
+  Clock
 } from 'lucide-react';
 import { supabaseService } from '../../../services/supabase';
+import { parsearValorBrasileiro, parsearDataBrasileira, formatarData } from '../../../utils/formatters';
+import ContatoSelector from '../../ContatoSelector';
 
 interface CadastroTransacoesProps {
   categorias: any[];
@@ -31,111 +38,278 @@ export default function CadastroTransacoes({
   onDataChange
 }: CadastroTransacoesProps) {
   const [formData, setFormData] = useState({
+    // Campos obrigatórios
     data: '',
+    vencimento: '',
     valor: '',
     descricao: '',
     conta: '',
-    contaTransferencia: '',
-    cartao: '',
     categoria: '',
+    forma: '',
+    tipo: 'despesa' as 'receita' | 'despesa' | 'transferencia' | 'investimento',
+    
+    // Campos opcionais
     subcategoria: '',
     contato: '',
-    centro: '',
+    centroCusto: '',
     projeto: '',
-    forma: '',
     numeroDocumento: '',
     observacoes: '',
     dataCompetencia: '',
-    tags: [] as string[],
-    tipo: 'despesa' as 'receita' | 'despesa' | 'transferencia' | 'investimento',
-    vencimento: '',
+    cartao: '',
+    contaTransferencia: '',
     parcelas: '1',
-    situacao: 'pendente'
+    situacao: 'pendente',
+    tags: [] as string[]
   });
 
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+
+  // Filtrar subcategorias baseadas na categoria selecionada
+  const subcategoriasFiltradas = useMemo(() => {
+    if (!formData.categoria) return [];
+    const categoriaSelecionada = categorias.find(cat => cat.nome === formData.categoria);
+    if (!categoriaSelecionada) return [];
+    return subcategorias.filter(sub => sub.categoriaId === categoriaSelecionada.id);
+  }, [formData.categoria, categorias, subcategorias]);
+
+  // Filtrar contas baseadas no tipo de transação
+  const contasFiltradas = useMemo(() => {
+    if (formData.tipo === 'transferencia') {
+      return contas.filter(conta => conta.nome !== formData.conta);
+    }
+    return contas;
+  }, [formData.tipo, formData.conta, contas]);
+
+  // Filtrar categorias baseadas no tipo de transação
+  const categoriasFiltradas = useMemo(() => {
+    return categorias.filter(cat => 
+      cat.tipo === formData.tipo || cat.tipo === 'ambos'
+    );
+  }, [formData.tipo, categorias]);
+
+  // Função para formatar valor monetário brasileiro
+  const formatarValorBrasileiro = (valor: string): string => {
+    let valorLimpo = valor.replace(/[R$\s]/g, '');
+    
+    if (!valorLimpo) return '';
+    
+    const isNegativo = valorLimpo.startsWith('-');
+    if (isNegativo) {
+      valorLimpo = valorLimpo.substring(1);
+    }
+    
+    if (valorLimpo.includes(',')) {
+      valorLimpo = valorLimpo.replace(/\./g, '').replace(',', '.');
+    } else if (valorLimpo.includes('.')) {
+      const partes = valorLimpo.split('.');
+      if (partes.length === 2 && partes[1].length <= 2) {
+        valorLimpo = valorLimpo;
+      } else {
+        valorLimpo = valorLimpo.replace(/\./g, '');
+      }
+    }
+    
+    const numero = parseFloat(valorLimpo);
+    if (isNaN(numero)) return '';
+    
+    const valorFinal = isNegativo ? -numero : numero;
+    
+    return valorFinal.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  // Função para formatar valor automaticamente durante a digitação
+  const formatarValorDuranteDigitacao = (valor: string): string => {
+    const numeros = valor.replace(/\D/g, '');
+    
+    if (numeros === '') return '';
+    
+    const valorNumerico = parseInt(numeros) / 100;
+    
+    return valorNumerico.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  // Função para lidar com mudança no campo valor
+  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    
+    if (!inputValue.trim()) {
+      handleInputChange('valor', '');
+      return;
+    }
+    
+    const valorFormatado = formatarValorDuranteDigitacao(inputValue);
+    handleInputChange('valor', valorFormatado);
+  };
+
+  // Função para formatar data no input
+  const handleDateChange = (field: string, value: string) => {
+    let formattedValue = value.replace(/\D/g, '');
+    
+    if (formattedValue.length >= 2) {
+      formattedValue = formattedValue.substring(0, 2) + '/' + formattedValue.substring(2);
+    }
+    if (formattedValue.length >= 5) {
+      formattedValue = formattedValue.substring(0, 5) + '/' + formattedValue.substring(2, 6);
+    }
+    
+    handleInputChange(field, formattedValue);
+  };
+
+  // Função para validar campos obrigatórios
+  const validateForm = (): boolean => {
+    const newErrors: {[key: string]: string} = {};
+    
+    if (!formData.descricao.trim()) {
+      newErrors.descricao = 'Descrição é obrigatória';
+    }
+    
+    if (!formData.valor.trim()) {
+      newErrors.valor = 'Valor é obrigatório';
+    }
+    
+    if (!formData.vencimento.trim()) {
+      newErrors.vencimento = 'Data de vencimento é obrigatória';
+    }
+    
+    if (!formData.conta) {
+      newErrors.conta = 'Conta é obrigatória';
+    }
+    
+    if (!formData.categoria) {
+      newErrors.categoria = 'Categoria é obrigatória';
+    }
+    
+    if (!formData.forma) {
+      newErrors.forma = 'Forma de pagamento é obrigatória';
+    }
+    
+    // Validação específica para transferências
+    if (formData.tipo === 'transferencia' && !formData.contaTransferencia) {
+      newErrors.contaTransferencia = 'Conta de destino é obrigatória para transferências';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+    
+    // Limpar erro do campo quando usuário começa a digitar
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
+    
+    // Limpar subcategoria quando categoria muda
+    if (field === 'categoria') {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+        subcategoria: ''
+      }));
+    }
+    
+    // Limpar conta de transferência quando tipo muda
+    if (field === 'tipo') {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+        contaTransferencia: ''
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.descricao || !formData.valor || !formData.data) {
-      alert('Por favor, preencha os campos obrigatórios (Descrição, Valor e Data)');
+    if (!validateForm()) {
       return;
     }
 
     setLoading(true);
+    
     try {
+      // Obter data atual para o campo data se não foi preenchida
+      const dataAtual = formData.data || new Date().toLocaleDateString('pt-BR');
+      
       const novaTransacao = {
-        data: formData.data,
-        valor: parseFloat(formData.valor),
+        data: dataAtual,
+        valor: parsearValorBrasileiro(formData.valor),
         descricao: formData.descricao,
         conta: formData.conta,
-        contaTransferencia: formData.contaTransferencia || undefined,
-        cartao: formData.cartao || undefined,
         categoria: formData.categoria,
         subcategoria: formData.subcategoria || undefined,
         contato: formData.contato || undefined,
-        centro: formData.centro || undefined,
+        centro: formData.centroCusto || undefined,
         projeto: formData.projeto || undefined,
         forma: formData.forma,
         numeroDocumento: formData.numeroDocumento || undefined,
         observacoes: formData.observacoes || undefined,
         dataCompetencia: formData.dataCompetencia || undefined,
-        tags: formData.tags.length > 0 ? formData.tags : undefined,
+        cartao: formData.cartao || undefined,
+        contaTransferencia: formData.contaTransferencia || undefined,
         tipo: formData.tipo,
-        vencimento: formData.vencimento || formData.data,
+        vencimento: formData.vencimento,
         parcelas: parseInt(formData.parcelas),
-        situacao: formData.situacao,
-        status: formData.situacao
+        tags: formData.tags.length > 0 ? formData.tags : undefined
       };
 
-      const { success, message, data } = await supabaseService.saveTransaction(novaTransacao);
+      console.log('📤 Enviando transação:', novaTransacao);
 
-      if (success && data) {
-        // Atualizar dados locais
-        const currentData = await supabaseService.getTransactions();
-        onDataChange(currentData);
+      const result = await supabaseService.saveTransaction(novaTransacao);
+
+      if (result && result.success && result.data) {
+        console.log('✅ Transação salva com sucesso:', result.data);
         
         // Limpar formulário
         setFormData({
           data: '',
+          vencimento: '',
           valor: '',
           descricao: '',
           conta: '',
-          contaTransferencia: '',
-          cartao: '',
           categoria: '',
+          forma: '',
+          tipo: 'despesa',
           subcategoria: '',
           contato: '',
-          centro: '',
+          centroCusto: '',
           projeto: '',
-          forma: '',
           numeroDocumento: '',
           observacoes: '',
           dataCompetencia: '',
-          tags: [],
-          tipo: 'despesa',
-          vencimento: '',
+          cartao: '',
+          contaTransferencia: '',
           parcelas: '1',
-          situacao: 'pendente'
+          situacao: 'pendente',
+          tags: []
         });
         
         setShowForm(false);
-        alert('Transação cadastrada com sucesso!');
+        setErrors({});
+        alert('Transação cadastrada com sucesso! Para ver a transação na lista, navegue para a aba "Transações".');
       } else {
-        alert(`Erro ao cadastrar: ${message}`);
+        console.error('❌ Erro ao salvar transação:', result?.message || 'Erro desconhecido');
+        alert(`Erro ao cadastrar: ${result?.message || 'Erro desconhecido'}`);
       }
     } catch (error) {
-      console.error('Erro ao cadastrar transação:', error);
-      alert('Erro ao cadastrar transação. Tente novamente.');
+      console.error('❌ Erro ao cadastrar transação:', error);
+      alert(`Erro ao cadastrar transação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setLoading(false);
     }
@@ -144,39 +318,36 @@ export default function CadastroTransacoes({
   const handleClearForm = () => {
     setFormData({
       data: '',
+      vencimento: '',
       valor: '',
       descricao: '',
       conta: '',
-      contaTransferencia: '',
-      cartao: '',
       categoria: '',
+      forma: '',
+      tipo: 'despesa',
       subcategoria: '',
       contato: '',
-      centro: '',
+      centroCusto: '',
       projeto: '',
-      forma: '',
       numeroDocumento: '',
       observacoes: '',
       dataCompetencia: '',
-      tags: [],
-      tipo: 'despesa',
-      vencimento: '',
+      cartao: '',
+      contaTransferencia: '',
       parcelas: '1',
-      situacao: 'pendente'
+      situacao: 'pendente',
+      tags: []
     });
+    setErrors({});
   };
 
-  const formatarData = (data: string) => {
-    if (!data) return '';
-    const [year, month, day] = data.split('-');
-    return `${day}/${month}/${year}`;
-  };
-
-  const parsearData = (data: string) => {
-    if (!data) return '';
-    const [day, month, year] = data.split('/');
-    return `${year}-${month}-${day}`;
-  };
+  // Definir data atual quando o formulário é aberto
+  useEffect(() => {
+    if (showForm && !formData.data) {
+      const hoje = new Date().toLocaleDateString('pt-BR');
+      setFormData(prev => ({ ...prev, data: hoje }));
+    }
+  }, [showForm]);
 
   return (
     <div className="space-y-6">
@@ -185,7 +356,7 @@ export default function CadastroTransacoes({
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
             <Plus className="h-5 w-5 text-gray-600" />
-            Cadastro de Transações
+            + Cadastro de Transações
           </h3>
           <button
             onClick={() => setShowForm(!showForm)}
@@ -211,38 +382,8 @@ export default function CadastroTransacoes({
 
         {showForm && (
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Informações Básicas */}
+            {/* Primeira linha - Tipo, Data e Vencimento */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <Calendar className="h-4 w-4 inline mr-1" />
-                  Data *
-                </label>
-                <input
-                  type="date"
-                  value={formData.data}
-                  onChange={(e) => handleInputChange('data', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <DollarSign className="h-4 w-4 inline mr-1" />
-                  Valor *
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.valor}
-                  onChange={(e) => handleInputChange('valor', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="0,00"
-                  required
-                />
-              </div>
-              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   <Tag className="h-4 w-4 inline mr-1" />
@@ -260,25 +401,86 @@ export default function CadastroTransacoes({
                   <option value="investimento">Investimento</option>
                 </select>
               </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Calendar className="h-4 w-4 inline mr-1" />
+                  Data *
+                </label>
+                <input
+                  type="text"
+                  value={formData.data}
+                  onChange={(e) => handleDateChange('data', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.data ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="DD/MM/AAAA"
+                  maxLength={10}
+                  required
+                />
+                {errors.data && <p className="mt-1 text-xs text-red-600">{errors.data}</p>}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Clock className="h-4 w-4 inline mr-1" />
+                  Vencimento *
+                </label>
+                <input
+                  type="text"
+                  value={formData.vencimento}
+                  onChange={(e) => handleDateChange('vencimento', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.vencimento ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="DD/MM/AAAA"
+                  maxLength={10}
+                  required
+                />
+                {errors.vencimento && <p className="mt-1 text-xs text-red-600">{errors.vencimento}</p>}
+              </div>
             </div>
 
-            {/* Descrição */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                <FileText className="h-4 w-4 inline mr-1" />
-                Descrição *
-              </label>
-              <input
-                type="text"
-                value={formData.descricao}
-                onChange={(e) => handleInputChange('descricao', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Descrição da transação"
-                required
-              />
+            {/* Segunda linha - Valor e Descrição */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <DollarSign className="h-4 w-4 inline mr-1" />
+                  Valor *
+                </label>
+                <input
+                  type="text"
+                  value={formData.valor}
+                  onChange={handleValorChange}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.valor ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="0,00"
+                  required
+                />
+                {errors.valor && <p className="mt-1 text-xs text-red-600">{errors.valor}</p>}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <FileText className="h-4 w-4 inline mr-1" />
+                  Descrição *
+                </label>
+                <input
+                  type="text"
+                  value={formData.descricao}
+                  onChange={(e) => handleInputChange('descricao', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.descricao ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Descrição da transação"
+                  required
+                />
+                {errors.descricao && <p className="mt-1 text-xs text-red-600">{errors.descricao}</p>}
+              </div>
             </div>
 
-            {/* Conta e Categoria */}
+            {/* Terceira linha - Conta e Forma de Pagamento */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -288,7 +490,9 @@ export default function CadastroTransacoes({
                 <select
                   value={formData.conta}
                   onChange={(e) => handleInputChange('conta', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.conta ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   required
                 >
                   <option value="">Selecione uma conta</option>
@@ -298,43 +502,7 @@ export default function CadastroTransacoes({
                     </option>
                   ))}
                 </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <Tag className="h-4 w-4 inline mr-1" />
-                  Categoria *
-                </label>
-                <select
-                  value={formData.categoria}
-                  onChange={(e) => handleInputChange('categoria', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                >
-                  <option value="">Selecione uma categoria</option>
-                  {categorias.map(categoria => (
-                    <option key={categoria.id} value={categoria.nome}>
-                      {categoria.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Contato e Forma de Pagamento */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <User className="h-4 w-4 inline mr-1" />
-                  Cliente/Fornecedor
-                </label>
-                <input
-                  type="text"
-                  value={formData.contato}
-                  onChange={(e) => handleInputChange('contato', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Nome do cliente ou fornecedor"
-                />
+                {errors.conta && <p className="mt-1 text-xs text-red-600">{errors.conta}</p>}
               </div>
               
               <div>
@@ -345,7 +513,9 @@ export default function CadastroTransacoes({
                 <select
                   value={formData.forma}
                   onChange={(e) => handleInputChange('forma', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.forma ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   required
                 >
                   <option value="">Selecione a forma de pagamento</option>
@@ -357,23 +527,191 @@ export default function CadastroTransacoes({
                   <option value="Boleto">Boleto</option>
                   <option value="Cheque">Cheque</option>
                 </select>
+                {errors.forma && <p className="mt-1 text-xs text-red-600">{errors.forma}</p>}
               </div>
             </div>
 
-            {/* Campos Opcionais */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Quarta linha - Categoria e Subcategoria */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Vencimento
+                  <Tag className="h-4 w-4 inline mr-1" />
+                  Categoria *
+                </label>
+                <select
+                  value={formData.categoria}
+                  onChange={(e) => handleInputChange('categoria', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.categoria ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  required
+                >
+                  <option value="">Selecione uma categoria</option>
+                  {categoriasFiltradas.map(categoria => (
+                    <option key={categoria.id} value={categoria.nome}>
+                      {categoria.nome}
+                    </option>
+                  ))}
+                </select>
+                {errors.categoria && <p className="mt-1 text-xs text-red-600">{errors.categoria}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Tag className="h-4 w-4 inline mr-1" />
+                  Subcategoria
+                </label>
+                <select
+                  value={formData.subcategoria}
+                  onChange={(e) => handleInputChange('subcategoria', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!formData.categoria}
+                >
+                  <option value="">Selecione uma subcategoria (opcional)</option>
+                  {subcategoriasFiltradas.map(subcategoria => (
+                    <option key={subcategoria.id} value={subcategoria.nome}>
+                      {subcategoria.nome}
+                    </option>
+                  ))}
+                </select>
+                {formData.categoria && subcategoriasFiltradas.length === 0 && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Nenhuma subcategoria disponível para esta categoria
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Quinta linha - Centro de Custo e Projeto */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Target className="h-4 w-4 inline mr-1" />
+                  Centro de Custo
+                </label>
+                <select
+                  value={formData.centroCusto}
+                  onChange={(e) => handleInputChange('centroCusto', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Selecione um centro de custo</option>
+                  {centrosCusto.map(centro => (
+                    <option key={centro.id} value={centro.nome}>
+                      {centro.nome} ({centro.tipo})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Briefcase className="h-4 w-4 inline mr-1" />
+                  Projeto
                 </label>
                 <input
-                  type="date"
-                  value={formData.vencimento}
-                  onChange={(e) => handleInputChange('vencimento', e.target.value)}
+                  type="text"
+                  value={formData.projeto}
+                  onChange={(e) => handleInputChange('projeto', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Nome do projeto"
+                />
+              </div>
+            </div>
+
+            {/* Sexta linha - Contato e Número do Documento */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <User className="h-4 w-4 inline mr-1" />
+                  Cliente/Fornecedor
+                </label>
+                <ContatoSelector
+                  value={formData.contato}
+                  onChange={(contato) => handleInputChange('contato', contato)}
+                  placeholder="Nome do cliente ou fornecedor"
                 />
               </div>
               
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Hash className="h-4 w-4 inline mr-1" />
+                  Número do Documento
+                </label>
+                <input
+                  type="text"
+                  value={formData.numeroDocumento}
+                  onChange={(e) => handleInputChange('numeroDocumento', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Número da nota fiscal, recibo, etc."
+                />
+              </div>
+            </div>
+
+            {/* Sétima linha - Conta de Transferência (se aplicável) */}
+            {formData.tipo === 'transferencia' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <MapPin className="h-4 w-4 inline mr-1" />
+                  Conta de Destino *
+                </label>
+                <select
+                  value={formData.contaTransferencia}
+                  onChange={(e) => handleInputChange('contaTransferencia', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.contaTransferencia ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  required
+                >
+                  <option value="">Selecione a conta de destino</option>
+                  {contasFiltradas.map(conta => (
+                    <option key={conta.id} value={conta.nome}>
+                      {conta.nome} - {conta.banco}
+                    </option>
+                  ))}
+                </select>
+                {errors.contaTransferencia && <p className="mt-1 text-xs text-red-600">{errors.contaTransferencia}</p>}
+              </div>
+            )}
+
+            {/* Oitava linha - Data de Competência e Cartão */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Calendar className="h-4 w-4 inline mr-1" />
+                  Data de Competência
+                </label>
+                <input
+                  type="text"
+                  value={formData.dataCompetencia}
+                  onChange={(e) => handleDateChange('dataCompetencia', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="DD/MM/AAAA"
+                  maxLength={10}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <CreditCard className="h-4 w-4 inline mr-1" />
+                  Cartão
+                </label>
+                <select
+                  value={formData.cartao}
+                  onChange={(e) => handleInputChange('cartao', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Selecione um cartão</option>
+                  {cartoes.map(cartao => (
+                    <option key={cartao.id} value={cartao.nome}>
+                      {cartao.nome} - {cartao.banco}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Nona linha - Parcelas e Situação */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Parcelas

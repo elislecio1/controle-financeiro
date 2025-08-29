@@ -107,7 +107,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode, onSucc
     <div className="w-full max-w-md mx-auto">
       <div className="bg-white rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">💰 FinFlow Pro</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">💰 NeoFIN</h1>
           <h2 className="text-xl font-semibold text-gray-700 mb-2">Criar sua conta</h2>
           <p className="text-gray-600">Comece a gerenciar suas finanças hoje mesmo</p>
         </div>

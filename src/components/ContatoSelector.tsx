@@ -30,15 +30,18 @@ export default function ContatoSelector({ value, onChange, placeholder = "Seleci
   // Carregar contatos
   const loadContatos = async () => {
     try {
+      console.log('🔄 Carregando contatos...')
       const data = await supabaseService.getContatos()
+      console.log('✅ Contatos carregados:', data.length)
       setContatos(data)
       setFilteredContatos(data)
     } catch (error) {
-      console.error('Erro ao carregar contatos:', error)
+      console.error('❌ Erro ao carregar contatos:', error)
     }
   }
 
   useEffect(() => {
+    console.log('🔄 ContatoSelector: useEffect inicial')
     loadContatos()
   }, [])
 
@@ -88,18 +91,30 @@ export default function ContatoSelector({ value, onChange, placeholder = "Seleci
     setMessage(null)
 
     try {
-      const result = await supabaseService.saveContato({
-        ...quickFormData,
-        cpfCnpj: '',
-        endereco: '',
-        observacoes: '',
-        ativo: true
-      })
+      console.log('🔄 Salvando contato rápido...')
+      console.log('📤 Dados do contato:', quickFormData)
+      
+      // Usar try-catch mais específico para identificar o problema
+      let result;
+      try {
+        result = await supabaseService.saveContato({
+          ...quickFormData,
+          cpfCnpj: '',
+          endereco: '',
+          observacoes: '',
+          ativo: true
+        })
+        console.log('📥 Resultado do saveContato:', result)
+      } catch (saveError) {
+        console.error('❌ Erro específico no saveContato:', saveError)
+        throw saveError
+      }
 
-      if (result.success && result.data) {
+      if (result && result.success && result.data) {
+        console.log('✅ Contato salvo com sucesso:', result.data)
         setMessage({ type: 'success', text: 'Contato salvo com sucesso!' })
         
-        // Adicionar à lista e selecionar
+        // Adicionar à lista local sem recarregar tudo
         const newContato = result.data
         setContatos(prev => [...prev, newContato])
         
@@ -121,9 +136,11 @@ export default function ContatoSelector({ value, onChange, placeholder = "Seleci
         // Aguardar um pouco antes de limpar a mensagem
         setTimeout(() => setMessage(null), 2000)
       } else {
-        setMessage({ type: 'error', text: result.message })
+        console.error('❌ Erro ao salvar contato:', result?.message || 'Erro desconhecido')
+        setMessage({ type: 'error', text: result?.message || 'Erro desconhecido' })
       }
     } catch (error: any) {
+      console.error('❌ Erro ao salvar contato:', error)
       setMessage({ type: 'error', text: error.message || 'Erro ao salvar contato' })
     } finally {
       setLoading(false)

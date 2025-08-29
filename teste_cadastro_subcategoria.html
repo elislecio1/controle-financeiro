@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Cadastro com Subcategoria</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .resultado { margin-top: 20px; padding: 15px; border-radius: 4px; }
+        .sucesso { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .erro { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Teste de Cadastro com Subcategoria</h1>
+    
+    <form id="testeForm">
+        <div class="form-group">
+            <label for="categoria">Categoria:</label>
+            <select id="categoria" required>
+                <option value="">Selecione uma categoria</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="subcategoria">Subcategoria:</label>
+            <select id="subcategoria">
+                <option value="">Selecione uma subcategoria (opcional)</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="descricao">Descrição:</label>
+            <input type="text" id="descricao" value="Teste com subcategoria" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="valor">Valor:</label>
+            <input type="number" id="valor" value="100" step="0.01" required>
+        </div>
+        
+        <button type="submit">Testar Cadastro</button>
+    </form>
+    
+    <div id="resultado"></div>
+
+    <script>
+        // Configuração do Supabase (substitua pelas suas credenciais)
+        const SUPABASE_URL = 'https://your-project.supabase.co';
+        const SUPABASE_ANON_KEY = 'your-anon-key';
+        
+        let supabase;
+        let categorias = [];
+        let subcategorias = [];
+
+        async function inicializar() {
+            try {
+                // Criar cliente Supabase
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                // Carregar categorias
+                const { data: catData, error: catError } = await supabase
+                    .from('categorias')
+                    .select('*')
+                    .eq('ativo', true)
+                    .order('nome');
+                
+                if (catError) throw catError;
+                categorias = catData || [];
+                
+                // Carregar subcategorias
+                const { data: subData, error: subError } = await supabase
+                    .from('subcategorias')
+                    .select('*')
+                    .eq('ativo', true)
+                    .order('nome');
+                
+                if (subError) throw subError;
+                subcategorias = subData || [];
+                
+                // Preencher select de categorias
+                const catSelect = document.getElementById('categoria');
+                categorias.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.nome;
+                    option.textContent = cat.nome;
+                    catSelect.appendChild(option);
+                });
+                
+                console.log('✅ Dados carregados:', { categorias, subcategorias });
+                
+            } catch (error) {
+                console.error('❌ Erro ao inicializar:', error);
+                document.getElementById('resultado').innerHTML = 
+                    `<div class="resultado erro">Erro ao inicializar: ${error.message}</div>`;
+            }
+        }
+
+        // Filtrar subcategorias quando categoria mudar
+        document.getElementById('categoria').addEventListener('change', function() {
+            const categoriaNome = this.value;
+            const subSelect = document.getElementById('subcategoria');
+            
+            // Limpar opções existentes
+            subSelect.innerHTML = '<option value="">Selecione uma subcategoria (opcional)</option>';
+            
+            if (categoriaNome) {
+                const categoria = categorias.find(cat => cat.nome === categoriaNome);
+                if (categoria) {
+                    const subcats = subcategorias.filter(sub => sub.categoria_id === categoria.id);
+                    subcats.forEach(sub => {
+                        const option = document.createElement('option');
+                        option.value = sub.nome;
+                        option.textContent = sub.nome;
+                        subSelect.appendChild(option);
+                    });
+                    console.log('🔍 Subcategorias filtradas para', categoriaNome, ':', subcats);
+                }
+            }
+        });
+
+        // Testar cadastro
+        document.getElementById('testeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const categoria = document.getElementById('categoria').value;
+            const subcategoria = document.getElementById('subcategoria').value;
+            const descricao = document.getElementById('descricao').value;
+            const valor = parseFloat(document.getElementById('valor').value);
+            
+            try {
+                const transacao = {
+                    data: new Date().toLocaleDateString('pt-BR'),
+                    valor: valor,
+                    descricao: descricao,
+                    conta: 'Conta Teste',
+                    categoria: categoria,
+                    subcategoria: subcategoria || undefined,
+                    contato: 'Teste',
+                    forma: 'PIX',
+                    tipo: 'despesa',
+                    vencimento: new Date().toLocaleDateString('pt-BR'),
+                    parcelas: 1
+                };
+                
+                console.log('📤 Enviando transação:', transacao);
+                
+                const { data, error } = await supabase
+                    .from('transactions')
+                    .insert([transacao])
+                    .select();
+                
+                if (error) throw error;
+                
+                console.log('✅ Transação salva:', data);
+                document.getElementById('resultado').innerHTML = 
+                    `<div class="resultado sucesso">
+                        ✅ Transação salva com sucesso!<br>
+                        ID: ${data[0].id}<br>
+                        Categoria: ${categoria}<br>
+                        Subcategoria: ${subcategoria || 'Nenhuma'}<br>
+                        Descrição: ${descricao}<br>
+                        Valor: R$ ${valor.toFixed(2)}
+                    </div>`;
+                    
+            } catch (error) {
+                console.error('❌ Erro ao salvar:', error);
+                document.getElementById('resultado').innerHTML = 
+                    `<div class="resultado erro">❌ Erro ao salvar: ${error.message}</div>`;
+            }
+        });
+
+        // Inicializar quando a página carregar
+        window.addEventListener('load', inicializar);
+    </script>
+</body>
+</html>

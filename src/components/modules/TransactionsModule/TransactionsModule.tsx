@@ -2,16 +2,9 @@ import React, { useState } from 'react';
 import { 
   Database, 
   Plus, 
-  FileText, 
-  Search,
-  Tag,
-  Building,
-  Target,
-  CreditCard,
-  Users
+  FileText,
+  Search
 } from 'lucide-react';
-
-// Componentes das abas
 import Transacoes from './Transacoes';
 import CadastroTransacoes from './CadastroTransacoes';
 import Extrato from './Extrato';
@@ -61,7 +54,7 @@ export default function TransactionsModule({
       id: 'transacoes',
       name: 'Transações',
       icon: Database,
-      description: 'Visualize e gerencie todas as suas transações financeiras'
+      description: 'Listagem e gerenciamento de todas as transações'
     },
     {
       id: 'cadastro',

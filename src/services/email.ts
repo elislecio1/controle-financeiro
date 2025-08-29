@@ -27,14 +27,14 @@ export class EmailService {
       // Template do e-mail
       const emailTemplate = {
         to: invite.email,
-        subject: 'Convite para acessar o FinFlow Pro',
+        subject: 'Convite para acessar o NeoFIN',
         html: `
           <!DOCTYPE html>
           <html>
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Convite - FinFlow Pro</title>
+            <title>Convite - NeoFIN</title>
             <style>
               body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
               .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -48,14 +48,14 @@ export class EmailService {
           <body>
             <div class="container">
               <div class="header">
-                <h1>💰 FinFlow Pro</h1>
+                <h1>💰 NeoFIN</h1>
                 <p>Controle Financeiro Inteligente</p>
               </div>
               
               <div class="content">
                 <h2>Olá ${invite.name}!</h2>
                 
-                <p>Você foi convidado para acessar o <strong>FinFlow Pro</strong>, nossa plataforma de controle financeiro.</p>
+                <p>Você foi convidado para acessar o <strong>NeoFIN</strong>, nossa plataforma de controle financeiro.</p>
                 
                 <p><strong>Detalhes do convite:</strong></p>
                 <ul>
@@ -83,8 +83,8 @@ export class EmailService {
               </div>
               
               <div class="footer">
-                <p>Este e-mail foi enviado automaticamente pelo FinFlow Pro</p>
-                <p>© 2024 FinFlow Pro. Todos os direitos reservados.</p>
+                <p>Este e-mail foi enviado automaticamente pelo NeoFIN</p>
+                <p>© 2024 NeoFIN. Todos os direitos reservados.</p>
               </div>
             </div>
           </body>
@@ -140,12 +140,12 @@ export class EmailService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'FinFlow Pro <noreply@finflowpro.com>',
+          from: 'NeoFIN <noreply@neofin.com>',
           to: invite.email,
-          subject: 'Convite para acessar o FinFlow Pro',
+          subject: 'Convite para acessar o NeoFIN',
           html: `
             <h2>Olá ${invite.name}!</h2>
-            <p>Você foi convidado para acessar o FinFlow Pro.</p>
+            <p>Você foi convidado para acessar o NeoFIN.</p>
             <p><a href="${inviteUrl}">Clique aqui para aceitar o convite</a></p>
             <p>Este convite expira em 7 dias.</p>
           `

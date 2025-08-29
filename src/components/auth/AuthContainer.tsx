@@ -87,8 +87,8 @@ export const AuthContainer: React.FC = () => {
         
         {/* Footer */}
         <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">
-            © 2024 FinFlow Pro. Todos os direitos reservados.
+          <p className="text-center text-gray-500 text-sm">
+            © 2024 NeoFIN. Todos os direitos reservados.
           </p>
           <div className="mt-2 space-x-4">
             <a href="#" className="text-xs text-gray-400 hover:text-gray-600">

@@ -85,7 +85,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack, 
     <div className="w-full max-w-md mx-auto">
       <div className="bg-white rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">💰 FinFlow Pro</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">💰 NeoFIN</h1>
           <h2 className="text-xl font-semibold text-gray-700 mb-2">Recuperar senha</h2>
           <p className="text-gray-600">
             Digite seu email e enviaremos um link para redefinir sua senha

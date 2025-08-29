@@ -75,11 +75,7 @@ export const AuthCallback: React.FC = () => {
             </div>
 
             {/* Title */}
-            <h2 className={`text-2xl font-bold ${getStatusColor()} mb-4`}>
-              {status === 'loading' && 'Processando...'}
-              {status === 'success' && 'Sucesso!'}
-              {status === 'error' && 'Erro'}
-            </h2>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">💰 NeoFIN</h1>
 
             {/* Message */}
             <p className="text-gray-600 mb-6">

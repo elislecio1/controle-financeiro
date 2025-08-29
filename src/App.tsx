@@ -19,6 +19,7 @@ import { UserProfile } from './components/auth/UserProfile'
 import SystemLogs from './components/SystemLogs'
 import { useAuth } from './hooks/useAuth'
 import { formatarMoeda, formatarValorTabela, getClasseValor } from './utils/formatters'
+import AnalisesFinanceiras from './components/modules/TransactionsModule/AnalisesFinanceiras'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
@@ -257,13 +258,22 @@ function App() {
 
   // Função para recarregar categorias e subcategorias
   const handleCategoriaSaved = async () => {
+    console.log('🔄 handleCategoriaSaved: Iniciando recarregamento de categorias...')
     try {
+      console.log('🔄 Carregando categorias...')
       const categoriasData = await supabaseService.getCategorias()
+      console.log('✅ Categorias carregadas:', categoriasData.length)
+      
+      console.log('🔄 Carregando subcategorias...')
       const subcategoriasData = await supabaseService.getSubcategorias()
+      console.log('✅ Subcategorias carregadas:', subcategoriasData.length)
+      
+      console.log('🔄 Atualizando estado das categorias...')
       setCategorias(categoriasData)
       setSubcategorias(subcategoriasData)
+      console.log('✅ Estado das categorias atualizado com sucesso')
     } catch (error) {
-      console.error('Erro ao recarregar categorias:', error)
+      console.error('❌ Erro ao recarregar categorias:', error)
     }
   }
 
@@ -432,6 +442,20 @@ function App() {
           const vencimentoStr = dataVencimento.toLocaleDateString('pt-BR')
           
           return vencimentoStr === hojeStr
+        case 'vencendo_amanha':
+          if (item.status === 'pago') return false
+          
+          const dataVencimentoAmanha = parseBrazilianDate(item.vencimento)
+          if (!dataVencimentoAmanha) return false
+          
+          const hojeAmanha = new Date()
+          const amanha = new Date(hojeAmanha)
+          amanha.setDate(hojeAmanha.getDate() + 1)
+          
+          const amanhaStr = amanha.toLocaleDateString('pt-BR')
+          const vencimentoAmanhaStr = dataVencimentoAmanha.toLocaleDateString('pt-BR')
+          
+          return vencimentoAmanhaStr === amanhaStr
         default:
           return true
       }
@@ -812,6 +836,30 @@ function App() {
   
   console.log(`💰 Total vencendo hoje: R$ ${totalVencendoHoje}`)
 
+  // Cálculo para "Vencendo Amanhã" - transações que vencem amanhã e ainda não foram pagas
+  const totalVencendoAmanha = filteredData.filter(item => {
+    if (item.status === 'pago') return false
+    
+    const dataVencimento = parseBrazilianDate(item.vencimento)
+    if (!dataVencimento) return false
+    
+    const hoje = new Date()
+    const amanha = new Date(hoje)
+    amanha.setDate(hoje.getDate() + 1)
+    
+    const amanhaStr = amanha.toLocaleDateString('pt-BR')
+    const vencimentoStr = dataVencimento.toLocaleDateString('pt-BR')
+    
+    const isVencendoAmanha = vencimentoStr === amanhaStr
+    if (isVencendoAmanha) {
+      console.log(`✅ Encontrado vencendo amanhã: ${item.descricao} - R$ ${Math.abs(item.valor)}`)
+    }
+    
+    return isVencendoAmanha
+  }).reduce((sum, item) => sum + Math.abs(item.valor), 0)
+  
+  console.log(`💰 Total vencendo amanhã: R$ ${totalVencendoAmanha}`)
+
   // Dados para gráficos
   const chartData = filteredData.reduce((acc: any[], item) => {
     const mes = item.data.split('/')[1] + '/' + item.data.split('/')[2]
@@ -873,7 +921,7 @@ function App() {
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
               <DollarSign className="h-8 w-8 text-blue-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">💰 FinFlow Pro</h1>
+              <h1 className="text-2xl font-bold text-gray-900">💰 NeoFIN</h1>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -1303,23 +1351,28 @@ function App() {
                 </div>
               </div>
 
-              <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-100">
+              <button
+                onClick={() => applyFilter('vencendo_amanha')}
+                className={`bg-white overflow-hidden shadow-lg rounded-xl hover:shadow-xl transition-all duration-300 transform hover:scale-105 border border-gray-100 ${
+                  activeFilter === 'vencendo_amanha' ? 'ring-4 ring-indigo-200 shadow-indigo-200' : ''
+                }`}
+              >
                 <div className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-shrink-0">
-                      <div className="p-3 bg-purple-100 rounded-full">
-                        <Users className="h-8 w-8 text-purple-600" />
+                      <div className="p-3 bg-indigo-100 rounded-full">
+                        <Calendar className="h-8 w-8 text-indigo-600" />
                       </div>
                     </div>
                     <div className="text-right">
                       <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">Total Registros</dt>
-                        <dd className="text-2xl font-bold text-gray-900">{filteredData.length}</dd>
+                        <dt className="text-sm font-medium text-gray-500 truncate">Vencendo Amanhã</dt>
+                        <dd className="text-2xl font-bold text-indigo-600">{formatarMoeda(totalVencendoAmanha)}</dd>
                       </dl>
                     </div>
                   </div>
                 </div>
-              </div>
+              </button>
             </div>
 
             {/* Filter Cards */}
@@ -1426,300 +1479,14 @@ function App() {
             </div>
           </div>
         )}
-                <div className="mb-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Buscar</label>
-                      <input
-                        type="text"
-                        placeholder="Descrição, categoria..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                      <select
-                        value={filterTipo}
-                        onChange={(e) => setFilterTipo(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      >
-                        <option value="todos">Todos</option>
-                        <option value="receita">Receitas</option>
-                        <option value="despesa">Despesas</option>
-                        <option value="transferencia">Transferências</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Status</label>
-                      <select
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      >
-                        <option value="todos">Todos</option>
-                        <option value="pendente">Pendente</option>
-                        <option value="pago">Pago</option>
-                        <option value="vencido">Vencido</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Itens por página</label>
-                      <select
-                        value={itemsPerPage}
-                        onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      >
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Tabela responsiva */}
-                <div className="overflow-x-auto rounded-lg border border-gray-200">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th 
-                          className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                          onClick={() => handleSort('vencimento')}
-                        >
-                          <div className="flex items-center">
-                            <span className="hidden sm:inline">Data de Vencimento</span>
-                            <span className="sm:hidden">Vencimento</span>
-                            {sortConfig?.key === 'vencimento' && (
-                              <span className="ml-1">
-                                {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                              </span>
-                            )}
-                          </div>
-                        </th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <span className="hidden sm:inline">Descrição</span>
-                          <span className="sm:hidden">Desc.</span>
-                        </th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <span className="hidden sm:inline">Categoria</span>
-                          <span className="sm:hidden">Cat.</span>
-                        </th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <span className="hidden sm:inline">Cliente/Fornecedor</span>
-                          <span className="sm:hidden">Contato</span>
-                        </th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <span className="hidden sm:inline">Banco</span>
-                          <span className="sm:hidden">Banco</span>
-                        </th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Valor
-                        </th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <span className="hidden sm:inline">Forma de Pagamento</span>
-                          <span className="sm:hidden">Forma</span>
-                        </th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Ações
-                        </th>
-                      </tr>
-                    </thead>
-                    
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {paginatedData.map((item) => (
-                        <tr key={item.id} className={`hover:bg-gray-50 ${
-                          item.tipo === 'despesa' ? 'bg-red-50' :
-                          item.status === 'pago' ? 'bg-green-50' : 
-                          item.status === 'vencido' ? 'bg-red-50' : 'bg-yellow-50'
-                        }`}>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
-                            {item.vencimento}
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                            <div className="max-w-xs truncate" title={item.descricao}>
-                              {item.descricao}
-                            </div>
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                            {item.categoria}
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                            {item.contato || '-'}
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                            {getBancoConta(item.conta)}
-                          </td>
-                          <td className={`px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium ${getClasseValor(item.tipo === 'despesa' ? -Math.abs(item.valor) : item.valor)}`}>
-                            {item.tipo === 'despesa' ? '- ' : ''}{formatarMoeda(Math.abs(item.valor))}
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                            {item.forma}
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              item.status === 'pago' ? 'bg-green-100 text-green-800' :
-                              item.status === 'vencido' ? 'bg-red-100 text-red-800' :
-                              'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {item.status === 'pago' ? 'Pago' :
-                               item.status === 'vencido' ? 'Vencido' : 'Pendente'}
-                            </span>
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
-                            <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
-                              <button
-                                onClick={() => handleEdit(item)}
-                                className="text-blue-600 hover:text-blue-900 p-1"
-                                title="Editar"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </button>
-                              {item.status === 'pendente' && (
-                                <button
-                                  onClick={() => handleConfirmPayment(item)}
-                                  className="text-green-600 hover:text-green-900 p-1"
-                                  title="Marcar como pago"
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                </button>
-                              )}
-                              {item.status === 'vencido' && (
-                                <button
-                                  onClick={() => handleConfirmPayment(item)}
-                                  className="text-green-600 hover:text-green-900 p-1"
-                                  title="Marcar como pago"
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                </button>
-                              )}
-                              {item.status === 'pago' && (
-                                <button
-                                  onClick={() => handleUnmarkAsPaid(item)}
-                                  className="text-yellow-600 hover:text-yellow-900 p-1"
-                                  title="Desmarcar como pago"
-                                >
-                                  <XCircle className="h-4 w-4" />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleDelete(item.id)}
-                                className="text-red-600 hover:text-red-900 p-1"
-                                title="Excluir"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      
-                      {/* Linha de Total */}
-                      <tr className="bg-gray-50 border-t-2 border-gray-300 font-semibold">
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
-                          <span className="font-bold">TOTAL</span>
-                        </td>
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                          <span className="font-bold">
-                            {filteredData.length} transação{filteredData.length !== 1 ? 'ões' : ''} (todas)
-                          </span>
-                        </td>
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                          -
-                        </td>
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                          -
-                        </td>
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                          -
-                        </td>
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-bold">
-                          <div className="flex flex-col space-y-1">
-                            <div className="text-green-600">
-                              Receitas: {formatarMoeda(receitasExibidas)}
-                            </div>
-                            <div className="text-red-600">
-                              Despesas: {formatarMoeda(despesasExibidas)}
-                            </div>
-                            <div className={`border-t pt-1 ${getClasseValor(totalExibido)}`}>
-                              Total: {formatarMoeda(Math.abs(totalExibido))}
-                              {totalExibido < 0 ? ' (Prejuízo)' : totalExibido > 0 ? ' (Lucro)' : ' (Equilibrado)'}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                          -
-                        </td>
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                          -
-                        </td>
-                        <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
-                          -
-                        </td>
-                      </tr>
-                      
 
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Paginação responsiva */}
-                <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="text-xs sm:text-sm text-gray-700">
-                    Mostrando {startIndex + 1} a {Math.min(endIndex, filteredData.length)} de {filteredData.length} resultados
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setCurrentPage(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                    >
-                      Anterior
-                    </button>
-                    
-                    <span className="text-xs sm:text-sm text-gray-700">
-                      Página {currentPage} de {totalPages}
-                    </span>
-                    
-                    <button
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                    >
-                      Próxima
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {activeTab === 'analytics' && (
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Análises Avançadas</h2>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="mes" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="pago" fill="#10B981" name="Pago" />
-                <Bar dataKey="pendente" fill="#F59E0B" name="Pendente" />
-                <Bar dataKey="vencido" fill="#EF4444" name="Vencido" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <AnalisesFinanceiras 
+            data={data}
+            onDataChange={setData}
+          />
         )}
 
         {activeTab === 'transactions' && (
