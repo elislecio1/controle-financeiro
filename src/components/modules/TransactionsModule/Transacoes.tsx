@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   Database, 
   Edit, 
@@ -17,8 +17,12 @@ import {
   FileText,
   User,
   CreditCard,
-  Tag
+  Tag,
+  Printer,
+  Download
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { supabaseService } from '../../../services/supabase';
 import ContatoSelector from '../../ContatoSelector';
 import { parsearValorBrasileiro } from '../../../utils/formatters';
@@ -262,6 +266,31 @@ export default function Transacoes({
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = sortedData.slice(startIndex, endIndex);
 
+  // Calcular resumo financeiro
+  const resumoFinanceiro = useMemo(() => {
+    let totalDespesas = 0;
+    let totalReceitas = 0;
+
+    sortedData.forEach(item => {
+      const valor = Math.abs(item.valor);
+      if (item.tipo === 'despesa') {
+        totalDespesas += valor;
+      } else if (item.tipo === 'receita') {
+        totalReceitas += valor;
+      }
+    });
+
+    const resultado = totalReceitas - totalDespesas;
+    const isLucro = resultado >= 0;
+
+    return {
+      totalDespesas,
+      totalReceitas,
+      resultado,
+      isLucro
+    };
+  }, [sortedData]);
+
   // Funções auxiliares
   const handleSort = (key: string) => {
     setSortConfig(current => {
@@ -488,14 +517,69 @@ export default function Transacoes({
     setCurrentPage(1);
   };
 
+  // Referências para PDF
+  const contentRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
+
   // Obter bancos únicos para o filtro
   const bancosUnicos = useMemo(() => {
     const bancos = contas.map(conta => conta.banco);
     return [...new Set(bancos)].sort();
   }, [contas]);
 
+  // Função para imprimir
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Função para gerar e baixar PDF
+  const handleDownloadPDF = async () => {
+    if (!tableRef.current) return;
+
+    try {
+      setLoading(true);
+      
+      const canvas = await html2canvas(tableRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = `transacoes_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
+      pdf.save(fileName);
+      
+      alert('PDF gerado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      alert('Erro ao gerar PDF. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={contentRef}>
       {/* Cabeçalho */}
       <div className="bg-white shadow rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
@@ -642,7 +726,7 @@ export default function Transacoes({
         </div>
 
         {/* Tabela */}
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <div className="overflow-x-auto rounded-lg border border-gray-200" ref={tableRef}>
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -793,6 +877,201 @@ export default function Transacoes({
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
+            </div>
+          </div>
+        )}
+
+                 {/* Resumo Financeiro */}
+         {sortedData.length > 0 && (
+           <div className="mt-6 bg-white shadow rounded-lg p-6">
+             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+               <DollarSign className="h-5 w-5 mr-2 text-gray-600" />
+               Resumo Financeiro
+             </h3>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                 <div className="flex items-center">
+                   <div className="flex-shrink-0">
+                     <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                       <DollarSign className="h-4 w-4 text-red-600" />
+                     </div>
+                   </div>
+                   <div className="ml-3">
+                     <p className="text-sm font-medium text-red-800">Total de Despesas</p>
+                     <p className="text-lg font-semibold text-red-900">
+                       {formatarMoeda(resumoFinanceiro.totalDespesas)}
+                     </p>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                 <div className="flex items-center">
+                   <div className="flex-shrink-0">
+                     <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                       <DollarSign className="h-4 w-4 text-green-600" />
+                     </div>
+                   </div>
+                   <div className="ml-3">
+                     <p className="text-sm font-medium text-green-800">Total de Receitas</p>
+                     <p className="text-lg font-semibold text-green-900">
+                       {formatarMoeda(resumoFinanceiro.totalReceitas)}
+                     </p>
+                   </div>
+                 </div>
+               </div>
+
+               <div className={`border rounded-lg p-4 ${
+                 resumoFinanceiro.isLucro 
+                   ? 'bg-green-50 border-green-200' 
+                   : 'bg-red-50 border-red-200'
+               }`}>
+                 <div className="flex items-center">
+                   <div className="flex-shrink-0">
+                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                       resumoFinanceiro.isLucro 
+                         ? 'bg-green-100' 
+                         : 'bg-red-100'
+                     }`}>
+                       <DollarSign className={`h-4 w-4 ${
+                         resumoFinanceiro.isLucro 
+                           ? 'text-green-600' 
+                           : 'text-red-600'
+                       }`} />
+                     </div>
+                   </div>
+                   <div className="ml-3">
+                     <p className={`text-sm font-medium ${
+                       resumoFinanceiro.isLucro 
+                         ? 'text-green-800' 
+                         : 'text-red-800'
+                     }`}>
+                       {resumoFinanceiro.isLucro ? 'Lucro' : 'Prejuízo'}
+                     </p>
+                     <p className={`text-lg font-semibold ${
+                       resumoFinanceiro.isLucro 
+                         ? 'text-green-900' 
+                         : 'text-red-900'
+                     }`}>
+                       {formatarMoeda(Math.abs(resumoFinanceiro.resultado))}
+                     </p>
+                   </div>
+                 </div>
+               </div>
+             </div>
+           </div>
+         )}
+
+         {/* Botões de Imprimir e Salvar PDF */}
+         {sortedData.length > 0 && (
+           <div className="mt-6 bg-white shadow rounded-lg p-6">
+             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+               <FileText className="h-5 w-5 mr-2 text-gray-600" />
+               Exportar Relatório
+             </h3>
+             <div className="flex flex-col sm:flex-row gap-4">
+               <button
+                 onClick={handlePrint}
+                 disabled={loading}
+                 className="flex-1 px-4 py-3 bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
+               >
+                 <Printer className="h-4 w-4 mr-2" />
+                 Imprimir Relatório
+               </button>
+               <button
+                 onClick={handleDownloadPDF}
+                 disabled={loading}
+                 className="flex-1 px-4 py-3 bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-400 rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
+               >
+                 {loading ? (
+                   <>
+                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                     Gerando PDF...
+                   </>
+                 ) : (
+                   <>
+                     <Download className="h-4 w-4 mr-2" />
+                     Salvar como PDF
+                   </>
+                 )}
+               </button>
+             </div>
+           </div>
+         )}
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <DollarSign className="h-5 w-5 mr-2 text-gray-600" />
+              Resumo Financeiro
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                      <DollarSign className="h-4 w-4 text-red-600" />
+                    </div>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-red-800">Total de Despesas</p>
+                    <p className="text-lg font-semibold text-red-900">
+                      {formatarMoeda(resumoFinanceiro.totalDespesas)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <DollarSign className="h-4 w-4 text-green-600" />
+                    </div>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-green-800">Total de Receitas</p>
+                    <p className="text-lg font-semibold text-green-900">
+                      {formatarMoeda(resumoFinanceiro.totalReceitas)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`border rounded-lg p-4 ${
+                resumoFinanceiro.isLucro 
+                  ? 'bg-green-50 border-green-200' 
+                  : 'bg-red-50 border-red-200'
+              }`}>
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      resumoFinanceiro.isLucro 
+                        ? 'bg-green-100' 
+                        : 'bg-red-100'
+                    }`}>
+                      <DollarSign className={`h-4 w-4 ${
+                        resumoFinanceiro.isLucro 
+                          ? 'text-green-600' 
+                          : 'text-red-600'
+                      }`} />
+                    </div>
+                  </div>
+                  <div className="ml-3">
+                    <p className={`text-sm font-medium ${
+                      resumoFinanceiro.isLucro 
+                        ? 'text-green-800' 
+                        : 'text-red-800'
+                    }`}>
+                      {resumoFinanceiro.isLucro ? 'Lucro' : 'Prejuízo'}
+                    </p>
+                    <p className={`text-lg font-semibold ${
+                      resumoFinanceiro.isLucro 
+                        ? 'text-green-900' 
+                        : 'text-red-900'
+                    }`}>
+                      {formatarMoeda(Math.abs(resumoFinanceiro.resultado))}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
