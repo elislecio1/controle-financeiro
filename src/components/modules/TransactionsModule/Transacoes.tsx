@@ -850,6 +850,58 @@ export default function Transacoes({
             </tbody>
           </table>
           
+          <!-- Totais por Dia -->
+          <div class="summary" style="margin-top: 30px;">
+            <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Totais por Dia</h3>
+            <div class="summary-grid" style="grid-template-columns: repeat(2, 1fr); gap: 15px;">
+              ${Object.entries(calcularTotaisPorDia()).map(([data, total]) => `
+                <div class="summary-item">
+                  <div class="summary-label">${data}</div>
+                  <div class="summary-value ${total >= 0 ? 'receita' : 'despesa'}">R$ ${total.toFixed(2).replace('.', ',')}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <!-- Totais por Categoria -->
+          <div class="summary" style="margin-top: 20px;">
+            <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Totais por Categoria</h3>
+            <div class="summary-grid" style="grid-template-columns: repeat(2, 1fr); gap: 15px;">
+              ${Object.entries(calcularTotaisPorCategoria()).map(([categoria, total]) => `
+                <div class="summary-item">
+                  <div class="summary-label">${categoria}</div>
+                  <div class="summary-value ${total >= 0 ? 'receita' : 'despesa'}">R$ ${total.toFixed(2).replace('.', ',')}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <!-- Totais por Banco -->
+          <div class="summary" style="margin-top: 20px;">
+            <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Totais por Banco</h3>
+            <div class="summary-grid" style="grid-template-columns: repeat(2, 1fr); gap: 15px;">
+              ${Object.entries(calcularTotaisPorBanco()).map(([banco, total]) => `
+                <div class="summary-item">
+                  <div class="summary-label">${banco}</div>
+                  <div class="summary-value ${total >= 0 ? 'receita' : 'despesa'}">R$ ${total.toFixed(2).replace('.', ',')}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <!-- Totais por Fornecedor -->
+          <div class="summary" style="margin-top: 20px;">
+            <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Totais por Fornecedor</h3>
+            <div class="summary-grid" style="grid-template-columns: repeat(2, 1fr); gap: 15px;">
+              ${Object.entries(calcularTotaisPorFornecedor()).map(([fornecedor, total]) => `
+                <div class="summary-item">
+                  <div class="summary-label">${fornecedor}</div>
+                  <div class="summary-value ${total >= 0 ? 'receita' : 'despesa'}">R$ ${total.toFixed(2).replace('.', ',')}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
           <div class="footer">
             <p>Relatório gerado automaticamente pelo Sistema de Controle Financeiro</p>
           </div>
