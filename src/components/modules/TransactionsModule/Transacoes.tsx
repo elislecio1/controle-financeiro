@@ -529,44 +529,83 @@ export default function Transacoes({
 
   // Função para imprimir
   const handlePrint = () => {
-    window.print();
+    // Criar uma nova janela para impressão
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    // Gerar o HTML para impressão
+    const printHTML = generatePrintHTML();
+    
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+    
+    // Aguardar o carregamento e imprimir
+    printWindow.onload = () => {
+      printWindow.print();
+      printWindow.close();
+    };
   };
 
   // Função para gerar e baixar PDF
   const handleDownloadPDF = async () => {
-    if (!tableRef.current) return;
-
     try {
       setLoading(true);
       
-      const canvas = await html2canvas(tableRef.current, {
+      // Criar um elemento temporário para o PDF
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = generatePrintHTML();
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '0';
+      document.body.appendChild(tempDiv);
+
+      const canvas = await html2canvas(tempDiv, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        width: 794, // A4 width in pixels at 96 DPI
+        height: tempDiv.scrollHeight
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      document.body.removeChild(tempDiv);
+
       const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const margin = 15; // Margem em mm
+      const contentWidth = pageWidth - (margin * 2);
       
-      const imgWidth = 210;
-      const pageHeight = 295;
+      const imgWidth = contentWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
       let heightLeft = imgHeight;
-
       let position = 0;
+      let pageNumber = 1;
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      // Adicionar primeira página
+      pdf.addImage(canvas, 'PNG', margin, margin, imgWidth, imgHeight);
+      
+      // Adicionar numeração da página
+      pdf.setFontSize(10);
+      pdf.text(`Página ${pageNumber}`, pageWidth - margin - 20, pageHeight - 10);
+      
+      heightLeft -= (pageHeight - (margin * 2));
 
+      // Adicionar páginas adicionais se necessário
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        pageNumber++;
+        
+        pdf.addImage(canvas, 'PNG', margin, margin + position, imgWidth, imgHeight);
+        pdf.setFontSize(10);
+        pdf.text(`Página ${pageNumber}`, pageWidth - margin - 20, pageHeight - 10);
+        
+        heightLeft -= (pageHeight - (margin * 2));
       }
 
-      const fileName = `transacoes_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
+      const fileName = `relatorio_transacoes_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.pdf`;
       pdf.save(fileName);
       
       alert('PDF gerado com sucesso!');
@@ -576,6 +615,206 @@ export default function Transacoes({
     } finally {
       setLoading(false);
     }
+  };
+
+  // Função para gerar HTML de impressão limpo e organizado
+  const generatePrintHTML = () => {
+    const currentDate = new Date().toLocaleDateString('pt-BR');
+    const currentTime = new Date().toLocaleTimeString('pt-BR');
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Relatório de Transações</title>
+          <style>
+            @media print {
+              @page {
+                size: A4;
+                margin: 1.5cm;
+              }
+            }
+            
+            body {
+              font-family: Arial, sans-serif;
+              font-size: 12px;
+              line-height: 1.4;
+              color: #333;
+              margin: 0;
+              padding: 0;
+            }
+            
+            .header {
+              text-align: center;
+              margin-bottom: 20px;
+              border-bottom: 2px solid #333;
+              padding-bottom: 15px;
+            }
+            
+            .header h1 {
+              margin: 0 0 10px 0;
+              font-size: 24px;
+              font-weight: bold;
+            }
+            
+            .header-info {
+              display: flex;
+              justify-content: space-between;
+              font-size: 11px;
+              color: #666;
+            }
+            
+            .summary {
+              margin-bottom: 20px;
+              padding: 15px;
+              background-color: #f8f9fa;
+              border-radius: 5px;
+              border: 1px solid #dee2e6;
+            }
+            
+            .summary-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 20px;
+            }
+            
+            .summary-item {
+              text-align: center;
+            }
+            
+            .summary-label {
+              font-weight: bold;
+              color: #666;
+              margin-bottom: 5px;
+            }
+            
+            .summary-value {
+              font-size: 18px;
+              font-weight: bold;
+            }
+            
+            .summary-value.receita { color: #28a745; }
+            .summary-value.despesa { color: #dc3545; }
+            .summary-value.resultado { color: #007bff; }
+            
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 20px;
+              font-size: 10px;
+            }
+            
+            th, td {
+              border: 1px solid #ddd;
+              padding: 6px 8px;
+              text-align: left;
+              vertical-align: top;
+            }
+            
+            th {
+              background-color: #f8f9fa;
+              font-weight: bold;
+              text-align: center;
+            }
+            
+            .valor-receita {
+              color: #28a745;
+              font-weight: bold;
+            }
+            
+            .valor-despesa {
+              color: #dc3545;
+              font-weight: bold;
+            }
+            
+            .page-break {
+              page-break-before: always;
+            }
+            
+            .footer {
+              margin-top: 20px;
+              text-align: center;
+              font-size: 10px;
+              color: #666;
+              border-top: 1px solid #ddd;
+              padding-top: 10px;
+            }
+            
+            @media print {
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Relatório de Transações</h1>
+            <div class="header-info">
+              <span>Gerado em: ${currentDate} às ${currentTime}</span>
+              <span>Total de transações: ${filteredData.length}</span>
+            </div>
+          </div>
+          
+          <div class="summary">
+            <div class="summary-grid">
+              <div class="summary-item">
+                <div class="summary-label">Total de Receitas</div>
+                <div class="summary-value receita">R$ ${resumoFinanceiro.totalReceitas.toFixed(2).replace('.', ',')}</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-label">Total de Despesas</div>
+                <div class="summary-value despesa">R$ ${resumoFinanceiro.totalDespesas.toFixed(2).replace('.', ',')}</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-label">Resultado</div>
+                <div class="summary-value resultado ${resumoFinanceiro.isLucro ? 'receita' : 'despesa'}">
+                  R$ ${resumoFinanceiro.resultado.toFixed(2).replace('.', ',')}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 12%;">Vencimento</th>
+                <th style="width: 25%;">Descrição</th>
+                <th style="width: 15%;">Categoria</th>
+                <th style="width: 15%;">Subcategoria</th>
+                <th style="width: 15%;">Cliente/Fornecedor</th>
+                <th style="width: 10%;">Banco</th>
+                <th style="width: 8%;">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredData.map((transacao, index) => {
+                const valor = parseFloat(transacao.valor || 0);
+                const valorClass = valor >= 0 ? 'valor-receita' : 'valor-despesa';
+                const valorFormatado = valor >= 0 ? 
+                  `R$ ${valor.toFixed(2).replace('.', ',')}` : 
+                  `-R$ ${Math.abs(valor).toFixed(2).replace('.', ',')}`;
+                
+                return `
+                  <tr>
+                    <td>${transacao.vencimento || '-'}</td>
+                    <td>${transacao.descricao || '-'}</td>
+                    <td>${transacao.categoria || '-'}</td>
+                    <td>${transacao.subcategoria || '-'}</td>
+                    <td>${transacao.contato || '-'}</td>
+                    <td>${transacao.conta || '-'}</td>
+                    <td class="${valorClass}">${valorFormatado}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+          
+          <div class="footer">
+            <p>Relatório gerado automaticamente pelo Sistema de Controle Financeiro</p>
+          </div>
+        </body>
+      </html>
+    `;
   };
 
   return (
