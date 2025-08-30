@@ -617,6 +617,47 @@ export default function Transacoes({
     }
   };
 
+  // Funções para calcular totais
+  const calcularTotaisPorDia = () => {
+    const totais: { [key: string]: number } = {};
+    filteredData.forEach(transacao => {
+      const data = transacao.vencimento || 'Sem data';
+      const valor = parseFloat(transacao.valor || 0);
+      totais[data] = (totais[data] || 0) + valor;
+    });
+    return totais;
+  };
+
+  const calcularTotaisPorCategoria = () => {
+    const totais: { [key: string]: number } = {};
+    filteredData.forEach(transacao => {
+      const categoria = transacao.categoria || 'Sem categoria';
+      const valor = parseFloat(transacao.valor || 0);
+      totais[categoria] = (totais[categoria] || 0) + valor;
+    });
+    return totais;
+  };
+
+  const calcularTotaisPorBanco = () => {
+    const totais: { [key: string]: number } = {};
+    filteredData.forEach(transacao => {
+      const banco = transacao.conta || 'Sem banco';
+      const valor = parseFloat(transacao.valor || 0);
+      totais[banco] = (totais[banco] || 0) + valor;
+    });
+    return totais;
+  };
+
+  const calcularTotaisPorFornecedor = () => {
+    const totais: { [key: string]: number } = {};
+    filteredData.forEach(transacao => {
+      const fornecedor = transacao.contato || 'Sem fornecedor';
+      const valor = parseFloat(transacao.valor || 0);
+      totais[fornecedor] = (totais[fornecedor] || 0) + valor;
+    });
+    return totais;
+  };
+
   // Função para gerar HTML de impressão limpo e organizado
   const generatePrintHTML = () => {
     const currentDate = new Date().toLocaleDateString('pt-BR');
