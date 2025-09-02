@@ -1925,9 +1925,46 @@
             // Adiciona classe active na aba clicada
             event.target.classList.add('active');
             
-            // Por enquanto, só implementamos a aba geral
-            if (tabName === 'geral') {
-                document.getElementById('geral').style.display = 'block';
+            // Esconde todas as seções primeiro
+            const sections = ['dashboard', 'cadastro', 'fluxo', 'analises', 'relatorios', 'configuracoes'];
+            sections.forEach(section => {
+                const element = document.getElementById(section);
+                if (element) {
+                    element.style.display = 'none';
+                }
+            });
+            
+            // Mostra a seção selecionada
+            if (tabName === 'dashboard') {
+                const dashboardSection = document.getElementById('dashboard');
+                if (dashboardSection) {
+                    dashboardSection.style.display = 'block';
+                }
+            } else if (tabName === 'cadastro') {
+                const cadastroSection = document.getElementById('cadastro');
+                if (cadastroSection) {
+                    cadastroSection.style.display = 'block';
+                }
+            } else if (tabName === 'fluxo') {
+                const fluxoSection = document.getElementById('fluxo');
+                if (fluxoSection) {
+                    fluxoSection.style.display = 'block';
+                }
+            } else if (tabName === 'analises') {
+                const analisesSection = document.getElementById('analises');
+                if (analisesSection) {
+                    analisesSection.style.display = 'block';
+                }
+            } else if (tabName === 'relatorios') {
+                const relatoriosSection = document.getElementById('relatorios');
+                if (relatoriosSection) {
+                    relatoriosSection.style.display = 'block';
+                }
+            } else if (tabName === 'configuracoes') {
+                const configuracoesSection = document.getElementById('configuracoes');
+                if (configuracoesSection) {
+                    configuracoesSection.style.display = 'block';
+                }
             }
         }
 
@@ -3341,10 +3378,28 @@
         }
 
         function goToTransactionsPage() {
-            // Aqui você pode implementar a navegação para a página de transações
-            // Por enquanto, vamos apenas fechar o modal
+            // Fecha o modal
             closeTransactionsModal();
-            showSuccess('Funcionalidade de navegação será implementada em breve!');
+            
+            // Navega para a aba de cadastro
+            showTab('cadastro');
+            
+            // Aplica os filtros baseados no tipo de card clicado
+            if (currentFilterType) {
+                applyFilterToCadastroTab(currentFilterType);
+            }
+            
+            showSuccess('Navegando para a página de transações com filtros aplicados!');
+        }
+        
+        // Função para aplicar filtros na aba de cadastro
+        function applyFilterToCadastroTab(filterType) {
+            // Aqui você pode implementar a lógica para aplicar filtros específicos
+            // na aba de cadastro, como preencher campos de filtro ou selecionar opções
+            console.log(`Aplicando filtro: ${filterType} na aba de cadastro`);
+            
+            // Exemplo: você pode definir valores padrão para campos de filtro
+            // ou disparar eventos para aplicar os filtros automaticamente
         }
 
         // Fechar modal quando clicar fora dele
