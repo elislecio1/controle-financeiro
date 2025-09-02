@@ -159,6 +159,157 @@
             background: #f0f9ff;
         }
 
+        /* Estilos para o modal */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: auto;
+            padding: 0;
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9fafb;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #1f2937;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .close {
+            color: #6b7280;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: #374151;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            background: #f9fafb;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .transaction-item {
+            padding: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            margin-bottom: 0.75rem;
+            background: #f9fafb;
+        }
+
+        .transaction-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .transaction-title {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .transaction-value {
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+
+        .transaction-value.despesa {
+            color: #dc2626;
+        }
+
+        .transaction-value.receita {
+            color: #059669;
+        }
+
+        .transaction-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .transaction-detail {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .transaction-detail strong {
+            color: #374151;
+        }
+
         .stat-header {
             display: flex;
             align-items: center;
@@ -816,7 +967,7 @@
 
             <!-- Stats Cards -->
             <div class="stats-grid">
-                <div class="stat-card" onclick="applyFilter('pago')">
+                <div class="stat-card" onclick="showTransactionsModal('pago', 'Total Pago')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #10b981;">💰</div>
                         <div>
@@ -826,7 +977,7 @@
                     </div>
                 </div>
 
-                <div class="stat-card" onclick="applyFilter('pendente')">
+                <div class="stat-card" onclick="showTransactionsModal('pendente', 'Total Pendente')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #f59e0b;">⏳</div>
                         <div>
@@ -836,7 +987,7 @@
                     </div>
                 </div>
 
-                <div class="stat-card" onclick="applyFilter('vencido')">
+                <div class="stat-card" onclick="showTransactionsModal('vencido', 'Total Vencido')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #ef4444;">⚠️</div>
                         <div>
@@ -846,7 +997,7 @@
                     </div>
                 </div>
 
-                <div class="stat-card" onclick="applyFilter('pago-hoje')">
+                <div class="stat-card" onclick="showTransactionsModal('pago-hoje', 'Pago Hoje')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #3b82f6;">📅</div>
                         <div>
@@ -856,7 +1007,7 @@
                     </div>
                 </div>
 
-                <div class="stat-card" onclick="applyFilter('vencendo-hoje')">
+                <div class="stat-card" onclick="showTransactionsModal('vencendo-hoje', 'Vencendo Hoje')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #f97316;">🚨</div>
                         <div>
@@ -865,11 +1016,21 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="stat-card" onclick="showTransactionsModal('vencido-ontem', 'Vencidos Ontem')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #7c3aed;">📅</div>
+                        <div>
+                            <div class="stat-value" id="total-vencido-ontem">R$ 0</div>
+                            <div class="stat-label">Vencidos Ontem</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Cards de Receitas Detalhadas -->
             <div class="stats-grid">
-                <div class="stat-card" onclick="applyFilter('a-receber-hoje')">
+                <div class="stat-card" onclick="showTransactionsModal('a-receber-hoje', 'A Receber Hoje')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #059669;">📅</div>
                         <div>
@@ -879,7 +1040,7 @@
                     </div>
                 </div>
 
-                <div class="stat-card" onclick="applyFilter('a-receber')">
+                <div class="stat-card" onclick="showTransactionsModal('a-receber', 'A Receber')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #f59e0b;">⏳</div>
                         <div>
@@ -889,7 +1050,7 @@
                     </div>
                 </div>
 
-                <div class="stat-card" onclick="applyFilter('total-a-receber')">
+                <div class="stat-card" onclick="showTransactionsModal('total-a-receber', 'Total a Receber')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #dc2626;">📋</div>
                         <div>
@@ -899,7 +1060,7 @@
                     </div>
                 </div>
 
-                <div class="stat-card" onclick="applyFilter('total-recebido')">
+                <div class="stat-card" onclick="showTransactionsModal('total-recebido', 'Total Recebido')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #10b981;">✅</div>
                         <div>
@@ -912,7 +1073,7 @@
 
             <!-- Cards de Despesas e Receitas -->
             <div class="stats-grid">
-                <div class="stat-card" onclick="applyFilter('despesas')">
+                <div class="stat-card" onclick="showTransactionsModal('despesas', 'Total de Despesas')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #dc2626;">💸</div>
                         <div>
@@ -922,7 +1083,7 @@
                     </div>
                 </div>
 
-                <div class="stat-card" onclick="applyFilter('receitas')">
+                <div class="stat-card" onclick="showTransactionsModal('receitas', 'Total de Receitas')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #059669;">💵</div>
                         <div>
@@ -940,6 +1101,23 @@
                     <div>
                         <div class="stat-value" id="total-geral">R$ 0</div>
                         <div class="stat-label">Resultado Financeiro</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal para exibir transações filtradas -->
+            <div id="transactionsModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="modalTitle">Transações</h3>
+                        <span class="close" onclick="closeTransactionsModal()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div id="modalTransactionsList"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" onclick="goToTransactionsPage()">Ver Todas as Transações</button>
+                        <button class="btn btn-secondary" onclick="closeTransactionsModal()">Fechar</button>
                     </div>
                 </div>
             </div>
@@ -1802,6 +1980,16 @@
                 return sum + item.valor; // Sempre positivo pois já filtramos apenas tipo D
             }, 0);
             
+            // Vencidos ontem apenas os que não estão pagos E são do tipo D (despesas)
+            const ontem = new Date(hoje);
+            ontem.setDate(hoje.getDate() - 1);
+            const totalVencidoOntem = filteredData.filter(item => {
+                const vencimento = parseBrazilianDate(item.vencimento);
+                return item.tipo === 'D' && vencimento && vencimento.toDateString() === ontem.toDateString() && item.status !== 'pago';
+            }).reduce((sum, item) => {
+                return sum + item.valor; // Sempre positivo pois já filtramos apenas tipo D
+            }, 0);
+            
             // Cálculos específicos para Receitas (tipo C)
             const aReceberHoje = filteredData.filter(item => {
                 const vencimento = parseBrazilianDate(item.vencimento);
@@ -1831,6 +2019,7 @@
             document.getElementById('total-geral').textContent = `R$ ${resultadoFinanceiro.toLocaleString()}`;
             document.getElementById('total-pago-hoje').textContent = `R$ ${totalPagoHoje.toLocaleString()}`;
             document.getElementById('total-vencendo-hoje').textContent = `R$ ${totalVencendoHoje.toLocaleString()}`;
+            document.getElementById('total-vencido-ontem').textContent = `R$ ${totalVencidoOntem.toLocaleString()}`;
             
             // Atualiza os novos elementos para Receitas
             document.getElementById('a-receber-hoje').textContent = `R$ ${aReceberHoje.toLocaleString()}`;
@@ -1847,6 +2036,7 @@
                 resultadoFinanceiro, 
                 totalPagoHoje, 
                 totalVencendoHoje,
+                totalVencidoOntem,
                 aReceberHoje,
                 aReceber,
                 totalAReceber,
@@ -3014,6 +3204,155 @@
                 'Filtro de conta bancária removido!' : 
                 `Filtro aplicado para: ${selectedConta}`;
             showSuccess(message);
+        }
+
+        // Funções para o modal de transações filtradas
+        let currentFilterType = '';
+        let currentFilterTitle = '';
+
+        function showTransactionsModal(filterType, title) {
+            currentFilterType = filterType;
+            currentFilterTitle = title;
+            
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('transactionsModal').style.display = 'block';
+            
+            // Filtra as transações baseado no tipo de filtro
+            const filteredTransactions = getFilteredTransactions(filterType);
+            displayTransactionsInModal(filteredTransactions);
+        }
+
+        function closeTransactionsModal() {
+            document.getElementById('transactionsModal').style.display = 'none';
+            currentFilterType = '';
+            currentFilterTitle = '';
+        }
+
+        function getFilteredTransactions(filterType) {
+            const hoje = new Date();
+            const ontem = new Date(hoje);
+            ontem.setDate(hoje.getDate() - 1);
+            const hojeFormatada = hoje.toLocaleDateString('pt-BR');
+            const ontemFormatada = ontem.toLocaleDateString('pt-BR');
+            
+            switch (filterType) {
+                case 'pago':
+                    return filteredData.filter(item => item.status === 'pago');
+                
+                case 'pendente':
+                    return filteredData.filter(item => item.status === 'pendente');
+                
+                case 'vencido':
+                    return filteredData.filter(item => {
+                        const vencimento = parseBrazilianDate(item.vencimento);
+                        return vencimento && vencimento < hoje && item.status !== 'pago';
+                    });
+                
+                case 'pago-hoje':
+                    return filteredData.filter(item => 
+                        item.status === 'pago' && item.dataPagamento === hojeFormatada
+                    );
+                
+                case 'vencendo-hoje':
+                    return filteredData.filter(item => {
+                        const vencimento = parseBrazilianDate(item.vencimento);
+                        return item.tipo === 'D' && vencimento && vencimento.toDateString() === hoje.toDateString() && item.status !== 'pago';
+                    });
+                
+                case 'vencido-ontem':
+                    return filteredData.filter(item => {
+                        const vencimento = parseBrazilianDate(item.vencimento);
+                        return item.tipo === 'D' && vencimento && vencimento.toDateString() === ontem.toDateString() && item.status !== 'pago';
+                    });
+                
+                case 'a-receber-hoje':
+                    return filteredData.filter(item => {
+                        const vencimento = parseBrazilianDate(item.vencimento);
+                        return item.tipo === 'C' && vencimento && vencimento.toDateString() === hoje.toDateString() && item.status !== 'pago';
+                    });
+                
+                case 'a-receber':
+                    return filteredData.filter(item => {
+                        const vencimento = parseBrazilianDate(item.vencimento);
+                        return item.tipo === 'C' && vencimento && vencimento < hoje && item.status !== 'pago';
+                    });
+                
+                case 'total-a-receber':
+                    return filteredData.filter(item => 
+                        item.tipo === 'C' && item.status !== 'pago'
+                    );
+                
+                case 'total-recebido':
+                    return filteredData.filter(item => 
+                        item.tipo === 'C' && item.status === 'pago'
+                    );
+                
+                case 'despesas':
+                    return filteredData.filter(item => item.tipo === 'D');
+                
+                case 'receitas':
+                    return filteredData.filter(item => item.tipo === 'C');
+                
+                default:
+                    return [];
+            }
+        }
+
+        function displayTransactionsInModal(transactions) {
+            const container = document.getElementById('modalTransactionsList');
+            
+            if (transactions.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500">Nenhuma transação encontrada para este filtro.</p>';
+                return;
+            }
+            
+            let html = '';
+            transactions.forEach(transaction => {
+                const valorClass = transaction.tipo === 'D' ? 'despesa' : 'receita';
+                const valorPrefix = transaction.tipo === 'D' ? '-' : '+';
+                
+                html += `
+                    <div class="transaction-item">
+                        <div class="transaction-header">
+                            <div class="transaction-title">${transaction.descricao}</div>
+                            <div class="transaction-value ${valorClass}">${valorPrefix}R$ ${transaction.valor.toLocaleString()}</div>
+                        </div>
+                        <div class="transaction-details">
+                            <div class="transaction-detail">
+                                <strong>Empresa:</strong> ${transaction.empresa || 'N/A'}
+                            </div>
+                            <div class="transaction-detail">
+                                <strong>Vencimento:</strong> ${transaction.vencimento || 'N/A'}
+                            </div>
+                            <div class="transaction-detail">
+                                <strong>Status:</strong> ${transaction.status || 'N/A'}
+                            </div>
+                            <div class="transaction-detail">
+                                <strong>Tipo:</strong> ${transaction.tipo === 'D' ? 'Despesa' : 'Receita'}
+                            </div>
+                            ${transaction.parcela ? `<div class="transaction-detail"><strong>Parcela:</strong> ${transaction.parcela}</div>` : ''}
+                            ${transaction.dataPagamento ? `<div class="transaction-detail"><strong>Data Pagamento:</strong> ${transaction.dataPagamento}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function goToTransactionsPage() {
+            // Aqui você pode implementar a navegação para a página de transações
+            // Por enquanto, vamos apenas fechar o modal
+            closeTransactionsModal();
+            showSuccess('Funcionalidade de navegação será implementada em breve!');
+        }
+
+        // Fechar modal quando clicar fora dele
+        window.onclick = function(event) {
+            const modal = document.getElementById('transactionsModal');
+            if (event.target === modal) {
+                closeTransactionsModal();
+            }
         }
     </script>
 </body>
