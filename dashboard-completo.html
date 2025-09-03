@@ -965,8 +965,31 @@
                 </div>
             </div>
 
-            <!-- Stats Cards -->
+            <!-- Stats Cards Reordenados -->
             <div class="stats-grid">
+                <!-- 1. Receitas -->
+                <div class="stat-card" onclick="showTransactionsModal('receitas', 'Total de Receitas')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #059669;">💵</div>
+                        <div>
+                            <div class="stat-value" id="total-receitas">R$ 0</div>
+                            <div class="stat-label">Receitas</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Despesas -->
+                <div class="stat-card" onclick="showTransactionsModal('despesas', 'Total de Despesas')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #dc2626;">💸</div>
+                        <div>
+                            <div class="stat-value" id="total-despesas">R$ 0</div>
+                            <div class="stat-label">Despesas</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Total Pago -->
                 <div class="stat-card" onclick="showTransactionsModal('pago', 'Total Pago')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #10b981;">💰</div>
@@ -977,6 +1000,18 @@
                     </div>
                 </div>
 
+                <!-- 4. Saldo -->
+                <div class="stat-card" onclick="showTransactionsModal('saldo', 'Saldo')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #3b82f6;">📊</div>
+                        <div>
+                            <div class="stat-value" id="total-geral">R$ 0</div>
+                            <div class="stat-label">Saldo</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Total Pendente -->
                 <div class="stat-card" onclick="showTransactionsModal('pendente', 'Total Pendente')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #f59e0b;">⏳</div>
@@ -987,6 +1022,7 @@
                     </div>
                 </div>
 
+                <!-- 6. Total Vencido -->
                 <div class="stat-card" onclick="showTransactionsModal('vencido', 'Total Vencido')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #ef4444;">⚠️</div>
@@ -997,16 +1033,7 @@
                     </div>
                 </div>
 
-                <div class="stat-card" onclick="showTransactionsModal('pago-hoje', 'Pago Hoje')">
-                    <div class="stat-header">
-                        <div class="stat-icon" style="background: #3b82f6;">📅</div>
-                        <div>
-                            <div class="stat-value" id="total-pago-hoje">R$ 0</div>
-                            <div class="stat-label">Pago Hoje</div>
-                        </div>
-                    </div>
-                </div>
-
+                <!-- 7. Vencendo Hoje -->
                 <div class="stat-card" onclick="showTransactionsModal('vencendo-hoje', 'Vencendo Hoje')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #f97316;">🚨</div>
@@ -1017,6 +1044,32 @@
                     </div>
                 </div>
 
+                <!-- 8. Vencendo Amanhã -->
+                <div class="stat-card" onclick="showTransactionsModal('vencendo-amanha', 'Vencendo Amanhã')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #8b5cf6;">📅</div>
+                        <div>
+                            <div class="stat-value" id="total-vencendo-amanha">R$ 0</div>
+                            <div class="stat-label">Vencendo Amanhã</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. Pago Hoje -->
+                <div class="stat-card" onclick="showTransactionsModal('pago-hoje', 'Pago Hoje')">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #3b82f6;">📅</div>
+                        <div>
+                            <div class="stat-value" id="total-pago-hoje">R$ 0</div>
+                            <div class="stat-label">Pago Hoje</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cards Adicionais -->
+            <div class="stats-grid">
+                <!-- Vencidos Ontem -->
                 <div class="stat-card" onclick="showTransactionsModal('vencido-ontem', 'Vencidos Ontem')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #7c3aed;">📅</div>
@@ -1026,10 +1079,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Cards de Receitas Detalhadas -->
-            <div class="stats-grid">
+                <!-- A Receber Hoje -->
                 <div class="stat-card" onclick="showTransactionsModal('a-receber-hoje', 'A Receber Hoje')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #059669;">📅</div>
@@ -1040,6 +1091,7 @@
                     </div>
                 </div>
 
+                <!-- A Receber -->
                 <div class="stat-card" onclick="showTransactionsModal('a-receber', 'A Receber')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #f59e0b;">⏳</div>
@@ -1050,6 +1102,7 @@
                     </div>
                 </div>
 
+                <!-- Total a Receber -->
                 <div class="stat-card" onclick="showTransactionsModal('total-a-receber', 'Total a Receber')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #dc2626;">📋</div>
@@ -1060,6 +1113,7 @@
                     </div>
                 </div>
 
+                <!-- Total Recebido -->
                 <div class="stat-card" onclick="showTransactionsModal('total-recebido', 'Total Recebido')">
                     <div class="stat-header">
                         <div class="stat-icon" style="background: #10b981;">✅</div>
@@ -1071,39 +1125,7 @@
                 </div>
             </div>
 
-            <!-- Cards de Despesas e Receitas -->
-            <div class="stats-grid">
-                <div class="stat-card" onclick="showTransactionsModal('despesas', 'Total de Despesas')">
-                    <div class="stat-header">
-                        <div class="stat-icon" style="background: #dc2626;">💸</div>
-                        <div>
-                            <div class="stat-value" id="total-despesas">R$ 0</div>
-                            <div class="stat-label">Total de Despesas</div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="stat-card" onclick="showTransactionsModal('receitas', 'Total de Receitas')">
-                    <div class="stat-header">
-                        <div class="stat-icon" style="background: #059669;">💵</div>
-                        <div>
-                            <div class="stat-value" id="total-receitas">R$ 0</div>
-                            <div class="stat-label">Total de Receitas</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Resultado Financeiro -->
-            <div class="stat-card" style="margin-bottom: 2rem;">
-                <div class="stat-header">
-                    <div class="stat-icon" style="background: #3b82f6;">📊</div>
-                    <div>
-                        <div class="stat-value" id="total-geral">R$ 0</div>
-                        <div class="stat-label">Resultado Financeiro</div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Modal para exibir transações filtradas -->
             <div id="transactionsModal" class="modal" style="display: none;">
@@ -2027,6 +2049,16 @@
                 return sum + item.valor; // Sempre positivo pois já filtramos apenas tipo D
             }, 0);
             
+            // Vencendo amanhã apenas os que não estão pagos E são do tipo D (despesas)
+            const amanha = new Date(hoje);
+            amanha.setDate(hoje.getDate() + 1);
+            const totalVencendoAmanha = filteredData.filter(item => {
+                const vencimento = parseBrazilianDate(item.vencimento);
+                return item.tipo === 'D' && vencimento && vencimento.toDateString() === amanha.toDateString() && item.status !== 'pago';
+            }).reduce((sum, item) => {
+                return sum + item.valor; // Sempre positivo pois já filtramos apenas tipo D
+            }, 0);
+            
             // Cálculos específicos para Receitas (tipo C)
             const aReceberHoje = filteredData.filter(item => {
                 const vencimento = parseBrazilianDate(item.vencimento);
@@ -2056,6 +2088,7 @@
             document.getElementById('total-geral').textContent = `R$ ${resultadoFinanceiro.toLocaleString()}`;
             document.getElementById('total-pago-hoje').textContent = `R$ ${totalPagoHoje.toLocaleString()}`;
             document.getElementById('total-vencendo-hoje').textContent = `R$ ${totalVencendoHoje.toLocaleString()}`;
+            document.getElementById('total-vencendo-amanha').textContent = `R$ ${totalVencendoAmanha.toLocaleString()}`;
             document.getElementById('total-vencido-ontem').textContent = `R$ ${totalVencidoOntem.toLocaleString()}`;
             
             // Atualiza os novos elementos para Receitas
@@ -2073,6 +2106,7 @@
                 resultadoFinanceiro, 
                 totalPagoHoje, 
                 totalVencendoHoje,
+                totalVencendoAmanha,
                 totalVencidoOntem,
                 aReceberHoje,
                 aReceber,
@@ -3294,6 +3328,14 @@
                     return filteredData.filter(item => {
                         const vencimento = parseBrazilianDate(item.vencimento);
                         return item.tipo === 'D' && vencimento && vencimento.toDateString() === hoje.toDateString() && item.status !== 'pago';
+                    });
+                
+                case 'vencendo-amanha':
+                    const amanha = new Date(hoje);
+                    amanha.setDate(hoje.getDate() + 1);
+                    return filteredData.filter(item => {
+                        const vencimento = parseBrazilianDate(item.vencimento);
+                        return item.tipo === 'D' && vencimento && vencimento.toDateString() === amanha.toDateString() && item.status !== 'pago';
                     });
                 
                 case 'vencido-ontem':
