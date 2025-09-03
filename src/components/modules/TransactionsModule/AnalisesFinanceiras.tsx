@@ -63,52 +63,68 @@ const formatarDataDiaria = (data: string): string => {
   return `${dia}/${mes}`;
 };
 
-// Função para obter dados agrupados por período
-const agruparPorPeriodo = (data: any[], tipoFiltro: string) => {
-  console.log('🔍 === INÍCIO AGRUPAR POR PERÍODO ===');
-  console.log('🔍 agruparPorPeriodo - Dados recebidos:', data);
-  console.log('🔍 agruparPorPeriodo - Tipo filtro:', tipoFiltro);
-  console.log('🔍 === DADOS COMPLETOS PARA AGRUPAMENTO ===');
-  console.table(data);
+// Função para converter data brasileira para ISO
+const converterDataBrasileira = (data: string): string => {
+  if (data.includes('/')) {
+    const [dia, mes, ano] = data.split('/');
+    return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+  }
+  return data;
+};
+
+// Função para validar se uma data está dentro de um período
+const dataEstaNoPeriodo = (dataItem: string, dataInicio: Date, dataFim: Date): boolean => {
+  try {
+    const dataProcessada = converterDataBrasileira(dataItem);
+    const dataTransacao = new Date(dataProcessada);
+    return dataTransacao >= dataInicio && dataTransacao <= dataFim;
+  } catch {
+    return false;
+  }
+};
+
+// Função para calcular período baseado no filtro
+const calcularPeriodo = (tipoFiltro: string) => {
+  const hoje = new Date();
+  let dataInicio: Date;
+  let dataFim: Date;
   
+  switch (tipoFiltro) {
+    case 'diario':
+      dataInicio = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 30);
+      dataFim = hoje;
+      break;
+    case 'mensal':
+      dataInicio = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
+      dataFim = hoje;
+      break;
+    case 'anual':
+      dataInicio = new Date(hoje.getFullYear() - 4, 0, 1);
+      dataFim = hoje;
+      break;
+    default:
+      dataInicio = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
+      dataFim = hoje;
+  }
+  
+  return { dataInicio, dataFim };
+};
+
+// Função para agrupar dados por período
+const agruparPorPeriodo = (data: any[], tipoFiltro: string) => {
+  const { dataInicio, dataFim } = calcularPeriodo(tipoFiltro);
   const agrupado: { [key: string]: { receitas: number; despesas: number; saldo: number } } = {};
   
-  data.forEach((item, index) => {
-    console.log(`🔍 Item ${index}:`, item);
+  data.forEach(item => {
+    const dataItem = item.vencimento || item.data;
+    if (!dataItem || !dataEstaNoPeriodo(dataItem, dataInicio, dataFim)) return;
     
-    // Usar vencimento como data principal, com fallback para data
-    let dataItem = item.vencimento || item.data;
-    console.log(`🔍 Data do item ${index}:`, dataItem);
-    
-    if (!dataItem) {
-      console.log(`⚠️ Item ${index} sem data, pulando...`);
-      return;
-    }
-    
-    // Converter data brasileira (DD/MM/AAAA) para formato ISO se necessário
-    let dataProcessada: string;
-    if (dataItem.includes('/')) {
-      const [dia, mes, ano] = dataItem.split('/');
-      dataProcessada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
-      console.log(`🔍 Data convertida ${index}: ${dataItem} -> ${dataProcessada}`);
-    } else {
-      dataProcessada = dataItem;
-      console.log(`🔍 Data mantida ${index}: ${dataItem}`);
-    }
-    
-    // Validar se a data é válida
-    if (!dataProcessada || dataProcessada === 'undefined' || dataProcessada.includes('undefined')) {
-      console.log(`⚠️ Data inválida ${index}: ${dataProcessada}`);
-      return;
-    }
-    
-    const [ano, mes, dia] = dataProcessada.split('-');
-    if (!ano || !mes || parseInt(ano) < 2000 || parseInt(ano) > 2030) {
-      console.log(`⚠️ Data fora do range ${index}: ano=${ano}, mes=${mes}`);
-      return;
-    }
+    const valor = parseFloat(item.valor);
+    if (isNaN(valor) || valor === 0) return;
     
     let chave: string;
+    const dataProcessada = converterDataBrasileira(dataItem);
+    const [ano, mes, dia] = dataProcessada.split('-');
     
     switch (tipoFiltro) {
       case 'diario':
@@ -124,30 +140,18 @@ const agruparPorPeriodo = (data: any[], tipoFiltro: string) => {
         chave = `${ano}-${mes}`;
     }
     
-    console.log(`🔍 Chave gerada ${index}: ${chave}`);
-    
     if (!agrupado[chave]) {
       agrupado[chave] = { receitas: 0, despesas: 0, saldo: 0 };
     }
     
-    const valor = Math.abs(parseFloat(item.valor) || 0);
-    console.log(`🔍 Valor processado ${index}: ${item.valor} -> ${valor}`);
-    console.log(`🔍 Valor original: ${item.valor}, tipo: ${typeof item.valor}, parseFloat: ${parseFloat(item.valor)}`);
-    
-    if (parseFloat(item.valor) > 0) {
+    if (valor > 0) {
       agrupado[chave].receitas += valor;
-      console.log(`🔍 Adicionando receita ${index}: ${agrupado[chave].receitas}`);
-    } else if (parseFloat(item.valor) < 0) {
-      agrupado[chave].despesas += valor;
-      console.log(`🔍 Adicionando despesa ${index}: ${agrupado[chave].despesas}`);
     } else {
-      console.log(`⚠️ Item ${index} com valor zero ou inválido: ${item.valor}`);
+      agrupado[chave].despesas += Math.abs(valor);
     }
     
     agrupado[chave].saldo = agrupado[chave].receitas - agrupado[chave].despesas;
   });
-  
-  console.log('🔍 Dados agrupados:', agrupado);
   
   const resultado = Object.entries(agrupado)
     .map(([periodo, dados]) => {
@@ -174,7 +178,6 @@ const agruparPorPeriodo = (data: any[], tipoFiltro: string) => {
       };
     })
     .sort((a, b) => {
-      // Ordenação específica para cada tipo
       switch (tipoFiltro) {
         case 'diario':
           const [diaA, mesA] = a.periodo.split('/');
@@ -190,344 +193,75 @@ const agruparPorPeriodo = (data: any[], tipoFiltro: string) => {
           return parseInt(a.periodo) - parseInt(b.periodo);
         default:
           return 0;
-        }
-      });
+      }
+    });
   
-  console.log('🔍 Resultado final:', resultado);
   return resultado;
 };
 
 // Função para calcular fluxo de caixa acumulado
 const calcularFluxoCaixa = (dadosPeriodo: any[]) => {
-  console.log('🔍 calcularFluxoCaixa - Dados recebidos:', dadosPeriodo);
   let saldoAcumulado = 0;
   
-  const resultado = dadosPeriodo.map(item => {
+  return dadosPeriodo.map(item => {
     saldoAcumulado += item.saldo;
-    console.log(`🔍 Período ${item.periodo}: saldo=${item.saldo}, acumulado=${saldoAcumulado}`);
     return {
       ...item,
       saldoAcumulado
     };
   });
-  
-  console.log('🔍 Resultado fluxo de caixa:', resultado);
-  return resultado;
 };
 
 // Função para agrupar por categoria
 const agruparPorCategoria = (data: any[]) => {
-  console.log('🔍 agruparPorCategoria - Dados recebidos:', data);
   const agrupado: { [key: string]: number } = {};
   
-  data.forEach((item, index) => {
-    console.log(`🔍 Processando categoria item ${index}:`, item);
-    if (parseFloat(item.valor) < 0) { // Apenas despesas
-      const categoria = item.categoria || item.descricao || 'Sem categoria';
+  data.forEach(item => {
+    if (parseFloat(item.valor) < 0) {
+      const categoria = item.categoria || 'Sem categoria';
       const valor = Math.abs(parseFloat(item.valor) || 0);
       agrupado[categoria] = (agrupado[categoria] || 0) + valor;
-      console.log(`🔍 Categoria "${categoria}" recebeu valor ${valor}, total: ${agrupado[categoria]}`);
     }
   });
   
-  const resultado = Object.entries(agrupado)
+  return Object.entries(agrupado)
     .map(([categoria, valor]) => ({ categoria, valor }))
     .sort((a, b) => b.valor - a.valor)
-    .slice(0, 8); // Top 8 categorias
-    
-  console.log('🔍 Resultado agruparPorCategoria:', resultado);
-  return resultado;
+    .slice(0, 8);
 };
 
 // Função para agrupar por cliente/contato
 const agruparPorCliente = (data: any[]) => {
-  console.log('🔍 agruparPorCliente - Dados recebidos:', data);
   const agrupado: { [key: string]: number } = {};
   
-  data.forEach((item, index) => {
-    console.log(`🔍 Processando cliente item ${index}:`, item);
-    if (parseFloat(item.valor) > 0) { // Apenas receitas
-      const cliente = item.empresa || item.contato || item.descricao || 'Cliente não identificado';
+  data.forEach(item => {
+    if (parseFloat(item.valor) > 0) {
+      const cliente = item.empresa || item.contato || 'Cliente não identificado';
       const valor = parseFloat(item.valor) || 0;
       agrupado[cliente] = (agrupado[cliente] || 0) + valor;
-      console.log(`🔍 Cliente "${cliente}" recebeu valor ${valor}, total: ${agrupado[cliente]}`);
     }
   });
   
-  const resultado = Object.entries(agrupado)
+  return Object.entries(agrupado)
     .map(([cliente, valor]) => ({ cliente, valor }))
     .sort((a, b) => b.valor - a.valor)
-    .slice(0, 10); // Top 10 clientes
-    
-  console.log('🔍 Resultado agruparPorCliente:', resultado);
-  return resultado;
+    .slice(0, 10);
 };
 
 // Função para calcular DRE
 const calcularDRE = (data: any[]) => {
-  console.log('🔍 calcularDRE - Dados recebidos:', data);
-  
   const receitas = data.filter(item => parseFloat(item.valor) > 0);
   const despesas = data.filter(item => parseFloat(item.valor) < 0);
   
-  console.log('🔍 Receitas para DRE:', receitas);
-  console.log('🔍 Despesas para DRE:', despesas);
-  
-  const receitaBruta = receitas.reduce((total, item) => total + parseFloat(item.valor) || 0, 0);
+  const receitaBruta = receitas.reduce((total, item) => total + (parseFloat(item.valor) || 0), 0);
   const despesasTotal = despesas.reduce((total, item) => total + Math.abs(parseFloat(item.valor) || 0), 0);
-  
-  console.log('🔍 Receita bruta calculada:', receitaBruta);
-  console.log('🔍 Despesas totais calculadas:', despesasTotal);
-  
   const lucroLiquido = receitaBruta - despesasTotal;
   
-  console.log('🔍 Lucro líquido calculado:', lucroLiquido);
-  
-  const resultado = [
+  return [
     { item: 'Receita Bruta', valor: receitaBruta, cor: '#00C49F' },
     { item: 'Despesas', valor: despesasTotal, cor: '#FF8042' },
     { item: 'Lucro Líquido', valor: lucroLiquido, cor: lucroLiquido >= 0 ? '#0088FE' : '#FF6B6B' }
   ];
-  
-  console.log('🔍 Resultado DRE:', resultado);
-  return resultado;
-};
-
-// Função para calcular projeção de caixa
-const calcularProjecaoCaixa = (data: any[], tipoFiltro: string) => {
-  const hoje = new Date();
-  const projecao = [];
-  
-  // Usar apenas dados reais existentes, sem projeções futuras
-  const dadosReais = data.filter(item => {
-    const dataItem = item.vencimento || item.data;
-    if (!dataItem) return false;
-    
-    // Converter data brasileira se necessário
-    let dataProcessada: string;
-    if (dataItem.includes('/')) {
-      const [dia, mes, ano] = dataItem.split('/');
-      dataProcessada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
-    } else {
-      dataProcessada = dataItem;
-    }
-    
-    if (!dataProcessada || dataProcessada === 'undefined' || dataProcessada.includes('undefined')) {
-      return false;
-    }
-    
-    return true;
-  });
-  
-  // Se não há dados reais, retornar array vazio
-  if (dadosReais.length === 0) {
-    return [];
-  }
-  
-  // Agrupar dados reais por período para mostrar histórico real
-  const dadosAgrupados = agruparPorPeriodo(dadosReais, tipoFiltro);
-  
-  // Retornar apenas os dados reais agrupados, sem projeções
-  return dadosAgrupados.map(item => ({
-    periodo: item.periodo,
-    receitas: item.receitas,
-    despesas: item.despesas,
-    saldo: item.saldo
-  }));
-};
-
-// Função para validar e limpar dados
-const validarELimparDados = (dados: any[]) => {
-  console.log('🔍 === INÍCIO DA VALIDAÇÃO E LIMPEZA DE DADOS ===');
-  console.log('🔍 Dados recebidos:', dados);
-  console.log('🔍 Tamanho do array:', dados?.length);
-  
-  const dadosLimpos = dados.filter(item => {
-    const dataItem = item.vencimento || item.data;
-    if (!dataItem) {
-      console.log(`⚠️ Item sem data, pulando:`, item);
-      return false;
-    }
-    
-    // Converter data brasileira para formato ISO se necessário
-    let dataProcessada: string;
-    if (dataItem.includes('/')) {
-      const [dia, mes, ano] = dataItem.split('/');
-      dataProcessada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
-    } else {
-      dataProcessada = dataItem;
-    }
-    
-    if (!dataProcessada || dataProcessada === 'undefined' || dataProcessada.includes('undefined')) {
-      console.log(`⚠️ Data inválida, pulando item:`, item);
-      return false;
-    }
-    
-    const dataTransacao = new Date(dataProcessada);
-    const hoje = new Date();
-    
-    // Validar se a data é no passado ou no futuro
-    if (dataTransacao > hoje) {
-      console.log(`⚠️ Item com data futura, pulando:`, item);
-      return false;
-    }
-    
-    // Validar se o valor é um número válido
-    const valor = parseFloat(item.valor);
-    if (isNaN(valor) || !isFinite(valor)) {
-      console.log(`⚠️ Item com valor inválido, pulando:`, item);
-      return false;
-    }
-    
-    // Validar se o tipo de transação é válido (receita ou despesa)
-    if (valor > 0) {
-      if (!item.descricao || !item.categoria) {
-        console.log(`⚠️ Receita com dados incompletos, pulando:`, item);
-        return false;
-      }
-    } else if (valor < 0) {
-      if (!item.descricao || !item.categoria) {
-        console.log(`⚠️ Despesa com dados incompletos, pulando:`, item);
-        return false;
-      }
-    } else {
-      console.log(`⚠️ Item com valor zero, pulando:`, item);
-      return false;
-    }
-    
-    console.log(`✅ Item válido:`, item);
-    return true;
-  });
-  
-  console.log('🔍 Dados após validação e limpeza:', dadosLimpos);
-  return dadosLimpos;
-};
-
-// Função para calcular métricas válidas
-const calcularMetricasValidas = (dados: any[], tipoFiltro: string) => {
-  console.log('🔍 === INÍCIO DO CÁLCULO DE MÉTRICAS VÁLIDAS ===');
-  console.log('🔍 Dados recebidos:', dados);
-  console.log('🔍 Tipo filtro selecionado:', tipoFiltro);
-  
-  if (!Array.isArray(dados) || dados.length === 0) {
-    console.log('⚠️ Dados inválidos ou vazios, retornando zeros');
-    return {
-      receitaTotal: 0,
-      despesaTotal: 0,
-      lucroTotal: 0,
-      margemLucro: 0
-    };
-  }
-  
-  // Filtrar dados baseado no período selecionado
-  const hoje = new Date();
-  let dataInicio: Date;
-  let dataFim: Date;
-  
-  switch (tipoFiltro) {
-    case 'diario':
-      // Últimos 30 dias
-      dataInicio = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 30);
-      dataFim = hoje;
-      break;
-    case 'mensal':
-      // Últimos 12 meses
-      dataInicio = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
-      dataFim = hoje;
-      break;
-    case 'anual':
-      // Últimos 5 anos
-      dataInicio = new Date(hoje.getFullYear() - 4, 0, 1);
-      dataFim = hoje;
-      break;
-    default:
-      dataInicio = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
-      dataFim = hoje;
-  }
-  
-  console.log('🔍 Período de análise:', {
-    tipoFiltro,
-    dataInicio: dataInicio.toISOString().split('T')[0],
-    dataFim: dataFim.toISOString().split('T')[0]
-  });
-  
-  const dadosFiltrados = dados.filter(item => {
-    const dataItem = item.vencimento || item.data;
-    if (!dataItem) return false;
-    
-    // Converter data brasileira para formato ISO se necessário
-    let dataProcessada: string;
-    if (dataItem.includes('/')) {
-      const [dia, mes, ano] = dataItem.split('/');
-      dataProcessada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
-    } else {
-      dataProcessada = dataItem;
-    }
-    
-    if (!dataProcessada || dataProcessada === 'undefined' || dataProcessada.includes('undefined')) {
-      return false;
-    }
-    
-    const dataTransacao = new Date(dataProcessada);
-    const estaNoPeriodo = dataTransacao >= dataInicio && dataTransacao <= dataFim;
-    
-    return estaNoPeriodo;
-  });
-  
-  console.log('🔍 Dados filtrados por período:', dadosFiltrados.length);
-  console.table(dadosFiltrados);
-  
-  const receitas = dadosFiltrados.filter(item => {
-    const valor = parseFloat(item.valor);
-    const isReceita = valor > 0 && !isNaN(valor);
-    return isReceita;
-  });
-  
-  const despesas = dadosFiltrados.filter(item => {
-    const valor = parseFloat(item.valor);
-    const isDespesa = valor < 0 && !isNaN(valor);
-    return isDespesa;
-  });
-  
-  console.log('🔍 Receitas encontradas no período:', receitas.length);
-  console.log('🔍 Despesas encontradas no período:', despesas.length);
-  
-  const receitaTotal = receitas.reduce((total, item) => {
-    const valor = parseFloat(item.valor) || 0;
-    return total + valor;
-  }, 0);
-  
-  const despesaTotal = despesas.reduce((total, item) => {
-    const valor = Math.abs(parseFloat(item.valor) || 0);
-    return total + valor;
-  }, 0);
-  
-  console.log('🔍 Receita total calculada no período:', receitaTotal);
-  console.log('🔍 Despesa total calculada no período:', despesaTotal);
-  
-  const lucroTotal = receitaTotal - despesaTotal;
-  const margemLucro = receitaTotal > 0 ? (lucroTotal / receitaTotal) * 100 : 0;
-  
-  console.log('🔍 Lucro total calculado no período:', lucroTotal);
-  console.log('🔍 Margem de lucro calculada no período:', margemLucro);
-  
-  return {
-    receitaTotal,
-    despesaTotal,
-    lucroTotal,
-    margemLucro
-  };
-};
-
-// Função para filtrar apenas receitas
-const filtrarApenasReceitas = (dados: any[]) => {
-  console.log('🔍 === INÍCIO DA FILTRAÇÃO DE RECEITAS ===');
-  console.log('🔍 Dados recebidos:', dados);
-  const receitas = dados.filter(item => parseFloat(item.valor) > 0);
-  const totalReceitas = receitas.reduce((sum, item) => sum + parseFloat(item.valor) || 0, 0);
-  console.log('🔍 Total de receitas filtradas:', receitas.length);
-  console.log('🔍 Valor total das receitas filtradas:', totalReceitas);
-  return { receitas, totalReceitas };
 };
 
 export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFinanceirasProps) {
@@ -540,35 +274,53 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
   const categoriasDespesa = useMemo(() => agruparPorCategoria(data), [data]);
   const receitasPorCliente = useMemo(() => agruparPorCliente(data), [data]);
   const dre = useMemo(() => calcularDRE(data), [data]);
-  const projecaoCaixa = useMemo(() => calcularProjecaoCaixa(data, tipoFiltro), [data, tipoFiltro]);
 
-  // Métricas principais - AGORA COM VALIDAÇÃO ROBUSTA E DEBUG DAS RECEITAS
+  // Métricas principais - CÁLCULO SIMPLES E DIRETO
   const metricas = useMemo(() => {
-    console.log('🔍 === INÍCIO DO CÁLCULO DE MÉTRICAS ===');
-    console.log('🔍 Dados recebidos:', data);
-    console.log('🔍 Tipo filtro selecionado:', tipoFiltro);
+    const { dataInicio, dataFim } = calcularPeriodo(tipoFiltro);
     
-    // DEBUG: Filtrar APENAS receitas para verificar dados reais
-    const { receitas: todasReceitas, totalReceitas: totalReal } = filtrarApenasReceitas(data);
+    // Filtrar dados do período
+    const dadosFiltrados = data.filter(item => {
+      const dataItem = item.vencimento || item.data;
+      return dataItem && dataEstaNoPeriodo(dataItem, dataInicio, dataFim);
+    });
     
-    console.log('🔍 COMPARAÇÃO:');
-    console.log('🔍 Total real das receitas (sem filtro): R$', totalReal);
-    console.log('🔍 Total esperado do seu banco: R$ 54.795,78');
-    console.log('🔍 Diferença:', totalReal - 54795.78);
+    // Separar receitas e despesas
+    const receitas = dadosFiltrados.filter(item => {
+      const valor = parseFloat(item.valor);
+      return valor > 0 && !isNaN(valor);
+    });
     
-    // Primeiro validar e limpar os dados
-    const dadosLimpos = validarELimparDados(data);
+    const despesas = dadosFiltrados.filter(item => {
+      const valor = parseFloat(item.valor);
+      return valor < 0 && !isNaN(valor);
+    });
     
-    // Depois calcular métricas com dados validados
-    const metricasCalculadas = calcularMetricasValidas(dadosLimpos, tipoFiltro);
+    // Calcular totais
+    const receitaTotal = receitas.reduce((total, item) => total + (parseFloat(item.valor) || 0), 0);
+    const despesaTotal = despesas.reduce((total, item) => total + Math.abs(parseFloat(item.valor) || 0), 0);
+    const lucroTotal = receitaTotal - despesaTotal;
+    const margemLucro = receitaTotal > 0 ? (lucroTotal / receitaTotal) * 100 : 0;
     
-    console.log('🔍 MÉTRICAS CALCULADAS:', metricasCalculadas);
-    console.log('🔍 COMPARAÇÃO FINAL:');
-    console.log('🔍 Receita Total (com filtro): R$', metricasCalculadas.receitaTotal);
-    console.log('🔍 Receita Total (sem filtro): R$', totalReal);
-    console.log('🔍 Receita Total (esperada): R$ 54.795,78');
+    // DEBUG: Mostrar dados para verificação
+    console.log('🔍 === DADOS DAS MÉTRICAS ===');
+    console.log('🔍 Período:', tipoFiltro);
+    console.log('🔍 Data início:', dataInicio.toISOString().split('T')[0]);
+    console.log('🔍 Data fim:', dataFim.toISOString().split('T')[0]);
+    console.log('🔍 Dados filtrados:', dadosFiltrados.length);
+    console.log('🔍 Receitas encontradas:', receitas.length);
+    console.log('🔍 Despesas encontradas:', despesas.length);
+    console.log('🔍 Receita total:', receitaTotal);
+    console.log('🔍 Despesa total:', despesaTotal);
+    console.log('🔍 Lucro total:', lucroTotal);
+    console.log('🔍 Margem de lucro:', margemLucro);
     
-    return metricasCalculadas;
+    return {
+      receitaTotal,
+      despesaTotal,
+      lucroTotal,
+      margemLucro
+    };
   }, [data, tipoFiltro]);
 
   const tabs = [
@@ -577,8 +329,7 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
     { id: 'categorias', name: 'Categorias de Despesa', icon: PieChartIcon },
     { id: 'clientes', name: 'Receitas por Cliente', icon: Users },
     { id: 'evolucao', name: 'Evolução de Receita', icon: TrendingUp },
-    { id: 'dre', name: 'DRE', icon: Target },
-    { id: 'projecao', name: 'Histórico de Caixa', icon: Calendar }
+    { id: 'dre', name: 'DRE', icon: Target }
   ];
 
   const filtros = [
@@ -655,7 +406,7 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
                 cy="50%"
                 labelLine={false}
                 label={({ categoria, percent }) => `${categoria} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={150}
+                outerRadius={80}
                 fill="#8884d8"
                 dataKey="valor"
               >
@@ -663,7 +414,7 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value: number) => [formatarMoeda(value), 'Valor']} />
+              <Tooltip formatter={(value: number) => [formatarMoeda(value), '']} />
             </PieChart>
           </ResponsiveContainer>
         );
@@ -674,12 +425,9 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
             <BarChart data={receitasPorCliente} layout="horizontal">
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" tickFormatter={(value) => formatarMoeda(value)} />
-              <YAxis dataKey="cliente" type="category" width={120} />
-              <Tooltip 
-                formatter={(value: number) => [formatarMoeda(value), 'Receita']}
-                labelFormatter={(label) => `Cliente: ${label}`}
-              />
-              <Bar dataKey="valor" fill="#00C49F" name="Receita" />
+              <YAxis dataKey="cliente" type="category" width={150} />
+              <Tooltip formatter={(value: number) => [formatarMoeda(value), '']} />
+              <Bar dataKey="valor" fill="#00C49F" />
             </BarChart>
           </ResponsiveContainer>
         );
@@ -692,7 +440,7 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
               <XAxis dataKey="periodo" />
               <YAxis tickFormatter={(value) => formatarMoeda(value)} />
               <Tooltip 
-                formatter={(value: number) => [formatarMoeda(value), 'Receita']}
+                formatter={(value: number) => [formatarMoeda(value), '']}
                 labelFormatter={(label) => `Período: ${label}`}
               />
               <Legend />
@@ -701,7 +449,7 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
                 dataKey="receitas" 
                 stroke="#00C49F" 
                 strokeWidth={3}
-                name="Receita"
+                name="Receitas"
               />
             </LineChart>
           </ResponsiveContainer>
@@ -714,36 +462,9 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="item" />
               <YAxis tickFormatter={(value) => formatarMoeda(value)} />
-              <Tooltip 
-                formatter={(value: number) => [formatarMoeda(value), 'Valor']}
-                labelFormatter={(label) => `Item: ${label}`}
-              />
-              <Bar dataKey="valor" fill="#8884d8" name="Valor" />
+              <Tooltip formatter={(value: number) => [formatarMoeda(value), '']} />
+              <Bar dataKey="valor" fill="#8884d8" />
             </BarChart>
-          </ResponsiveContainer>
-        );
-
-      case 'projecao':
-        return (
-          <ResponsiveContainer width="100%" height={400}>
-            <AreaChart data={projecaoCaixa}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="periodo" />
-              <YAxis tickFormatter={(value) => formatarMoeda(value)} />
-              <Tooltip 
-                formatter={(value: number) => [formatarMoeda(value), 'Saldo']}
-                labelFormatter={(label) => `Período: ${label}`}
-              />
-              <Legend />
-              <Area 
-                type="monotone" 
-                dataKey="saldo" 
-                stroke="#0088FE" 
-                fill="#0088FE" 
-                fillOpacity={0.3}
-                name="Saldo Real"
-              />
-            </AreaChart>
           </ResponsiveContainer>
         );
 
@@ -801,7 +522,7 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
             </div>
           </div>
 
-          {/* Métricas Principais */}
+          {/* Indicador de Período */}
           <div className="mb-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <div className="flex items-center text-blue-700">
@@ -816,6 +537,7 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
             </div>
           </div>
           
+          {/* Métricas Principais */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-green-50 p-4 rounded-lg border border-green-200">
               <div className="flex items-center">
