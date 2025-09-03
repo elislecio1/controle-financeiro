@@ -68,10 +68,29 @@ const agruparPorPeriodo = (data: any[], tipoFiltro: string) => {
   const agrupado: { [key: string]: { receitas: number; despesas: number; saldo: number } } = {};
   
   data.forEach(item => {
-    const data = item.data || item.vencimento;
-    if (!data) return;
+    // Usar vencimento como data principal, com fallback para data
+    let dataItem = item.vencimento || item.data;
+    if (!dataItem) return;
     
-    const [ano, mes, dia] = data.split('-');
+    // Converter data brasileira (DD/MM/AAAA) para formato ISO se necessário
+    let dataProcessada: string;
+    if (dataItem.includes('/')) {
+      const [dia, mes, ano] = dataItem.split('/');
+      dataProcessada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+    } else {
+      dataProcessada = dataItem;
+    }
+    
+    // Validar se a data é válida
+    if (!dataProcessada || dataProcessada === 'undefined' || dataProcessada.includes('undefined')) {
+      return;
+    }
+    
+    const [ano, mes, dia] = dataProcessada.split('-');
+    if (!ano || !mes || parseInt(ano) < 2000 || parseInt(ano) > 2030) {
+      return;
+    }
+    
     let chave: string;
     
     switch (tipoFiltro) {
@@ -127,23 +146,23 @@ const agruparPorPeriodo = (data: any[], tipoFiltro: string) => {
         saldo: dados.saldo
       };
     })
-          .sort((a, b) => {
-        // Ordenação específica para cada tipo
-        switch (tipoFiltro) {
-          case 'diario':
-            const [diaA, mesA] = a.periodo.split('/');
-            const [diaB, mesB] = b.periodo.split('/');
-            return new Date(2024, parseInt(mesA) - 1, parseInt(diaA)).getTime() - 
-                   new Date(2024, parseInt(mesB) - 1, parseInt(diaB)).getTime();
-          case 'mensal':
-            const [mesMensalA, anoA] = a.periodo.split('/');
-            const [mesMensalB, anoB] = b.periodo.split('/');
-            return new Date(parseInt(anoA), parseInt(mesMensalA) - 1).getTime() - 
-                   new Date(parseInt(anoB), parseInt(mesMensalB) - 1).getTime();
-          case 'anual':
-            return parseInt(a.periodo) - parseInt(b.periodo);
-          default:
-            return 0;
+    .sort((a, b) => {
+      // Ordenação específica para cada tipo
+      switch (tipoFiltro) {
+        case 'diario':
+          const [diaA, mesA] = a.periodo.split('/');
+          const [diaB, mesB] = b.periodo.split('/');
+          return new Date(2024, parseInt(mesA) - 1, parseInt(diaA)).getTime() - 
+                 new Date(2024, parseInt(mesB) - 1, parseInt(diaB)).getTime();
+        case 'mensal':
+          const [mesMensalA, anoA] = a.periodo.split('/');
+          const [mesMensalB, anoB] = b.periodo.split('/');
+          return new Date(parseInt(anoA), parseInt(mesMensalA) - 1).getTime() - 
+                 new Date(parseInt(anoB), parseInt(mesMensalB) - 1).getTime();
+        case 'anual':
+          return parseInt(a.periodo) - parseInt(b.periodo);
+        default:
+          return 0;
         }
       });
 };
@@ -166,7 +185,7 @@ const agruparPorCategoria = (data: any[]) => {
   
   data.forEach(item => {
     if (parseFloat(item.valor) < 0) { // Apenas despesas
-      const categoria = item.categoria || 'Sem categoria';
+      const categoria = item.categoria || item.descricao || 'Sem categoria';
       agrupado[categoria] = (agrupado[categoria] || 0) + Math.abs(parseFloat(item.valor) || 0);
     }
   });
@@ -182,8 +201,9 @@ const agruparPorCliente = (data: any[]) => {
   const agrupado: { [key: string]: number } = {};
   
   data.forEach(item => {
-    if (parseFloat(item.valor) > 0 && item.contato) { // Apenas receitas com contato
-      agrupado[item.contato] = (agrupado[item.contato] || 0) + parseFloat(item.valor) || 0;
+    if (parseFloat(item.valor) > 0) { // Apenas receitas
+      const cliente = item.empresa || item.contato || item.descricao || 'Cliente não identificado';
+      agrupado[cliente] = (agrupado[cliente] || 0) + parseFloat(item.valor) || 0;
     }
   });
   
@@ -243,9 +263,48 @@ const calcularProjecaoCaixa = (data: any[], tipoFiltro: string) => {
         label = formatarData(dataProjecao.toISOString().split('T')[0]);
     }
     
-    // Simular dados de projeção baseados em histórico
-    const receitas = Math.random() * 50000 + 10000;
-    const despesas = Math.random() * 40000 + 8000;
+    // Calcular dados de projeção baseados em histórico real
+    const dadosHistorico = data.filter(item => {
+      const dataItem = item.vencimento || item.data;
+      if (!dataItem) return false;
+      
+      // Converter data brasileira se necessário
+      let dataProcessada: string;
+      if (dataItem.includes('/')) {
+        const [dia, mes, ano] = dataItem.split('/');
+        dataProcessada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+      } else {
+        dataProcessada = dataItem;
+      }
+      
+      if (!dataProcessada || dataProcessada === 'undefined' || dataProcessada.includes('undefined')) {
+        return false;
+      }
+      
+      return true;
+    });
+    
+    // Calcular médias baseadas em dados reais
+    const receitasReais = dadosHistorico
+      .filter(item => parseFloat(item.valor) > 0)
+      .map(item => parseFloat(item.valor) || 0);
+    
+    const despesasReais = dadosHistorico
+      .filter(item => parseFloat(item.valor) < 0)
+      .map(item => Math.abs(parseFloat(item.valor) || 0));
+    
+    const mediaReceitas = receitasReais.length > 0 ? 
+      receitasReais.reduce((a, b) => a + b, 0) / receitasReais.length : 0;
+    
+    const mediaDespesas = despesasReais.length > 0 ? 
+      despesasReais.reduce((a, b) => a + b, 0) / despesasReais.length : 0;
+    
+    // Aplicar variação sazonal baseada no mês
+    const mes = dataProjecao.getMonth();
+    const variacaoSazonal = 1 + (Math.sin(mes * Math.PI / 6) * 0.2); // Variação de ±20%
+    
+    const receitas = mediaReceitas * variacaoSazonal;
+    const despesas = mediaDespesas * variacaoSazonal;
     const saldo = receitas - despesas;
     
     projecao.push({
