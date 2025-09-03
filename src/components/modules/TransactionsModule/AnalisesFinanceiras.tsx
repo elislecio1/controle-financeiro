@@ -65,29 +65,43 @@ const formatarDataDiaria = (data: string): string => {
 
 // Função para obter dados agrupados por período
 const agruparPorPeriodo = (data: any[], tipoFiltro: string) => {
+  console.log('🔍 agruparPorPeriodo - Dados recebidos:', data);
+  console.log('🔍 agruparPorPeriodo - Tipo filtro:', tipoFiltro);
+  
   const agrupado: { [key: string]: { receitas: number; despesas: number; saldo: number } } = {};
   
-  data.forEach(item => {
+  data.forEach((item, index) => {
+    console.log(`🔍 Item ${index}:`, item);
+    
     // Usar vencimento como data principal, com fallback para data
     let dataItem = item.vencimento || item.data;
-    if (!dataItem) return;
+    console.log(`🔍 Data do item ${index}:`, dataItem);
+    
+    if (!dataItem) {
+      console.log(`⚠️ Item ${index} sem data, pulando...`);
+      return;
+    }
     
     // Converter data brasileira (DD/MM/AAAA) para formato ISO se necessário
     let dataProcessada: string;
     if (dataItem.includes('/')) {
       const [dia, mes, ano] = dataItem.split('/');
       dataProcessada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+      console.log(`🔍 Data convertida ${index}: ${dataItem} -> ${dataProcessada}`);
     } else {
       dataProcessada = dataItem;
+      console.log(`🔍 Data mantida ${index}: ${dataItem}`);
     }
     
     // Validar se a data é válida
     if (!dataProcessada || dataProcessada === 'undefined' || dataProcessada.includes('undefined')) {
+      console.log(`⚠️ Data inválida ${index}: ${dataProcessada}`);
       return;
     }
     
     const [ano, mes, dia] = dataProcessada.split('-');
     if (!ano || !mes || parseInt(ano) < 2000 || parseInt(ano) > 2030) {
+      console.log(`⚠️ Data fora do range ${index}: ano=${ano}, mes=${mes}`);
       return;
     }
     
@@ -107,22 +121,29 @@ const agruparPorPeriodo = (data: any[], tipoFiltro: string) => {
         chave = `${ano}-${mes}`;
     }
     
+    console.log(`🔍 Chave gerada ${index}: ${chave}`);
+    
     if (!agrupado[chave]) {
       agrupado[chave] = { receitas: 0, despesas: 0, saldo: 0 };
     }
     
     const valor = Math.abs(parseFloat(item.valor) || 0);
+    console.log(`🔍 Valor processado ${index}: ${item.valor} -> ${valor}`);
     
     if (parseFloat(item.valor) > 0) {
       agrupado[chave].receitas += valor;
+      console.log(`🔍 Adicionando receita ${index}: ${agrupado[chave].receitas}`);
     } else {
       agrupado[chave].despesas += valor;
+      console.log(`🔍 Adicionando despesa ${index}: ${agrupado[chave].despesas}`);
     }
     
     agrupado[chave].saldo = agrupado[chave].receitas - agrupado[chave].despesas;
   });
   
-  return Object.entries(agrupado)
+  console.log('🔍 Dados agrupados:', agrupado);
+  
+  const resultado = Object.entries(agrupado)
     .map(([periodo, dados]) => {
       let label: string;
       switch (tipoFiltro) {
@@ -165,6 +186,9 @@ const agruparPorPeriodo = (data: any[], tipoFiltro: string) => {
           return 0;
         }
       });
+  
+  console.log('🔍 Resultado final:', resultado);
+  return resultado;
 };
 
 // Função para calcular fluxo de caixa acumulado
@@ -332,16 +356,25 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
 
   // Métricas principais
   const metricas = useMemo(() => {
-    const receitaTotal = data
-      .filter(item => parseFloat(item.valor) > 0)
-      .reduce((total, item) => total + parseFloat(item.valor) || 0, 0);
+    console.log('🔍 Calculando métricas - Dados recebidos:', data);
     
-    const despesaTotal = data
-      .filter(item => parseFloat(item.valor) < 0)
-      .reduce((total, item) => total + Math.abs(parseFloat(item.valor) || 0), 0);
+    const receitas = data.filter(item => parseFloat(item.valor) > 0);
+    const despesas = data.filter(item => parseFloat(item.valor) < 0);
+    
+    console.log('🔍 Receitas encontradas:', receitas);
+    console.log('🔍 Despesas encontradas:', despesas);
+    
+    const receitaTotal = receitas.reduce((total, item) => total + parseFloat(item.valor) || 0, 0);
+    const despesaTotal = despesas.reduce((total, item) => total + Math.abs(parseFloat(item.valor) || 0), 0);
+    
+    console.log('🔍 Receita total calculada:', receitaTotal);
+    console.log('🔍 Despesa total calculada:', despesaTotal);
     
     const lucroTotal = receitaTotal - despesaTotal;
     const margemLucro = receitaTotal > 0 ? (lucroTotal / receitaTotal) * 100 : 0;
+    
+    console.log('🔍 Lucro total calculado:', lucroTotal);
+    console.log('🔍 Margem de lucro calculada:', margemLucro);
     
     return {
       receitaTotal,
