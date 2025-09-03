@@ -31,7 +31,9 @@ import {
   Filter,
   CalendarDays,
   CalendarRange,
-  CalendarCheck
+  CalendarCheck,
+  Database,
+  RefreshCw
 } from 'lucide-react';
 
 interface AnalisesFinanceirasProps {
@@ -72,17 +74,6 @@ const converterDataBrasileira = (data: string): string => {
   return data;
 };
 
-// Função para validar se uma data está dentro de um período
-const dataEstaNoPeriodo = (dataItem: string, dataInicio: Date, dataFim: Date): boolean => {
-  try {
-    const dataProcessada = converterDataBrasileira(dataItem);
-    const dataTransacao = new Date(dataProcessada);
-    return dataTransacao >= dataInicio && dataTransacao <= dataFim;
-  } catch {
-    return false;
-  }
-};
-
 // Função para calcular período baseado no filtro
 const calcularPeriodo = (tipoFiltro: string) => {
   const hoje = new Date();
@@ -108,6 +99,17 @@ const calcularPeriodo = (tipoFiltro: string) => {
   }
   
   return { dataInicio, dataFim };
+};
+
+// Função para validar se uma data está dentro de um período
+const dataEstaNoPeriodo = (dataItem: string, dataInicio: Date, dataFim: Date): boolean => {
+  try {
+    const dataProcessada = converterDataBrasileira(dataItem);
+    const dataTransacao = new Date(dataProcessada);
+    return dataTransacao >= dataInicio && dataTransacao <= dataFim;
+  } catch {
+    return false;
+  }
 };
 
 // Função para agrupar dados por período
@@ -275,7 +277,7 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
   const receitasPorCliente = useMemo(() => agruparPorCliente(data), [data]);
   const dre = useMemo(() => calcularDRE(data), [data]);
 
-  // Métricas principais - CÁLCULO SIMPLES E DIRETO
+  // Métricas principais - CÁLCULO DIRETO DAS TRANSAÇÕES DO SUPABASE
   const metricas = useMemo(() => {
     const { dataInicio, dataFim } = calcularPeriodo(tipoFiltro);
     
@@ -303,17 +305,20 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
     const margemLucro = receitaTotal > 0 ? (lucroTotal / receitaTotal) * 100 : 0;
     
     // DEBUG: Mostrar dados para verificação
-    console.log('🔍 === DADOS DAS MÉTRICAS ===');
-    console.log('🔍 Período:', tipoFiltro);
+    console.log('🔍 === NOVO MÓDULO DE ANÁLISES ===');
+    console.log('🔍 Dados recebidos do Supabase:', data.length);
+    console.log('🔍 Período selecionado:', tipoFiltro);
     console.log('🔍 Data início:', dataInicio.toISOString().split('T')[0]);
     console.log('🔍 Data fim:', dataFim.toISOString().split('T')[0]);
-    console.log('🔍 Dados filtrados:', dadosFiltrados.length);
+    console.log('🔍 Dados filtrados por período:', dadosFiltrados.length);
     console.log('🔍 Receitas encontradas:', receitas.length);
     console.log('🔍 Despesas encontradas:', despesas.length);
-    console.log('🔍 Receita total:', receitaTotal);
-    console.log('🔍 Despesa total:', despesaTotal);
-    console.log('🔍 Lucro total:', lucroTotal);
-    console.log('🔍 Margem de lucro:', margemLucro);
+    console.log('🔍 Receita total calculada:', receitaTotal);
+    console.log('🔍 Despesa total calculada:', despesaTotal);
+    console.log('🔍 Lucro total calculado:', lucroTotal);
+    console.log('🔍 Margem de lucro calculada:', margemLucro);
+    console.log('🔍 === DADOS COMPLETOS DO SUPABASE ===');
+    console.table(data);
     
     return {
       receitaTotal,
@@ -492,6 +497,18 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
             </div>
           </div>
 
+          {/* Indicador de Dados do Supabase */}
+          <div className="mb-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="flex items-center text-green-700">
+                <Database className="h-5 w-5 mr-2" />
+                <span className="text-sm font-medium">
+                  Dados carregados diretamente do Supabase: <strong>{data.length} transações</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* Filtros de Período */}
           <div className="mb-6">
             <div className="flex items-center mb-3">
@@ -585,7 +602,7 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
                     Margem de Lucro
                   </p>
                   <p className={`text-2xl font-bold ${metricas.margemLucro >= 0 ? 'text-green-900' : 'text-red-900'}`}>
-                    {metricas.margemLucro.toFixed(1)}%
+                    {metricas.lucroTotal >= 0 ? metricas.margemLucro.toFixed(1) : '0.0'}%
                   </p>
                 </div>
               </div>
