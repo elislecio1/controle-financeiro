@@ -1,3 +1,5 @@
-[33m9c10f3f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m  Remove: Eliminação completa de todas as simulações - sistema 100% real
-[33m667d61b[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m  Fix: Correção das URLs da API do Banco Inter e implementação de fallback para desenvolvimento
-[33m237502e[m  Fix: Remoção da sincronização simulada - Sistema agora sempre tenta sincronização real com credenciais configuradas
+[33m1ff955d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Implementar navegação para aba de cadastro com filtros aplicados ao clicar em 'Ver Todas as Transações'
+[33m8804bd8[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Implementar card 'Vencidos Ontem' e modal flutuante para exibir transações filtradas ao clicar nos cards
+[33md35360b[m Implementar totais por dia, categoria, banco e fornecedor no relatório de impressão
+[33m9d8b4d8[m Implementar PDF com layout organizado e numeração de páginas - primeira versão
+[33mbe6583b[m Implementar layout de impressão organizado para PDF e impressão com numeração de páginas
