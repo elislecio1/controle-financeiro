@@ -519,6 +519,17 @@ const calcularMetricasValidas = (dados: any[], tipoFiltro: string) => {
   };
 };
 
+// Função para filtrar apenas receitas
+const filtrarApenasReceitas = (dados: any[]) => {
+  console.log('🔍 === INÍCIO DA FILTRAÇÃO DE RECEITAS ===');
+  console.log('🔍 Dados recebidos:', dados);
+  const receitas = dados.filter(item => parseFloat(item.valor) > 0);
+  const totalReceitas = receitas.reduce((sum, item) => sum + parseFloat(item.valor) || 0, 0);
+  console.log('🔍 Total de receitas filtradas:', receitas.length);
+  console.log('🔍 Valor total das receitas filtradas:', totalReceitas);
+  return { receitas, totalReceitas };
+};
+
 export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFinanceirasProps) {
   const [activeTab, setActiveTab] = useState('receita-despesa');
   const [tipoFiltro, setTipoFiltro] = useState<'diario' | 'mensal' | 'anual'>('mensal');
@@ -531,17 +542,33 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
   const dre = useMemo(() => calcularDRE(data), [data]);
   const projecaoCaixa = useMemo(() => calcularProjecaoCaixa(data, tipoFiltro), [data, tipoFiltro]);
 
-  // Métricas principais - AGORA COM VALIDAÇÃO ROBUSTA
+  // Métricas principais - AGORA COM VALIDAÇÃO ROBUSTA E DEBUG DAS RECEITAS
   const metricas = useMemo(() => {
     console.log('🔍 === INÍCIO DO CÁLCULO DE MÉTRICAS ===');
     console.log('🔍 Dados recebidos:', data);
     console.log('🔍 Tipo filtro selecionado:', tipoFiltro);
     
+    // DEBUG: Filtrar APENAS receitas para verificar dados reais
+    const { receitas: todasReceitas, totalReceitas: totalReal } = filtrarApenasReceitas(data);
+    
+    console.log('🔍 COMPARAÇÃO:');
+    console.log('🔍 Total real das receitas (sem filtro): R$', totalReal);
+    console.log('🔍 Total esperado do seu banco: R$ 54.795,78');
+    console.log('🔍 Diferença:', totalReal - 54795.78);
+    
     // Primeiro validar e limpar os dados
     const dadosLimpos = validarELimparDados(data);
     
     // Depois calcular métricas com dados validados
-    return calcularMetricasValidas(dadosLimpos, tipoFiltro);
+    const metricasCalculadas = calcularMetricasValidas(dadosLimpos, tipoFiltro);
+    
+    console.log('🔍 MÉTRICAS CALCULADAS:', metricasCalculadas);
+    console.log('🔍 COMPARAÇÃO FINAL:');
+    console.log('🔍 Receita Total (com filtro): R$', metricasCalculadas.receitaTotal);
+    console.log('🔍 Receita Total (sem filtro): R$', totalReal);
+    console.log('🔍 Receita Total (esperada): R$ 54.795,78');
+    
+    return metricasCalculadas;
   }, [data, tipoFiltro]);
 
   const tabs = [
