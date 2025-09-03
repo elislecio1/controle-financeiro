@@ -65,8 +65,11 @@ const formatarDataDiaria = (data: string): string => {
 
 // Função para obter dados agrupados por período
 const agruparPorPeriodo = (data: any[], tipoFiltro: string) => {
+  console.log('🔍 === INÍCIO AGRUPAR POR PERÍODO ===');
   console.log('🔍 agruparPorPeriodo - Dados recebidos:', data);
   console.log('🔍 agruparPorPeriodo - Tipo filtro:', tipoFiltro);
+  console.log('🔍 === DADOS COMPLETOS PARA AGRUPAMENTO ===');
+  console.table(data);
   
   const agrupado: { [key: string]: { receitas: number; despesas: number; saldo: number } } = {};
   
@@ -347,10 +350,13 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
 
   // Métricas principais
   const metricas = useMemo(() => {
+    console.log('🔍 === INÍCIO DO CÁLCULO DE MÉTRICAS ===');
     console.log('🔍 Calculando métricas - Dados recebidos:', data);
     console.log('🔍 Tipo dos dados:', typeof data);
     console.log('🔍 É array?', Array.isArray(data));
     console.log('🔍 Tamanho do array:', data?.length);
+    console.log('🔍 === DADOS COMPLETOS ===');
+    console.table(data);
     
     if (!Array.isArray(data) || data.length === 0) {
       console.log('⚠️ Dados inválidos ou vazios, retornando zeros');
