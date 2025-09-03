@@ -129,13 +129,16 @@ const agruparPorPeriodo = (data: any[], tipoFiltro: string) => {
     
     const valor = Math.abs(parseFloat(item.valor) || 0);
     console.log(`🔍 Valor processado ${index}: ${item.valor} -> ${valor}`);
+    console.log(`🔍 Valor original: ${item.valor}, tipo: ${typeof item.valor}, parseFloat: ${parseFloat(item.valor)}`);
     
     if (parseFloat(item.valor) > 0) {
       agrupado[chave].receitas += valor;
       console.log(`🔍 Adicionando receita ${index}: ${agrupado[chave].receitas}`);
-    } else {
+    } else if (parseFloat(item.valor) < 0) {
       agrupado[chave].despesas += valor;
       console.log(`🔍 Adicionando despesa ${index}: ${agrupado[chave].despesas}`);
+    } else {
+      console.log(`⚠️ Item ${index} com valor zero ou inválido: ${item.valor}`);
     }
     
     agrupado[chave].saldo = agrupado[chave].receitas - agrupado[chave].despesas;
@@ -345,15 +348,63 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
   // Métricas principais
   const metricas = useMemo(() => {
     console.log('🔍 Calculando métricas - Dados recebidos:', data);
+    console.log('🔍 Tipo dos dados:', typeof data);
+    console.log('🔍 É array?', Array.isArray(data));
+    console.log('🔍 Tamanho do array:', data?.length);
     
-    const receitas = data.filter(item => parseFloat(item.valor) > 0);
-    const despesas = data.filter(item => parseFloat(item.valor) < 0);
+    if (!Array.isArray(data) || data.length === 0) {
+      console.log('⚠️ Dados inválidos ou vazios, retornando zeros');
+      return {
+        receitaTotal: 0,
+        despesaTotal: 0,
+        lucroTotal: 0,
+        margemLucro: 0
+      };
+    }
+    
+    // Verificar estrutura dos primeiros itens
+    console.log('🔍 Primeiro item:', data[0]);
+    console.log('🔍 Segundo item:', data[1]);
+    console.log('🔍 Terceiro item:', data[2]);
+    
+    // Verificar se o campo 'valor' existe e seu tipo
+    data.slice(0, 5).forEach((item, index) => {
+      console.log(`🔍 Item ${index}:`, {
+        valor: item.valor,
+        tipoValor: typeof item.valor,
+        parseFloat: parseFloat(item.valor),
+        isNaN: isNaN(parseFloat(item.valor))
+      });
+    });
+    
+    const receitas = data.filter(item => {
+      const valor = parseFloat(item.valor);
+      const isReceita = valor > 0 && !isNaN(valor);
+      console.log(`🔍 Item "${item.descricao || 'Sem descrição'}": valor=${item.valor}, parseFloat=${valor}, isReceita=${isReceita}`);
+      return isReceita;
+    });
+    
+    const despesas = data.filter(item => {
+      const valor = parseFloat(item.valor);
+      const isDespesa = valor < 0 && !isNaN(valor);
+      console.log(`🔍 Item "${item.descricao || 'Sem descrição'}": valor=${item.valor}, parseFloat=${valor}, isDespesa=${isDespesa}`);
+      return isDespesa;
+    });
     
     console.log('🔍 Receitas encontradas:', receitas);
     console.log('🔍 Despesas encontradas:', despesas);
     
-    const receitaTotal = receitas.reduce((total, item) => total + parseFloat(item.valor) || 0, 0);
-    const despesaTotal = despesas.reduce((total, item) => total + Math.abs(parseFloat(item.valor) || 0), 0);
+    const receitaTotal = receitas.reduce((total, item) => {
+      const valor = parseFloat(item.valor) || 0;
+      console.log(`🔍 Somando receita: ${total} + ${valor} = ${total + valor}`);
+      return total + valor;
+    }, 0);
+    
+    const despesaTotal = despesas.reduce((total, item) => {
+      const valor = Math.abs(parseFloat(item.valor) || 0);
+      console.log(`🔍 Somando despesa: ${total} + ${valor} = ${total + valor}`);
+      return total + valor;
+    }, 0);
     
     console.log('🔍 Receita total calculada:', receitaTotal);
     console.log('🔍 Despesa total calculada:', despesaTotal);
