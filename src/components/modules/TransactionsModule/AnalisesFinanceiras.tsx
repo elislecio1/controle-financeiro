@@ -348,10 +348,11 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
   const dre = useMemo(() => calcularDRE(data), [data]);
   const projecaoCaixa = useMemo(() => calcularProjecaoCaixa(data, tipoFiltro), [data, tipoFiltro]);
 
-  // Métricas principais
+  // Métricas principais - AGORA CALCULADAS COM BASE NO FILTRO SELECIONADO
   const metricas = useMemo(() => {
     console.log('🔍 === INÍCIO DO CÁLCULO DE MÉTRICAS ===');
     console.log('🔍 Calculando métricas - Dados recebidos:', data);
+    console.log('🔍 Tipo filtro selecionado:', tipoFiltro);
     console.log('🔍 Tipo dos dados:', typeof data);
     console.log('🔍 É array?', Array.isArray(data));
     console.log('🔍 Tamanho do array:', data?.length);
@@ -368,37 +369,100 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
       };
     }
     
-    // Verificar estrutura dos primeiros itens
-    console.log('🔍 Primeiro item:', data[0]);
-    console.log('🔍 Segundo item:', data[1]);
-    console.log('🔍 Terceiro item:', data[2]);
+    // Filtrar dados baseado no período selecionado
+    const hoje = new Date();
+    let dataInicio: Date;
+    let dataFim: Date;
     
-    // Verificar se o campo 'valor' existe e seu tipo
-    data.slice(0, 5).forEach((item, index) => {
-      console.log(`🔍 Item ${index}:`, {
-        valor: item.valor,
-        tipoValor: typeof item.valor,
-        parseFloat: parseFloat(item.valor),
-        isNaN: isNaN(parseFloat(item.valor))
-      });
+    switch (tipoFiltro) {
+      case 'diario':
+        // Últimos 30 dias
+        dataInicio = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 30);
+        dataFim = hoje;
+        break;
+      case 'mensal':
+        // Últimos 12 meses
+        dataInicio = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
+        dataFim = hoje;
+        break;
+      case 'anual':
+        // Últimos 5 anos
+        dataInicio = new Date(hoje.getFullYear() - 4, 0, 1);
+        dataFim = hoje;
+        break;
+      default:
+        dataInicio = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
+        dataFim = hoje;
+    }
+    
+    console.log('🔍 Período de análise:', {
+      tipoFiltro,
+      dataInicio: dataInicio.toISOString().split('T')[0],
+      dataFim: dataFim.toISOString().split('T')[0]
     });
     
-    const receitas = data.filter(item => {
+    // Filtrar dados dentro do período selecionado
+    const dadosFiltrados = data.filter(item => {
+      const dataItem = item.vencimento || item.data;
+      if (!dataItem) return false;
+      
+      // Converter data brasileira para formato ISO se necessário
+      let dataProcessada: string;
+      if (dataItem.includes('/')) {
+        const [dia, mes, ano] = dataItem.split('/');
+        dataProcessada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+      } else {
+        dataProcessada = dataItem;
+      }
+      
+      if (!dataProcessada || dataProcessada === 'undefined' || dataProcessada.includes('undefined')) {
+        return false;
+      }
+      
+      const dataTransacao = new Date(dataProcessada);
+      const estaNoPeriodo = dataTransacao >= dataInicio && dataTransacao <= dataFim;
+      
+      console.log(`🔍 Item "${item.descricao || 'Sem descrição'}": data=${dataItem}, processada=${dataProcessada}, estaNoPeriodo=${estaNoPeriodo}`);
+      
+      return estaNoPeriodo;
+    });
+    
+    console.log('🔍 Dados filtrados por período:', dadosFiltrados.length);
+    console.table(dadosFiltrados);
+    
+    // Verificar estrutura dos primeiros itens
+    if (dadosFiltrados.length > 0) {
+      console.log('🔍 Primeiro item filtrado:', dadosFiltrados[0]);
+      console.log('🔍 Segundo item filtrado:', dadosFiltrados[1]);
+      console.log('🔍 Terceiro item filtrado:', dadosFiltrados[2]);
+      
+      // Verificar se o campo 'valor' existe e seu tipo
+      dadosFiltrados.slice(0, 5).forEach((item, index) => {
+        console.log(`🔍 Item filtrado ${index}:`, {
+          valor: item.valor,
+          tipoValor: typeof item.valor,
+          parseFloat: parseFloat(item.valor),
+          isNaN: isNaN(parseFloat(item.valor))
+        });
+      });
+    }
+    
+    const receitas = dadosFiltrados.filter(item => {
       const valor = parseFloat(item.valor);
       const isReceita = valor > 0 && !isNaN(valor);
-      console.log(`🔍 Item "${item.descricao || 'Sem descrição'}": valor=${item.valor}, parseFloat=${valor}, isReceita=${isReceita}`);
+      console.log(`🔍 Item filtrado "${item.descricao || 'Sem descrição'}": valor=${item.valor}, parseFloat=${valor}, isReceita=${isReceita}`);
       return isReceita;
     });
     
-    const despesas = data.filter(item => {
+    const despesas = dadosFiltrados.filter(item => {
       const valor = parseFloat(item.valor);
       const isDespesa = valor < 0 && !isNaN(valor);
-      console.log(`🔍 Item "${item.descricao || 'Sem descrição'}": valor=${item.valor}, parseFloat=${valor}, isDespesa=${isDespesa}`);
+      console.log(`🔍 Item filtrado "${item.descricao || 'Sem descrição'}": valor=${item.valor}, parseFloat=${valor}, isDespesa=${isDespesa}`);
       return isDespesa;
     });
     
-    console.log('🔍 Receitas encontradas:', receitas);
-    console.log('🔍 Despesas encontradas:', despesas);
+    console.log('🔍 Receitas encontradas no período:', receitas.length);
+    console.log('🔍 Despesas encontradas no período:', despesas.length);
     
     const receitaTotal = receitas.reduce((total, item) => {
       const valor = parseFloat(item.valor) || 0;
@@ -412,14 +476,14 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
       return total + valor;
     }, 0);
     
-    console.log('🔍 Receita total calculada:', receitaTotal);
-    console.log('🔍 Despesa total calculada:', despesaTotal);
+    console.log('🔍 Receita total calculada no período:', receitaTotal);
+    console.log('🔍 Despesa total calculada no período:', despesaTotal);
     
     const lucroTotal = receitaTotal - despesaTotal;
     const margemLucro = receitaTotal > 0 ? (lucroTotal / receitaTotal) * 100 : 0;
     
-    console.log('🔍 Lucro total calculado:', lucroTotal);
-    console.log('🔍 Margem de lucro calculada:', margemLucro);
+    console.log('🔍 Lucro total calculado no período:', lucroTotal);
+    console.log('🔍 Margem de lucro calculada no período:', margemLucro);
     
     return {
       receitaTotal,
@@ -427,7 +491,7 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
       lucroTotal,
       margemLucro
     };
-  }, [data]);
+  }, [data, tipoFiltro]); // AGORA DEPENDE DO tipoFiltro também!
 
   const tabs = [
     { id: 'receita-despesa', name: 'Receita x Despesa', icon: BarChart3 },
@@ -444,19 +508,19 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
       id: 'diario', 
       name: 'Diário', 
       icon: CalendarDays,
-      description: 'Análise diária dentro do mês atual'
+      description: 'Análise dos últimos 30 dias'
     },
     { 
       id: 'mensal', 
       name: 'Mensal', 
       icon: CalendarRange,
-      description: 'Análise mensal dos últimos 12 meses'
+      description: 'Análise dos últimos 12 meses'
     },
     { 
       id: 'anual', 
       name: 'Anual', 
       icon: CalendarCheck,
-      description: 'Análise anual dos últimos 5 anos'
+      description: 'Análise dos últimos 5 anos'
     }
   ];
 
@@ -660,6 +724,20 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
           </div>
 
           {/* Métricas Principais */}
+          <div className="mb-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-center text-blue-700">
+                <Calendar className="h-5 w-5 mr-2" />
+                <span className="text-sm font-medium">
+                  Período de Análise: <strong>{filtros.find(f => f.id === tipoFiltro)?.name}</strong>
+                  {tipoFiltro === 'diario' && ' (últimos 30 dias)'}
+                  {tipoFiltro === 'mensal' && ' (últimos 12 meses)'}
+                  {tipoFiltro === 'anual' && ' (últimos 5 anos)'}
+                </span>
+              </div>
+            </div>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-green-50 p-4 rounded-lg border border-green-200">
               <div className="flex items-center">
