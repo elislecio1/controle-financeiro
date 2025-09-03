@@ -193,67 +193,98 @@ const agruparPorPeriodo = (data: any[], tipoFiltro: string) => {
 
 // Função para calcular fluxo de caixa acumulado
 const calcularFluxoCaixa = (dadosPeriodo: any[]) => {
+  console.log('🔍 calcularFluxoCaixa - Dados recebidos:', dadosPeriodo);
   let saldoAcumulado = 0;
-  return dadosPeriodo.map(item => {
+  
+  const resultado = dadosPeriodo.map(item => {
     saldoAcumulado += item.saldo;
+    console.log(`🔍 Período ${item.periodo}: saldo=${item.saldo}, acumulado=${saldoAcumulado}`);
     return {
       ...item,
       saldoAcumulado
     };
   });
+  
+  console.log('🔍 Resultado fluxo de caixa:', resultado);
+  return resultado;
 };
 
 // Função para agrupar por categoria
 const agruparPorCategoria = (data: any[]) => {
+  console.log('🔍 agruparPorCategoria - Dados recebidos:', data);
   const agrupado: { [key: string]: number } = {};
   
-  data.forEach(item => {
+  data.forEach((item, index) => {
+    console.log(`🔍 Processando categoria item ${index}:`, item);
     if (parseFloat(item.valor) < 0) { // Apenas despesas
       const categoria = item.categoria || item.descricao || 'Sem categoria';
-      agrupado[categoria] = (agrupado[categoria] || 0) + Math.abs(parseFloat(item.valor) || 0);
+      const valor = Math.abs(parseFloat(item.valor) || 0);
+      agrupado[categoria] = (agrupado[categoria] || 0) + valor;
+      console.log(`🔍 Categoria "${categoria}" recebeu valor ${valor}, total: ${agrupado[categoria]}`);
     }
   });
   
-  return Object.entries(agrupado)
+  const resultado = Object.entries(agrupado)
     .map(([categoria, valor]) => ({ categoria, valor }))
     .sort((a, b) => b.valor - a.valor)
     .slice(0, 8); // Top 8 categorias
+    
+  console.log('🔍 Resultado agruparPorCategoria:', resultado);
+  return resultado;
 };
 
 // Função para agrupar por cliente/contato
 const agruparPorCliente = (data: any[]) => {
+  console.log('🔍 agruparPorCliente - Dados recebidos:', data);
   const agrupado: { [key: string]: number } = {};
   
-  data.forEach(item => {
+  data.forEach((item, index) => {
+    console.log(`🔍 Processando cliente item ${index}:`, item);
     if (parseFloat(item.valor) > 0) { // Apenas receitas
       const cliente = item.empresa || item.contato || item.descricao || 'Cliente não identificado';
-      agrupado[cliente] = (agrupado[cliente] || 0) + parseFloat(item.valor) || 0;
+      const valor = parseFloat(item.valor) || 0;
+      agrupado[cliente] = (agrupado[cliente] || 0) + valor;
+      console.log(`🔍 Cliente "${cliente}" recebeu valor ${valor}, total: ${agrupado[cliente]}`);
     }
   });
   
-  return Object.entries(agrupado)
+  const resultado = Object.entries(agrupado)
     .map(([cliente, valor]) => ({ cliente, valor }))
     .sort((a, b) => b.valor - a.valor)
     .slice(0, 10); // Top 10 clientes
+    
+  console.log('🔍 Resultado agruparPorCliente:', resultado);
+  return resultado;
 };
 
 // Função para calcular DRE
 const calcularDRE = (data: any[]) => {
-  const receitaBruta = data
-    .filter(item => parseFloat(item.valor) > 0)
-    .reduce((total, item) => total + parseFloat(item.valor) || 0, 0);
+  console.log('🔍 calcularDRE - Dados recebidos:', data);
   
-  const despesas = data
-    .filter(item => parseFloat(item.valor) < 0)
-    .reduce((total, item) => total + Math.abs(parseFloat(item.valor) || 0), 0);
+  const receitas = data.filter(item => parseFloat(item.valor) > 0);
+  const despesas = data.filter(item => parseFloat(item.valor) < 0);
   
-  const lucroLiquido = receitaBruta - despesas;
+  console.log('🔍 Receitas para DRE:', receitas);
+  console.log('🔍 Despesas para DRE:', despesas);
   
-  return [
+  const receitaBruta = receitas.reduce((total, item) => total + parseFloat(item.valor) || 0, 0);
+  const despesasTotal = despesas.reduce((total, item) => total + Math.abs(parseFloat(item.valor) || 0), 0);
+  
+  console.log('🔍 Receita bruta calculada:', receitaBruta);
+  console.log('🔍 Despesas totais calculadas:', despesasTotal);
+  
+  const lucroLiquido = receitaBruta - despesasTotal;
+  
+  console.log('🔍 Lucro líquido calculado:', lucroLiquido);
+  
+  const resultado = [
     { item: 'Receita Bruta', valor: receitaBruta, cor: '#00C49F' },
-    { item: 'Despesas', valor: despesas, cor: '#FF8042' },
+    { item: 'Despesas', valor: despesasTotal, cor: '#FF8042' },
     { item: 'Lucro Líquido', valor: lucroLiquido, cor: lucroLiquido >= 0 ? '#0088FE' : '#FF6B6B' }
   ];
+  
+  console.log('🔍 Resultado DRE:', resultado);
+  return resultado;
 };
 
 // Função para calcular projeção de caixa
@@ -261,85 +292,42 @@ const calcularProjecaoCaixa = (data: any[], tipoFiltro: string) => {
   const hoje = new Date();
   const projecao = [];
   
-  let periodos = 6; // Padrão 6 meses
-  if (tipoFiltro === 'diario') periodos = 30; // 30 dias
-  if (tipoFiltro === 'anual') periodos = 5; // 5 anos
-  
-  for (let i = 0; i < periodos; i++) {
-    let dataProjecao: Date;
-    let label: string;
+  // Usar apenas dados reais existentes, sem projeções futuras
+  const dadosReais = data.filter(item => {
+    const dataItem = item.vencimento || item.data;
+    if (!dataItem) return false;
     
-    switch (tipoFiltro) {
-      case 'diario':
-        dataProjecao = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + i);
-        label = formatarDataDiaria(dataProjecao.toISOString().split('T')[0]);
-        break;
-      case 'mensal':
-        dataProjecao = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
-        label = formatarData(dataProjecao.toISOString().split('T')[0]);
-        break;
-      case 'anual':
-        dataProjecao = new Date(hoje.getFullYear() + i, 0, 1);
-        label = dataProjecao.getFullYear().toString();
-        break;
-      default:
-        dataProjecao = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
-        label = formatarData(dataProjecao.toISOString().split('T')[0]);
+    // Converter data brasileira se necessário
+    let dataProcessada: string;
+    if (dataItem.includes('/')) {
+      const [dia, mes, ano] = dataItem.split('/');
+      dataProcessada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+    } else {
+      dataProcessada = dataItem;
     }
     
-    // Calcular dados de projeção baseados em histórico real
-    const dadosHistorico = data.filter(item => {
-      const dataItem = item.vencimento || item.data;
-      if (!dataItem) return false;
-      
-      // Converter data brasileira se necessário
-      let dataProcessada: string;
-      if (dataItem.includes('/')) {
-        const [dia, mes, ano] = dataItem.split('/');
-        dataProcessada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
-      } else {
-        dataProcessada = dataItem;
-      }
-      
-      if (!dataProcessada || dataProcessada === 'undefined' || dataProcessada.includes('undefined')) {
-        return false;
-      }
-      
-      return true;
-    });
+    if (!dataProcessada || dataProcessada === 'undefined' || dataProcessada.includes('undefined')) {
+      return false;
+    }
     
-    // Calcular médias baseadas em dados reais
-    const receitasReais = dadosHistorico
-      .filter(item => parseFloat(item.valor) > 0)
-      .map(item => parseFloat(item.valor) || 0);
-    
-    const despesasReais = dadosHistorico
-      .filter(item => parseFloat(item.valor) < 0)
-      .map(item => Math.abs(parseFloat(item.valor) || 0));
-    
-    const mediaReceitas = receitasReais.length > 0 ? 
-      receitasReais.reduce((a, b) => a + b, 0) / receitasReais.length : 0;
-    
-    const mediaDespesas = despesasReais.length > 0 ? 
-      despesasReais.reduce((a, b) => a + b, 0) / despesasReais.length : 0;
-    
-    // Aplicar variação sazonal baseada no mês
-    const mes = dataProjecao.getMonth();
-    const variacaoSazonal = 1 + (Math.sin(mes * Math.PI / 6) * 0.2); // Variação de ±20%
-    
-    const receitas = mediaReceitas * variacaoSazonal;
-    const despesas = mediaDespesas * variacaoSazonal;
-    const saldo = receitas - despesas;
-    
-    projecao.push({
-      periodo: label,
-      receitas,
-      despesas,
-      saldo
-    });
+    return true;
+  });
+  
+  // Se não há dados reais, retornar array vazio
+  if (dadosReais.length === 0) {
+    return [];
   }
   
-  return projecao;
+  // Agrupar dados reais por período para mostrar histórico real
+  const dadosAgrupados = agruparPorPeriodo(dadosReais, tipoFiltro);
+  
+  // Retornar apenas os dados reais agrupados, sem projeções
+  return dadosAgrupados.map(item => ({
+    periodo: item.periodo,
+    receitas: item.receitas,
+    despesas: item.despesas,
+    saldo: item.saldo
+  }));
 };
 
 export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFinanceirasProps) {
@@ -391,7 +379,7 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
     { id: 'clientes', name: 'Receitas por Cliente', icon: Users },
     { id: 'evolucao', name: 'Evolução de Receita', icon: TrendingUp },
     { id: 'dre', name: 'DRE', icon: Target },
-    { id: 'projecao', name: 'Projeção de Caixa', icon: Calendar }
+    { id: 'projecao', name: 'Histórico de Caixa', icon: Calendar }
   ];
 
   const filtros = [
@@ -554,7 +542,7 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
                 stroke="#0088FE" 
                 fill="#0088FE" 
                 fillOpacity={0.3}
-                name="Saldo Projetado"
+                name="Saldo Real"
               />
             </AreaChart>
           </ResponsiveContainer>
