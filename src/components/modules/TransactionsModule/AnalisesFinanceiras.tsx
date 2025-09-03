@@ -336,6 +336,189 @@ const calcularProjecaoCaixa = (data: any[], tipoFiltro: string) => {
   }));
 };
 
+// Função para validar e limpar dados
+const validarELimparDados = (dados: any[]) => {
+  console.log('🔍 === INÍCIO DA VALIDAÇÃO E LIMPEZA DE DADOS ===');
+  console.log('🔍 Dados recebidos:', dados);
+  console.log('🔍 Tamanho do array:', dados?.length);
+  
+  const dadosLimpos = dados.filter(item => {
+    const dataItem = item.vencimento || item.data;
+    if (!dataItem) {
+      console.log(`⚠️ Item sem data, pulando:`, item);
+      return false;
+    }
+    
+    // Converter data brasileira para formato ISO se necessário
+    let dataProcessada: string;
+    if (dataItem.includes('/')) {
+      const [dia, mes, ano] = dataItem.split('/');
+      dataProcessada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+    } else {
+      dataProcessada = dataItem;
+    }
+    
+    if (!dataProcessada || dataProcessada === 'undefined' || dataProcessada.includes('undefined')) {
+      console.log(`⚠️ Data inválida, pulando item:`, item);
+      return false;
+    }
+    
+    const dataTransacao = new Date(dataProcessada);
+    const hoje = new Date();
+    
+    // Validar se a data é no passado ou no futuro
+    if (dataTransacao > hoje) {
+      console.log(`⚠️ Item com data futura, pulando:`, item);
+      return false;
+    }
+    
+    // Validar se o valor é um número válido
+    const valor = parseFloat(item.valor);
+    if (isNaN(valor) || !isFinite(valor)) {
+      console.log(`⚠️ Item com valor inválido, pulando:`, item);
+      return false;
+    }
+    
+    // Validar se o tipo de transação é válido (receita ou despesa)
+    if (valor > 0) {
+      if (!item.descricao || !item.categoria) {
+        console.log(`⚠️ Receita com dados incompletos, pulando:`, item);
+        return false;
+      }
+    } else if (valor < 0) {
+      if (!item.descricao || !item.categoria) {
+        console.log(`⚠️ Despesa com dados incompletos, pulando:`, item);
+        return false;
+      }
+    } else {
+      console.log(`⚠️ Item com valor zero, pulando:`, item);
+      return false;
+    }
+    
+    console.log(`✅ Item válido:`, item);
+    return true;
+  });
+  
+  console.log('🔍 Dados após validação e limpeza:', dadosLimpos);
+  return dadosLimpos;
+};
+
+// Função para calcular métricas válidas
+const calcularMetricasValidas = (dados: any[], tipoFiltro: string) => {
+  console.log('🔍 === INÍCIO DO CÁLCULO DE MÉTRICAS VÁLIDAS ===');
+  console.log('🔍 Dados recebidos:', dados);
+  console.log('🔍 Tipo filtro selecionado:', tipoFiltro);
+  
+  if (!Array.isArray(dados) || dados.length === 0) {
+    console.log('⚠️ Dados inválidos ou vazios, retornando zeros');
+    return {
+      receitaTotal: 0,
+      despesaTotal: 0,
+      lucroTotal: 0,
+      margemLucro: 0
+    };
+  }
+  
+  // Filtrar dados baseado no período selecionado
+  const hoje = new Date();
+  let dataInicio: Date;
+  let dataFim: Date;
+  
+  switch (tipoFiltro) {
+    case 'diario':
+      // Últimos 30 dias
+      dataInicio = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 30);
+      dataFim = hoje;
+      break;
+    case 'mensal':
+      // Últimos 12 meses
+      dataInicio = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
+      dataFim = hoje;
+      break;
+    case 'anual':
+      // Últimos 5 anos
+      dataInicio = new Date(hoje.getFullYear() - 4, 0, 1);
+      dataFim = hoje;
+      break;
+    default:
+      dataInicio = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
+      dataFim = hoje;
+  }
+  
+  console.log('🔍 Período de análise:', {
+    tipoFiltro,
+    dataInicio: dataInicio.toISOString().split('T')[0],
+    dataFim: dataFim.toISOString().split('T')[0]
+  });
+  
+  const dadosFiltrados = dados.filter(item => {
+    const dataItem = item.vencimento || item.data;
+    if (!dataItem) return false;
+    
+    // Converter data brasileira para formato ISO se necessário
+    let dataProcessada: string;
+    if (dataItem.includes('/')) {
+      const [dia, mes, ano] = dataItem.split('/');
+      dataProcessada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+    } else {
+      dataProcessada = dataItem;
+    }
+    
+    if (!dataProcessada || dataProcessada === 'undefined' || dataProcessada.includes('undefined')) {
+      return false;
+    }
+    
+    const dataTransacao = new Date(dataProcessada);
+    const estaNoPeriodo = dataTransacao >= dataInicio && dataTransacao <= dataFim;
+    
+    return estaNoPeriodo;
+  });
+  
+  console.log('🔍 Dados filtrados por período:', dadosFiltrados.length);
+  console.table(dadosFiltrados);
+  
+  const receitas = dadosFiltrados.filter(item => {
+    const valor = parseFloat(item.valor);
+    const isReceita = valor > 0 && !isNaN(valor);
+    return isReceita;
+  });
+  
+  const despesas = dadosFiltrados.filter(item => {
+    const valor = parseFloat(item.valor);
+    const isDespesa = valor < 0 && !isNaN(valor);
+    return isDespesa;
+  });
+  
+  console.log('🔍 Receitas encontradas no período:', receitas.length);
+  console.log('🔍 Despesas encontradas no período:', despesas.length);
+  
+  const receitaTotal = receitas.reduce((total, item) => {
+    const valor = parseFloat(item.valor) || 0;
+    return total + valor;
+  }, 0);
+  
+  const despesaTotal = despesas.reduce((total, item) => {
+    const valor = Math.abs(parseFloat(item.valor) || 0);
+    return total + valor;
+  }, 0);
+  
+  console.log('🔍 Receita total calculada no período:', receitaTotal);
+  console.log('🔍 Despesa total calculada no período:', despesaTotal);
+  
+  const lucroTotal = receitaTotal - despesaTotal;
+  const margemLucro = receitaTotal > 0 ? (lucroTotal / receitaTotal) * 100 : 0;
+  
+  console.log('🔍 Lucro total calculado no período:', lucroTotal);
+  console.log('🔍 Margem de lucro calculada no período:', margemLucro);
+  
+  return {
+    receitaTotal,
+    despesaTotal,
+    lucroTotal,
+    margemLucro
+  };
+};
+
 export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFinanceirasProps) {
   const [activeTab, setActiveTab] = useState('receita-despesa');
   const [tipoFiltro, setTipoFiltro] = useState<'diario' | 'mensal' | 'anual'>('mensal');
@@ -348,150 +531,18 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
   const dre = useMemo(() => calcularDRE(data), [data]);
   const projecaoCaixa = useMemo(() => calcularProjecaoCaixa(data, tipoFiltro), [data, tipoFiltro]);
 
-  // Métricas principais - AGORA CALCULADAS COM BASE NO FILTRO SELECIONADO
+  // Métricas principais - AGORA COM VALIDAÇÃO ROBUSTA
   const metricas = useMemo(() => {
     console.log('🔍 === INÍCIO DO CÁLCULO DE MÉTRICAS ===');
-    console.log('🔍 Calculando métricas - Dados recebidos:', data);
+    console.log('🔍 Dados recebidos:', data);
     console.log('🔍 Tipo filtro selecionado:', tipoFiltro);
-    console.log('🔍 Tipo dos dados:', typeof data);
-    console.log('🔍 É array?', Array.isArray(data));
-    console.log('🔍 Tamanho do array:', data?.length);
-    console.log('🔍 === DADOS COMPLETOS ===');
-    console.table(data);
     
-    if (!Array.isArray(data) || data.length === 0) {
-      console.log('⚠️ Dados inválidos ou vazios, retornando zeros');
-      return {
-        receitaTotal: 0,
-        despesaTotal: 0,
-        lucroTotal: 0,
-        margemLucro: 0
-      };
-    }
+    // Primeiro validar e limpar os dados
+    const dadosLimpos = validarELimparDados(data);
     
-    // Filtrar dados baseado no período selecionado
-    const hoje = new Date();
-    let dataInicio: Date;
-    let dataFim: Date;
-    
-    switch (tipoFiltro) {
-      case 'diario':
-        // Últimos 30 dias
-        dataInicio = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 30);
-        dataFim = hoje;
-        break;
-      case 'mensal':
-        // Últimos 12 meses
-        dataInicio = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
-        dataFim = hoje;
-        break;
-      case 'anual':
-        // Últimos 5 anos
-        dataInicio = new Date(hoje.getFullYear() - 4, 0, 1);
-        dataFim = hoje;
-        break;
-      default:
-        dataInicio = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
-        dataFim = hoje;
-    }
-    
-    console.log('🔍 Período de análise:', {
-      tipoFiltro,
-      dataInicio: dataInicio.toISOString().split('T')[0],
-      dataFim: dataFim.toISOString().split('T')[0]
-    });
-    
-    // Filtrar dados dentro do período selecionado
-    const dadosFiltrados = data.filter(item => {
-      const dataItem = item.vencimento || item.data;
-      if (!dataItem) return false;
-      
-      // Converter data brasileira para formato ISO se necessário
-      let dataProcessada: string;
-      if (dataItem.includes('/')) {
-        const [dia, mes, ano] = dataItem.split('/');
-        dataProcessada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
-      } else {
-        dataProcessada = dataItem;
-      }
-      
-      if (!dataProcessada || dataProcessada === 'undefined' || dataProcessada.includes('undefined')) {
-        return false;
-      }
-      
-      const dataTransacao = new Date(dataProcessada);
-      const estaNoPeriodo = dataTransacao >= dataInicio && dataTransacao <= dataFim;
-      
-      console.log(`🔍 Item "${item.descricao || 'Sem descrição'}": data=${dataItem}, processada=${dataProcessada}, estaNoPeriodo=${estaNoPeriodo}`);
-      
-      return estaNoPeriodo;
-    });
-    
-    console.log('🔍 Dados filtrados por período:', dadosFiltrados.length);
-    console.table(dadosFiltrados);
-    
-    // Verificar estrutura dos primeiros itens
-    if (dadosFiltrados.length > 0) {
-      console.log('🔍 Primeiro item filtrado:', dadosFiltrados[0]);
-      console.log('🔍 Segundo item filtrado:', dadosFiltrados[1]);
-      console.log('🔍 Terceiro item filtrado:', dadosFiltrados[2]);
-      
-      // Verificar se o campo 'valor' existe e seu tipo
-      dadosFiltrados.slice(0, 5).forEach((item, index) => {
-        console.log(`🔍 Item filtrado ${index}:`, {
-          valor: item.valor,
-          tipoValor: typeof item.valor,
-          parseFloat: parseFloat(item.valor),
-          isNaN: isNaN(parseFloat(item.valor))
-        });
-      });
-    }
-    
-    const receitas = dadosFiltrados.filter(item => {
-      const valor = parseFloat(item.valor);
-      const isReceita = valor > 0 && !isNaN(valor);
-      console.log(`🔍 Item filtrado "${item.descricao || 'Sem descrição'}": valor=${item.valor}, parseFloat=${valor}, isReceita=${isReceita}`);
-      return isReceita;
-    });
-    
-    const despesas = dadosFiltrados.filter(item => {
-      const valor = parseFloat(item.valor);
-      const isDespesa = valor < 0 && !isNaN(valor);
-      console.log(`🔍 Item filtrado "${item.descricao || 'Sem descrição'}": valor=${item.valor}, parseFloat=${valor}, isDespesa=${isDespesa}`);
-      return isDespesa;
-    });
-    
-    console.log('🔍 Receitas encontradas no período:', receitas.length);
-    console.log('🔍 Despesas encontradas no período:', despesas.length);
-    
-    const receitaTotal = receitas.reduce((total, item) => {
-      const valor = parseFloat(item.valor) || 0;
-      console.log(`🔍 Somando receita: ${total} + ${valor} = ${total + valor}`);
-      return total + valor;
-    }, 0);
-    
-    const despesaTotal = despesas.reduce((total, item) => {
-      const valor = Math.abs(parseFloat(item.valor) || 0);
-      console.log(`🔍 Somando despesa: ${total} + ${valor} = ${total + valor}`);
-      return total + valor;
-    }, 0);
-    
-    console.log('🔍 Receita total calculada no período:', receitaTotal);
-    console.log('🔍 Despesa total calculada no período:', despesaTotal);
-    
-    const lucroTotal = receitaTotal - despesaTotal;
-    const margemLucro = receitaTotal > 0 ? (lucroTotal / receitaTotal) * 100 : 0;
-    
-    console.log('🔍 Lucro total calculado no período:', lucroTotal);
-    console.log('🔍 Margem de lucro calculada no período:', margemLucro);
-    
-    return {
-      receitaTotal,
-      despesaTotal,
-      lucroTotal,
-      margemLucro
-    };
-  }, [data, tipoFiltro]); // AGORA DEPENDE DO tipoFiltro também!
+    // Depois calcular métricas com dados validados
+    return calcularMetricasValidas(dadosLimpos, tipoFiltro);
+  }, [data, tipoFiltro]);
 
   const tabs = [
     { id: 'receita-despesa', name: 'Receita x Despesa', icon: BarChart3 },
