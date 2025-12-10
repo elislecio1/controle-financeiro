@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
-import { TrendingUp, Users, DollarSign, Activity, Database, Settings, RefreshCw, Calendar, Filter, Search, Plus, Download, Upload, CheckCircle, XCircle, Trash2, Edit, Bell, User, Shield, Clock } from 'lucide-react'
+import { TrendingUp, Users, DollarSign, Activity, Database, Settings, RefreshCw, Calendar, Filter, Search, Plus, Download, Upload, CheckCircle, XCircle, Trash2, Edit, Bell, User, Shield, Clock, Brain } from 'lucide-react'
 import { SheetData, Categoria, Subcategoria, CentroCusto, Meta, Orcamento, Investimento, ContaBancaria, CartaoCredito, Contato, Alerta } from './types'
 import { supabaseService } from './services/supabase'
 import TransactionForm from './components/TransactionForm'
@@ -20,6 +20,14 @@ import SystemLogs from './components/SystemLogs'
 import { useAuth } from './hooks/useAuth'
 import { formatarMoeda, formatarValorTabela, getClasseValor } from './utils/formatters'
 import AnalisesFinanceiras from './components/modules/TransactionsModule/AnalisesFinanceiras'
+import { realtimeService } from './services/realtimeService'
+import { backupService } from './services/backupService'
+import { notificationService } from './services/notificationService'
+import NotificationSettings from './components/NotificationSettings'
+import { monitoringService } from './services/monitoringService'
+import MonitoringDashboard from './components/MonitoringDashboard'
+import { aiFinancialService } from './services/aiFinancialService'
+import AIFinancialDashboard from './components/AIFinancialDashboard'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
@@ -95,6 +103,20 @@ function App() {
   // Estados para edição de transações
   const [showEditModal, setShowEditModal] = useState(false)
   const [transactionToEdit, setTransactionToEdit] = useState<SheetData | null>(null)
+
+  // Estados para tempo real
+  const [realtimeNotifications, setRealtimeNotifications] = useState<any[]>([])
+  const [realtimeStats, setRealtimeStats] = useState<any>(null)
+
+  // Estados para notificações
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false)
+  const [notificationHistory, setNotificationHistory] = useState<any[]>([])
+
+  // Estados para monitoramento
+  const [showMonitoringDashboard, setShowMonitoringDashboard] = useState(false)
+
+  // Estados para IA financeira
+  const [showAIFinancialDashboard, setShowAIFinancialDashboard] = useState(false)
 
   // Função para formatar data automaticamente
   const formatDateInput = (value: string): string => {
@@ -227,7 +249,64 @@ function App() {
 
   useEffect(() => {
     loadData()
-  }, [])
+    
+    // Configurar listeners de tempo real
+    if (isAuthenticated && user) {
+      console.log('🔄 Configurando listeners de tempo real...')
+      
+      // Listener para mudanças nas transações
+      const unsubscribeTransactions = realtimeService.addListener('transaction_created', (data) => {
+        console.log('📊 Nova transação criada:', data)
+        setConnectionStatus({ success: true, message: data.message })
+        
+        // Enviar notificação
+        if (data.data) {
+          notificationService.sendTransactionNotification(user.id, data.data)
+        }
+        
+        loadData() // Recarregar dados
+      })
+
+      const unsubscribeUpdates = realtimeService.addListener('transaction_updated', (data) => {
+        console.log('📊 Transação atualizada:', data)
+        setConnectionStatus({ success: true, message: data.message })
+        loadData() // Recarregar dados
+      })
+
+      const unsubscribeDeletes = realtimeService.addListener('transaction_deleted', (data) => {
+        console.log('📊 Transação excluída:', data)
+        setConnectionStatus({ success: true, message: data.message })
+        loadData() // Recarregar dados
+      })
+
+      // Listener para notificações
+      const unsubscribeNotifications = realtimeService.addListener('new_notification', (notification) => {
+        console.log('🔔 Nova notificação:', notification)
+        setRealtimeNotifications(prev => [notification, ...prev])
+      })
+
+      // Listener para estatísticas
+      const unsubscribeStats = realtimeService.addListener('stats_updated', (stats) => {
+        console.log('📈 Estatísticas atualizadas:', stats)
+        setRealtimeStats(stats)
+      })
+
+      // Solicitar permissão para notificações do navegador
+      realtimeService.requestNotificationPermission()
+
+      // Configurar backup automático
+      backupService.scheduleAutomaticBackup()
+
+      // Cleanup
+      return () => {
+        unsubscribeTransactions()
+        unsubscribeUpdates()
+        unsubscribeDeletes()
+        unsubscribeNotifications()
+        unsubscribeStats()
+      }
+    }
+  }, [isAuthenticated, user])
 
   // Fechar menu do usuário quando clicar fora
   useEffect(() => {
@@ -624,6 +703,33 @@ function App() {
     }
   }
 
+  // Função para criar backup manual
+  const handleCreateBackup = async () => {
+    try {
+      setLoading(true)
+      const result = await backupService.createBackup('manual')
+      
+      if (result.success) {
+        setConnectionStatus({ 
+          success: true, 
+          message: `Backup criado com sucesso! ID: ${result.backupId}` 
+        })
+      } else {
+        setConnectionStatus({ 
+          success: false, 
+          message: result.error || 'Erro ao criar backup' 
+        })
+      }
+    } catch (error: any) {
+      setConnectionStatus({ 
+        success: false, 
+        message: error.message || 'Erro ao criar backup' 
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Função para ordenação
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc'
@@ -941,6 +1047,14 @@ function App() {
                 Atualizar
               </button>
               
+              <button
+                onClick={handleCreateBackup}
+                className="flex items-center px-3 py-2 text-sm font-medium text-purple-700 bg-purple-100 rounded-md hover:bg-purple-200"
+              >
+                <Database className="h-4 w-4 mr-2" />
+                Backup
+              </button>
+              
               <div className="flex items-center space-x-2">
                 <button
                   onClick={handleExportData}
@@ -1034,6 +1148,36 @@ function App() {
                        >
                          <User className="h-4 w-4 mr-2" />
                          Meu Perfil
+                       </button>
+                       <button
+                         onClick={() => {
+                           setShowUserMenu(false)
+                           setShowNotificationSettings(true)
+                         }}
+                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                       >
+                         <Bell className="h-4 w-4 mr-2" />
+                         Notificações
+                       </button>
+                       <button
+                         onClick={() => {
+                           setShowUserMenu(false)
+                           setShowMonitoringDashboard(true)
+                         }}
+                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                       >
+                         <Activity className="h-4 w-4 mr-2" />
+                         Monitoramento
+                       </button>
+                       <button
+                         onClick={() => {
+                           setShowUserMenu(false)
+                           setShowAIFinancialDashboard(true)
+                         }}
+                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                       >
+                         <Brain className="h-4 w-4 mr-2" />
+                         IA Financeira
                        </button>
                      </div>
                    )}
@@ -1677,6 +1821,24 @@ function App() {
         <SystemLogs
           isOpen={showSystemLogs}
           onClose={() => setShowSystemLogs(false)}
+        />
+
+        {/* Modal de Configurações de Notificações */}
+        <NotificationSettings
+          isOpen={showNotificationSettings}
+          onClose={() => setShowNotificationSettings(false)}
+        />
+
+        {/* Dashboard de Monitoramento */}
+        <MonitoringDashboard
+          isOpen={showMonitoringDashboard}
+          onClose={() => setShowMonitoringDashboard(false)}
+        />
+
+        {/* Dashboard de IA Financeira */}
+        <AIFinancialDashboard
+          isOpen={showAIFinancialDashboard}
+          onClose={() => setShowAIFinancialDashboard(false)}
         />
       </main>
     </div>

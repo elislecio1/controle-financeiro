@@ -1,19 +1,24 @@
 import { createClient } from '@supabase/supabase-js'
 import { SheetData, NewTransaction, Categoria, Subcategoria, Investimento, ContaBancaria, CartaoCredito, Contato, CentroCusto } from '../types'
 import { formatarMoeda, formatarData, parsearDataBrasileira, parsearValorBrasileiro } from '../utils/formatters'
+import { logService } from './logService'
+import { cacheService } from './cacheService'
 
-// Configurações do Supabase - App Frameworks
-const SUPABASE_URL = import.meta.env.NEXT_PUBLIC_SUPABASE_URL || 
-                    import.meta.env.VITE_SUPABASE_URL || 
-                    'https://eshaahpcddqkeevxpgfk.supabase.co'
-
-const SUPABASE_ANON_KEY = import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || 
-                         import.meta.env.VITE_SUPABASE_ANON_KEY || 
-                         'sb_publishable_SV3lBKi83O1jhjIYPW_bjQ_m5vK9lBD'
+// Configurações do Supabase - SEGURANÇA CRÍTICA
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Verificar se as configurações são válidas
-if (SUPABASE_URL === 'https://your-project.supabase.co' || SUPABASE_ANON_KEY === 'your-anon-key') {
-  throw new Error('Supabase não configurado. Configure as variáveis de ambiente.')
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error('❌ SUPABASE NÃO CONFIGURADO!\n\nConfigure as variáveis de ambiente:\n- VITE_SUPABASE_URL\n- VITE_SUPABASE_ANON_KEY\n\nCrie um arquivo .env na raiz do projeto com estas variáveis.')
+}
+
+// Verificar se não são valores padrão
+if (SUPABASE_URL === 'https://your-project-id.supabase.co' || 
+    SUPABASE_ANON_KEY === 'your-anon-key' ||
+    SUPABASE_URL.includes('your-project') ||
+    SUPABASE_ANON_KEY.includes('your-anon')) {
+  throw new Error('❌ CONFIGURAÇÃO INVÁLIDA!\n\nSubstitua os valores padrão pelas credenciais reais do seu projeto Supabase.')
 }
 
 // Criar uma única instância do cliente Supabase
@@ -60,9 +65,42 @@ const addUserIdToData = async (data: any) => {
 
 // Sistema operando apenas com dados reais - sem dados simulados
 
+export interface PaginationOptions {
+  page?: number
+  limit?: number
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+}
+
+export interface FilterOptions {
+  search?: string
+  tipo?: 'receita' | 'despesa' | 'transferencia' | 'investimento'
+  categoria?: string
+  conta?: string
+  status?: 'pago' | 'pendente' | 'vencido'
+  dataInicio?: string
+  dataFim?: string
+  valorMin?: number
+  valorMax?: number
+}
+
+export interface PaginatedResult<T> {
+  data: T[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
+  }
+}
+
 export interface SupabaseService {
   readonly supabase: any
   getData(): Promise<SheetData[]>
+  getDataPaginated(options?: PaginationOptions): Promise<PaginatedResult<SheetData>>
+  searchTransactions(filters: FilterOptions, pagination?: PaginationOptions): Promise<PaginatedResult<SheetData>>
   saveTransaction(transaction: NewTransaction): Promise<{ success: boolean; message: string; data?: SheetData }>
   updateTransaction(id: string, data: Partial<SheetData>): Promise<{ success: boolean; message: string }>
   deleteTransaction(id: string): Promise<{ success: boolean; message: string }>
@@ -118,9 +156,29 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async getData(): Promise<SheetData[]> {
     try {
-      // Se o Supabase não estiver configurado, retornar erro
-      if (SUPABASE_URL === 'https://your-project.supabase.co' || SUPABASE_ANON_KEY === 'your-anon-key') {
-        throw new Error('Supabase não configurado. Configure as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY')
+      // Verificar se o Supabase está configurado
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        throw new Error('❌ Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY')
+      }
+      
+      // Verificar autenticação primeiro
+      const { data: { session }, error: authError } = await supabase.auth.getSession()
+      if (authError) {
+        console.error('❌ Erro de autenticação:', authError)
+        throw new Error(`Erro de autenticação: ${authError.message}`)
+      }
+
+      if (!session?.user) {
+        throw new Error('❌ Usuário não autenticado. Faça login para acessar os dados.')
+      }
+
+      // Usar cache para melhorar performance
+      const cacheKey = `transactions:${session.user.id}`
+      const cachedData = cacheService.get<SheetData[]>(cacheKey)
+      
+      if (cachedData) {
+        console.log('✅ Dados carregados do cache:', cachedData.length, 'registros')
+        return cachedData
       }
       
       console.log('🔍 Conectando com Supabase...')
@@ -139,6 +197,7 @@ class SupabaseServiceImpl implements SupabaseService {
       const { data, error } = await supabase
         .from(this.TABLE_NAME)
         .select('*')
+        .eq('user_id', session.user.id) // Filtrar por usuário
         .order('data', { ascending: true })
 
       if (error) {
@@ -176,9 +235,257 @@ class SupabaseServiceImpl implements SupabaseService {
         situacao: item.situacao || ''
       }))
 
+      // Armazenar no cache por 5 minutos
+      cacheService.set(cacheKey, sheetData, 5 * 60 * 1000)
+      
       return sheetData
     } catch (error: any) {
       console.error('❌ Erro ao carregar dados:', error)
+      throw error
+    }
+  }
+
+  // Método otimizado com paginação
+  async getDataPaginated(options: PaginationOptions = {}): Promise<PaginatedResult<SheetData>> {
+    try {
+      const {
+        page = 1,
+        limit = 50,
+        sortBy = 'data',
+        sortOrder = 'desc'
+      } = options
+
+      // Verificar autenticação
+      const { data: { session }, error: authError } = await supabase.auth.getSession()
+      if (authError || !session?.user) {
+        throw new Error('❌ Usuário não autenticado')
+      }
+
+      // Usar cache para contagem total
+      const countCacheKey = `transactions_count:${session.user.id}`
+      let totalCount = cacheService.get<number>(countCacheKey)
+
+      if (totalCount === null) {
+        const { count, error: countError } = await supabase
+          .from(this.TABLE_NAME)
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', session.user.id)
+
+        if (countError) {
+          console.error('❌ Erro ao contar registros:', countError)
+          totalCount = 0
+        } else {
+          totalCount = count || 0
+          cacheService.set(countCacheKey, totalCount, 2 * 60 * 1000) // 2 minutos
+        }
+      }
+
+      // Calcular offset
+      const offset = (page - 1) * limit
+      const totalPages = Math.ceil(totalCount / limit)
+
+      // Usar cache para dados paginados
+      const cacheKey = `transactions_paginated:${session.user.id}:${page}:${limit}:${sortBy}:${sortOrder}`
+      const cachedData = cacheService.get<SheetData[]>(cacheKey)
+
+      if (cachedData) {
+        console.log('✅ Dados paginados carregados do cache')
+        return {
+          data: cachedData,
+          pagination: {
+            page,
+            limit,
+            total: totalCount,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1
+          }
+        }
+      }
+
+      // Buscar dados paginados
+      const { data, error } = await supabase
+        .from(this.TABLE_NAME)
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order(sortBy, { ascending: sortOrder === 'asc' })
+        .range(offset, offset + limit - 1)
+
+      if (error) {
+        console.error('❌ Erro ao buscar dados paginados:', error)
+        throw new Error(`Erro ao buscar dados: ${error.message}`)
+      }
+
+      // Converter dados
+      const sheetData: SheetData[] = (data || []).map((item: any) => ({
+        id: item.id.toString(),
+        data: this.formatDateForDisplay(item.data),
+        valor: this.parseValue(item.valor),
+        descricao: item.descricao,
+        conta: item.conta || 'Conta Corrente',
+        contaTransferencia: item.conta_transferencia,
+        cartao: item.cartao,
+        categoria: item.categoria || 'Outros',
+        subcategoria: item.subcategoria,
+        contato: item.contato,
+        centro: item.centro,
+        projeto: item.projeto,
+        forma: item.forma || 'Dinheiro',
+        numeroDocumento: item.numero_documento,
+        observacoes: item.observacoes,
+        dataCompetencia: this.formatDateForDisplay(item.data_competencia),
+        tags: item.tags ? JSON.parse(item.tags) : [],
+        status: item.status || this.calculateStatus(item.vencimento, item.data_pagamento),
+        dataPagamento: this.formatDateForDisplay(item.data_pagamento) || '',
+        vencimento: this.formatDateForDisplay(item.vencimento),
+        empresa: item.empresa,
+        tipo: item.tipo || 'despesa',
+        parcela: item.parcela || '1',
+        situacao: item.situacao || ''
+      }))
+
+      // Armazenar no cache por 3 minutos
+      cacheService.set(cacheKey, sheetData, 3 * 60 * 1000)
+
+      console.log(`✅ Dados paginados carregados: página ${page}/${totalPages} (${sheetData.length} registros)`)
+
+      return {
+        data: sheetData,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1
+        }
+      }
+    } catch (error: any) {
+      console.error('❌ Erro ao carregar dados paginados:', error)
+      throw error
+    }
+  }
+
+  // Busca otimizada com filtros
+  async searchTransactions(filters: FilterOptions, pagination: PaginationOptions = {}): Promise<PaginatedResult<SheetData>> {
+    try {
+      const {
+        page = 1,
+        limit = 50,
+        sortBy = 'data',
+        sortOrder = 'desc'
+      } = pagination
+
+      // Verificar autenticação
+      const { data: { session }, error: authError } = await supabase.auth.getSession()
+      if (authError || !session?.user) {
+        throw new Error('❌ Usuário não autenticado')
+      }
+
+      // Construir query base
+      let query = supabase
+        .from(this.TABLE_NAME)
+        .select('*', { count: 'exact' })
+        .eq('user_id', session.user.id)
+
+      // Aplicar filtros
+      if (filters.search) {
+        query = query.or(`descricao.ilike.%${filters.search}%,observacoes.ilike.%${filters.search}%,numero_documento.ilike.%${filters.search}%`)
+      }
+
+      if (filters.tipo) {
+        query = query.eq('tipo', filters.tipo)
+      }
+
+      if (filters.categoria) {
+        query = query.eq('categoria', filters.categoria)
+      }
+
+      if (filters.conta) {
+        query = query.eq('conta', filters.conta)
+      }
+
+      if (filters.status) {
+        query = query.eq('status', filters.status)
+      }
+
+      if (filters.dataInicio) {
+        query = query.gte('data', filters.dataInicio)
+      }
+
+      if (filters.dataFim) {
+        query = query.lte('data', filters.dataFim)
+      }
+
+      if (filters.valorMin !== undefined) {
+        query = query.gte('valor', filters.valorMin)
+      }
+
+      if (filters.valorMax !== undefined) {
+        query = query.lte('valor', filters.valorMax)
+      }
+
+      // Aplicar ordenação
+      query = query.order(sortBy, { ascending: sortOrder === 'asc' })
+
+      // Aplicar paginação
+      const offset = (page - 1) * limit
+      query = query.range(offset, offset + limit - 1)
+
+      // Executar query
+      const { data, error, count } = await query
+
+      if (error) {
+        console.error('❌ Erro na busca de transações:', error)
+        throw new Error(`Erro na busca: ${error.message}`)
+      }
+
+      // Converter dados
+      const sheetData: SheetData[] = (data || []).map((item: any) => ({
+        id: item.id.toString(),
+        data: this.formatDateForDisplay(item.data),
+        valor: this.parseValue(item.valor),
+        descricao: item.descricao,
+        conta: item.conta || 'Conta Corrente',
+        contaTransferencia: item.conta_transferencia,
+        cartao: item.cartao,
+        categoria: item.categoria || 'Outros',
+        subcategoria: item.subcategoria,
+        contato: item.contato,
+        centro: item.centro,
+        projeto: item.projeto,
+        forma: item.forma || 'Dinheiro',
+        numeroDocumento: item.numero_documento,
+        observacoes: item.observacoes,
+        dataCompetencia: this.formatDateForDisplay(item.data_competencia),
+        tags: item.tags ? JSON.parse(item.tags) : [],
+        status: item.status || this.calculateStatus(item.vencimento, item.data_pagamento),
+        dataPagamento: this.formatDateForDisplay(item.data_pagamento) || '',
+        vencimento: this.formatDateForDisplay(item.vencimento),
+        empresa: item.empresa,
+        tipo: item.tipo || 'despesa',
+        parcela: item.parcela || '1',
+        situacao: item.situacao || ''
+      }))
+
+      const totalCount = count || 0
+      const totalPages = Math.ceil(totalCount / limit)
+
+      console.log(`✅ Busca concluída: ${sheetData.length} resultados de ${totalCount} total`)
+
+      return {
+        data: sheetData,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1
+        }
+      }
+    } catch (error: any) {
+      console.error('❌ Erro na busca de transações:', error)
       throw error
     }
   }
@@ -190,12 +497,13 @@ class SupabaseServiceImpl implements SupabaseService {
       
       // Verificar autenticação
       console.log('🔐 Verificando autenticação...')
-      await ensureAuthenticated()
+      const user = await ensureAuthenticated()
       console.log('✅ Autenticação verificada')
       
-      // Validar campos obrigatórios
-      if (!transaction.descricao || !transaction.valor || !transaction.data) {
-        throw new Error('Descrição, valor e data são obrigatórios')
+      // Validação robusta de campos obrigatórios
+      const validationErrors = this.validateTransaction(transaction)
+      if (validationErrors.length > 0) {
+        throw new Error(`Dados inválidos: ${validationErrors.join(', ')}`)
       }
       console.log('✅ Validação de campos concluída')
 
@@ -319,10 +627,14 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       console.log('💾 Inserindo transação no banco...')
-      const { data, error } = await supabase
-        .from(this.TABLE_NAME)
-        .insert([transactionData])
-        .select()
+      
+      // Tentar salvar com retry automático
+      const { data, error } = await this.retryOperation(async () => {
+        return await supabase
+          .from(this.TABLE_NAME)
+          .insert([transactionData])
+          .select()
+      }, 3)
 
       if (error) {
         console.error('❌ Erro ao salvar transação:', error)
@@ -361,6 +673,28 @@ class SupabaseServiceImpl implements SupabaseService {
       console.log('✅ Transação salva com sucesso!')
       
       const savedData = data?.[0]
+      
+      // Registrar log de auditoria
+      try {
+        await logService.logManualActivity(
+          'create',
+          'transactions',
+          savedData?.id || 'unknown',
+          `Transação criada: ${transaction.descricao} - ${formatarMoeda(transaction.valor)}`,
+          null,
+          transaction,
+          { 
+            tipo: transaction.tipo,
+            parcelas: transaction.parcelas,
+            conta: transaction.conta
+          }
+        )
+      } catch (logError) {
+        console.warn('⚠️ Erro ao registrar log de auditoria:', logError)
+      }
+
+      // Invalidar cache de transações
+      cacheService.invalidateTable('transactions')
       const sheetData: SheetData | undefined = savedData ? {
         id: String(savedData.id),
         data: this.formatDateForDisplay(String(savedData.data)),
@@ -443,6 +777,28 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       console.log('✅ Transação atualizada com sucesso!')
+      
+      // Registrar log de auditoria
+      try {
+        await logService.logManualActivity(
+          'update',
+          'transactions',
+          id,
+          `Transação atualizada: ${data.descricao || 'ID ' + id}`,
+          null, // oldValues seria obtido antes da atualização
+          data,
+          { 
+            campos_alterados: Object.keys(data),
+            timestamp: new Date().toISOString()
+          }
+        )
+      } catch (logError) {
+        console.warn('⚠️ Erro ao registrar log de auditoria:', logError)
+      }
+
+      // Invalidar cache de transações
+      cacheService.invalidateTable('transactions')
+      
       return {
         success: true,
         message: 'Transação atualizada com sucesso!'
@@ -471,6 +827,28 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       console.log('✅ Transação excluída com sucesso!')
+      
+      // Registrar log de auditoria
+      try {
+        await logService.logManualActivity(
+          'delete',
+          'transactions',
+          id,
+          `Transação excluída: ID ${id}`,
+          null, // oldValues seria obtido antes da exclusão
+          null,
+          { 
+            timestamp: new Date().toISOString(),
+            acao: 'exclusao_permanente'
+          }
+        )
+      } catch (logError) {
+        console.warn('⚠️ Erro ao registrar log de auditoria:', logError)
+      }
+
+      // Invalidar cache de transações
+      cacheService.invalidateTable('transactions')
+      
       return {
         success: true,
         message: 'Transação excluída com sucesso!'
@@ -486,11 +864,11 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async testConnection(): Promise<{ success: boolean; message: string; data?: any }> {
     try {
-      // Se o Supabase não estiver configurado, retornar erro
-      if (SUPABASE_URL === 'https://your-project.supabase.co' || SUPABASE_ANON_KEY === 'your-anon-key') {
+      // Verificar se o Supabase está configurado
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
         return {
           success: false,
-          message: 'Supabase não configurado. Configure as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY',
+          message: '❌ Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY',
           data: { 
             mode: 'error',
             error: 'missing_config'
@@ -534,6 +912,91 @@ class SupabaseServiceImpl implements SupabaseService {
       return parsearValorBrasileiro(value)
     }
     return parseFloat(value) || 0
+  }
+
+  // Validação robusta de transação
+  private validateTransaction(transaction: NewTransaction): string[] {
+    const errors: string[] = []
+
+    // Validar campos obrigatórios
+    if (!transaction.descricao || transaction.descricao.trim().length === 0) {
+      errors.push('Descrição é obrigatória')
+    }
+
+    if (!transaction.valor || isNaN(Number(transaction.valor))) {
+      errors.push('Valor deve ser um número válido')
+    }
+
+    if (!transaction.data || transaction.data.trim().length === 0) {
+      errors.push('Data é obrigatória')
+    }
+
+    // Validar formato da data
+    if (transaction.data && !this.isValidDate(transaction.data)) {
+      errors.push('Data deve estar no formato DD/MM/AAAA')
+    }
+
+    // Validar valor mínimo
+    if (transaction.valor && Math.abs(Number(transaction.valor)) < 0.01) {
+      errors.push('Valor deve ser maior que R$ 0,01')
+    }
+
+    // Validar descrição (mínimo 3 caracteres)
+    if (transaction.descricao && transaction.descricao.trim().length < 3) {
+      errors.push('Descrição deve ter pelo menos 3 caracteres')
+    }
+
+    // Validar parcelas
+    if (transaction.parcelas && (transaction.parcelas < 1 || transaction.parcelas > 999)) {
+      errors.push('Número de parcelas deve estar entre 1 e 999')
+    }
+
+    return errors
+  }
+
+  // Validar formato de data brasileira
+  private isValidDate(dateString: string): boolean {
+    const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/
+    const match = dateString.match(dateRegex)
+    
+    if (!match) return false
+    
+    const [, day, month, year] = match
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+    
+    return date.getDate() === parseInt(day) && 
+           date.getMonth() === parseInt(month) - 1 && 
+           date.getFullYear() === parseInt(year)
+  }
+
+  // Retry automático para operações que podem falhar
+  private async retryOperation<T>(
+    operation: () => Promise<T>, 
+    maxRetries: number = 3,
+    delay: number = 1000
+  ): Promise<T> {
+    let lastError: any
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 Tentativa ${attempt}/${maxRetries}...`)
+        const result = await operation()
+        console.log(`✅ Operação bem-sucedida na tentativa ${attempt}`)
+        return result
+      } catch (error) {
+        lastError = error
+        console.warn(`⚠️ Tentativa ${attempt} falhou:`, error)
+        
+        if (attempt < maxRetries) {
+          console.log(`⏳ Aguardando ${delay}ms antes da próxima tentativa...`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+          delay *= 2 // Exponential backoff
+        }
+      }
+    }
+    
+    console.error(`❌ Todas as ${maxRetries} tentativas falharam`)
+    throw lastError
   }
 
   private calculateStatus(vencimento: string, dataPagamento?: string | null): 'pago' | 'pendente' | 'vencido' {
@@ -634,9 +1097,9 @@ class SupabaseServiceImpl implements SupabaseService {
   // Métodos para Categorias
   async getCategorias(): Promise<Categoria[]> {
     try {
-      // Se o Supabase não estiver configurado, retornar erro
-      if (SUPABASE_URL === 'https://your-project.supabase.co' || SUPABASE_ANON_KEY === 'your-anon-key') {
-        throw new Error('Supabase não configurado. Configure as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY')
+      // Verificar se o Supabase está configurado
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        throw new Error('❌ Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY')
       }
       
       console.log('🔍 Buscando categorias no Supabase...')

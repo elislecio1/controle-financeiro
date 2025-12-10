@@ -443,6 +443,7 @@ export interface UserProfile {
   document?: string
   birth_date?: string
   role: 'admin' | 'user' | 'viewer'
+  is_active: boolean
   preferences: UserPreferences
   created_at: string
   updated_at: string

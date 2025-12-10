@@ -74,27 +74,65 @@ class AuthService {
     }
   }
 
-  // Gerenciar sessão do usuário
+  // Gerenciar sessão do usuário - VALIDAÇÃO ROBUSTA
   private async handleUserSession(supabaseUser: SupabaseUser) {
     try {
+      // Validar dados básicos do usuário
+      if (!supabaseUser || !supabaseUser.id || !supabaseUser.email) {
+        console.error('❌ Dados inválidos do usuário:', supabaseUser)
+        this.updateAuthState({
+          user: null,
+          profile: null,
+          loading: false,
+          error: 'Dados inválidos do usuário',
+          isAuthenticated: false
+        })
+        return
+      }
+
+      // Verificar se o email está confirmado
+      if (!supabaseUser.email_confirmed_at) {
+        console.error('❌ Email não confirmado:', supabaseUser.email)
+        this.updateAuthState({
+          user: null,
+          profile: null,
+          loading: false,
+          error: 'Email não confirmado. Verifique sua caixa de entrada.',
+          isAuthenticated: false
+        })
+        return
+      }
+
       const user = this.mapSupabaseUser(supabaseUser)
       const profile = await this.getUserProfile(user.id)
       
       // Verificar se o usuário tem permissão para acessar o sistema
-      if (profile) {
-        const hasPermission = await this.checkUserLoginPermission(user.email)
-        if (!hasPermission) {
-          console.error('❌ Usuário sem permissão de acesso:', user.email)
-          await this.signOut()
-          this.updateAuthState({
-            user: null,
-            profile: null,
-            loading: false,
-            error: 'Acesso negado. Entre em contato com o administrador.',
-            isAuthenticated: false
-          })
-          return
-        }
+      const hasPermission = await this.checkUserLoginPermission(user.email)
+      if (!hasPermission) {
+        console.error('❌ Usuário sem permissão de acesso:', user.email)
+        await this.signOut()
+        this.updateAuthState({
+          user: null,
+          profile: null,
+          loading: false,
+          error: 'Acesso negado. Entre em contato com o administrador.',
+          isAuthenticated: false
+        })
+        return
+      }
+
+      // Verificar se o perfil está ativo
+      if (profile && profile.is_active === false) {
+        console.error('❌ Perfil inativo:', user.email)
+        await this.signOut()
+        this.updateAuthState({
+          user: null,
+          profile: null,
+          loading: false,
+          error: 'Sua conta foi desativada. Entre em contato com o administrador.',
+          isAuthenticated: false
+        })
+        return
       }
       
       this.updateAuthState({
@@ -104,8 +142,10 @@ class AuthService {
         error: null,
         isAuthenticated: true
       })
+
+      console.log('✅ Usuário autenticado com sucesso:', user.email)
     } catch (error) {
-      console.error('Erro ao processar sessão do usuário:', error)
+      console.error('❌ Erro ao processar sessão do usuário:', error)
       this.updateAuthState({ 
         loading: false, 
         error: 'Erro ao carregar dados do usuário' 
@@ -164,28 +204,67 @@ class AuthService {
     }
   }
 
-  // Verificar permissão de login do usuário
+  // Verificar permissão de login do usuário - VALIDAÇÃO ROBUSTA
   private async checkUserLoginPermission(email: string): Promise<boolean> {
     try {
+      // Validar formato do email
+      if (!email || !this.isValidEmail(email)) {
+        console.error('❌ Email inválido:', email)
+        return false
+      }
+
+      // Verificar se o usuário está ativo no sistema
       const { data, error } = await supabase
         .rpc('check_user_login_permission', { user_email: email })
 
       if (error) {
-        console.error('Erro ao verificar permissão de login:', error)
-        return false
+        console.error('❌ Erro ao verificar permissão de login:', error)
+        // Em caso de erro na RPC, verificar diretamente na tabela de perfis
+        return await this.checkUserProfilePermission(email)
       }
 
       if (data && data.length > 0) {
         const permission = data[0]
         console.log('🔐 Verificação de permissão:', permission)
-        return permission.can_login
+        return permission.can_login === true
       }
 
-      return false
+      // Fallback: verificar diretamente na tabela de perfis
+      return await this.checkUserProfilePermission(email)
     } catch (error) {
-      console.error('Erro ao verificar permissão de login:', error)
+      console.error('❌ Erro ao verificar permissão de login:', error)
       return false
     }
+  }
+
+  // Verificar permissão diretamente na tabela de perfis (fallback)
+  private async checkUserProfilePermission(email: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('role, is_active')
+        .eq('email', email)
+        .eq('is_active', true)
+        .single()
+
+      if (error) {
+        console.error('❌ Erro ao verificar perfil do usuário:', error)
+        return false
+      }
+
+      // Verificar se o usuário tem role válido e está ativo
+      const validRoles = ['admin', 'user', 'viewer']
+      return data && validRoles.includes(data.role) && data.is_active === true
+    } catch (error) {
+      console.error('❌ Erro ao verificar perfil do usuário:', error)
+      return false
+    }
+  }
+
+  // Validar formato do email
+  private isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
   }
 
   // ============ MÉTODOS PÚBLICOS ============
@@ -440,6 +519,7 @@ class AuthService {
       name: this.authState.user?.name || 'Usuário',
       avatar_url: this.authState.user?.avatar_url,
       role: 'user',
+      is_active: true,
       preferences: defaultPreferences
     }
 
