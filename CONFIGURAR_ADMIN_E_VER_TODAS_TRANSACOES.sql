@@ -119,6 +119,7 @@ WITH CHECK (
 -- Remover políticas antigas (incluindo as que podem já existir)
 DROP POLICY IF EXISTS "Users can view own transactions" ON transactions;
 DROP POLICY IF EXISTS "Users can view own transactions or admin all" ON transactions;
+DROP POLICY IF EXISTS "All authenticated users can view all transactions" ON transactions;
 DROP POLICY IF EXISTS "Users can insert own transactions" ON transactions;
 DROP POLICY IF EXISTS "Users can update own transactions" ON transactions;
 DROP POLICY IF EXISTS "Users can update own transactions or admin all" ON transactions;
