@@ -126,10 +126,43 @@ update_repository() {
         log_success "Remote ajustado"
     fi
     
+    # Verificar arquivos não rastreados que podem conflitar
+    UNTRACKED_FILES=$(git ls-files --others --exclude-standard)
+    if [ -n "$UNTRACKED_FILES" ]; then
+        log_warning "Arquivos não rastreados encontrados que podem conflitar:"
+        echo "$UNTRACKED_FILES" | while read -r file; do
+            log_info "  - $file"
+        done
+        
+        # Verificar se algum arquivo não rastreado está no repositório remoto
+        log_info "Verificando se arquivos não rastreados existem no repositório remoto..."
+        git fetch origin $GIT_BRANCH --quiet
+        
+        CONFLICTING_FILES=""
+        for file in $UNTRACKED_FILES; do
+            if git ls-tree -r origin/$GIT_BRANCH --name-only | grep -q "^$file$"; then
+                CONFLICTING_FILES="$CONFLICTING_FILES $file"
+            fi
+        done
+        
+        if [ -n "$CONFLICTING_FILES" ]; then
+            log_warning "Arquivos não rastreados que conflitam com o repositório remoto:"
+            for file in $CONFLICTING_FILES; do
+                log_info "  - $file (será movido para .backup)"
+                # Fazer backup do arquivo local
+                if [ -f "$file" ]; then
+                    mkdir -p .backup-$(date +%Y%m%d-%H%M%S)
+                    cp "$file" ".backup-$(date +%Y%m%d-%H%M%S)/$file" 2>/dev/null || true
+                    rm -f "$file"
+                fi
+            done
+        fi
+    fi
+    
     # Stash de mudanças locais se houver
-    if [ -n "$(git status --porcelain)" ]; then
-        log_warning "Há mudanças locais. Fazendo stash..."
-        git stash
+    if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+        log_warning "Há mudanças locais rastreadas. Fazendo stash..."
+        git stash push -m "Deploy manual - $(date +%Y%m%d-%H%M%S)"
     fi
     
     # Fetch
@@ -147,9 +180,18 @@ update_repository() {
         log_info "Repositório já está atualizado (commit: $(git rev-parse --short HEAD))"
     else
         log_info "Atualizações disponíveis. Fazendo pull..."
-        if ! git pull origin $GIT_BRANCH; then
+        
+        # Tentar pull com estratégia de merge
+        if ! git pull origin $GIT_BRANCH --no-edit; then
             log_error "Erro ao fazer pull"
-            return 1
+            log_info "Tentando reset hard para forçar atualização..."
+            # Se pull falhar, fazer reset hard (cuidado: perde mudanças locais)
+            if git reset --hard origin/$GIT_BRANCH; then
+                log_success "Repositório atualizado via reset hard"
+            else
+                log_error "Erro ao fazer reset hard"
+                return 1
+            fi
         fi
         log_success "Repositório atualizado!"
         log_info "Commit anterior: $(git rev-parse --short $LOCAL)"
