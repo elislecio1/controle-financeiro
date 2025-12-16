@@ -403,10 +403,17 @@ class AuthService {
           return await this.createDefaultProfile(userId)
         }
         
-        // Se for erro 500, pode ser problema de RLS - tentar usar RPC
-        if (error.code === 'PGRST301' || error.status === 500) {
-          console.warn('Erro 500 ao buscar perfil, tentando via RPC...')
+        // Se for erro 500 ou problema de RLS - tentar usar RPC imediatamente
+        if (error.code === 'PGRST301' || error.message?.includes('500') || error.message?.includes('internal') || error.code === '42883') {
+          console.warn('Erro ao buscar perfil (possível problema de RLS), tentando via RPC...')
           return await this.getUserProfileViaRPC(userId)
+        }
+        
+        // Qualquer outro erro também tenta RPC como fallback
+        console.warn('Erro ao buscar perfil, tentando via RPC como fallback...', error)
+        const rpcResult = await this.getUserProfileViaRPC(userId)
+        if (rpcResult) {
+          return rpcResult
         }
         
         console.error('Erro ao buscar perfil:', error)
