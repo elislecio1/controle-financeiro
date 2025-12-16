@@ -77,10 +77,12 @@ SELECT public.create_or_update_user_profile(
 -- ============================================
 -- 4. CORRIGIR POLÍTICAS RLS DE user_profiles
 -- ============================================
--- Remover políticas antigas
+-- Remover políticas antigas (incluindo as que podem já existir)
 DROP POLICY IF EXISTS "Users can view own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can view own profile or admin" ON user_profiles;
 DROP POLICY IF EXISTS "Users can insert own profile" ON user_profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can update own profile or admin" ON user_profiles;
 DROP POLICY IF EXISTS "Admins have full access" ON user_profiles;
 
 -- Política para SELECT: usuários veem seu próprio perfil OU são admin
@@ -114,11 +116,14 @@ WITH CHECK (
 -- ============================================
 -- 5. CORRIGIR POLÍTICAS RLS DE transactions
 -- ============================================
--- Remover políticas antigas
+-- Remover políticas antigas (incluindo as que podem já existir)
 DROP POLICY IF EXISTS "Users can view own transactions" ON transactions;
+DROP POLICY IF EXISTS "Users can view own transactions or admin all" ON transactions;
 DROP POLICY IF EXISTS "Users can insert own transactions" ON transactions;
 DROP POLICY IF EXISTS "Users can update own transactions" ON transactions;
+DROP POLICY IF EXISTS "Users can update own transactions or admin all" ON transactions;
 DROP POLICY IF EXISTS "Users can delete own transactions" ON transactions;
+DROP POLICY IF EXISTS "Users can delete own transactions or admin all" ON transactions;
 DROP POLICY IF EXISTS "Admins can view all transactions" ON transactions;
 
 -- Política para SELECT: usuários veem suas próprias transações OU admin vê todas
