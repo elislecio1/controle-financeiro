@@ -21,6 +21,7 @@ import { useAuth } from './hooks/useAuth'
 import { formatarMoeda, formatarValorTabela, getClasseValor } from './utils/formatters'
 import AnalisesFinanceiras from './components/modules/TransactionsModule/AnalisesFinanceiras'
 import logger from './utils/logger'
+import { realtimeService, RealtimeNotification } from './services/realtimeService'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
@@ -247,21 +248,21 @@ function App() {
         await realtimeService.initialize()
 
         // Listener para nova transação criada
-        const unsubscribeCreated = realtimeService.addListener('transaction_created', (notification) => {
+        const unsubscribeCreated = realtimeService.addListener('transaction_created', (notification: RealtimeNotification) => {
           logger.success('Nova transação criada - recarregando dados...')
           setConnectionStatus({ success: true, message: notification.message || 'Nova transação criada!' })
           loadData() // Recarregar dados automaticamente
         })
 
         // Listener para transação atualizada
-        const unsubscribeUpdated = realtimeService.addListener('transaction_updated', (notification) => {
+        const unsubscribeUpdated = realtimeService.addListener('transaction_updated', (notification: RealtimeNotification) => {
           logger.success('Transação atualizada - recarregando dados...')
           setConnectionStatus({ success: true, message: notification.message || 'Transação atualizada!' })
           loadData() // Recarregar dados automaticamente
         })
 
         // Listener para transação excluída
-        const unsubscribeDeleted = realtimeService.addListener('transaction_deleted', (notification) => {
+        const unsubscribeDeleted = realtimeService.addListener('transaction_deleted', (notification: RealtimeNotification) => {
           logger.success('Transação excluída - recarregando dados...')
           setConnectionStatus({ success: true, message: notification.message || 'Transação excluída!' })
           loadData() // Recarregar dados automaticamente
@@ -280,7 +281,7 @@ function App() {
     // Cleanup: desconectar quando componente desmontar ou usuário sair
     return () => {
       unsubscribeFunctions.forEach(unsubscribe => unsubscribe())
-      realtimeService.disconnect().catch(err => {
+      realtimeService.disconnect().catch((err: Error) => {
         logger.error('Erro ao desconectar realtime:', err)
       })
     }
