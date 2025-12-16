@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 # ==================== CONFIGURAÇÕES ====================
 DOMAIN="cf.don.cim.br"
-CERT_DIR="/etc/letsencrypt/live/${DOMAIN}"
+LETSENCRYPT_LIVE_DIR="/etc/letsencrypt/live"
 AAPANEL_CERT_DIR="/www/server/panel/vhost/cert/${DOMAIN}"
 NGINX_CONFIG="/www/server/panel/vhost/nginx/${DOMAIN}.conf"
 
@@ -84,6 +84,26 @@ check_port_80() {
     fi
 }
 
+# Encontrar diretório do certificado (pode ter sufixo -0001, -0002, etc)
+find_cert_dir() {
+    # Procurar diretório que começa com o domínio
+    CERT_DIR=$(find "${LETSENCRYPT_LIVE_DIR}" -maxdepth 1 -type d -name "${DOMAIN}*" | head -1)
+    
+    if [ -z "$CERT_DIR" ]; then
+        # Tentar sem sufixo
+        CERT_DIR="${LETSENCRYPT_LIVE_DIR}/${DOMAIN}"
+    fi
+    
+    if [ -d "$CERT_DIR" ] && [ -f "${CERT_DIR}/fullchain.pem" ]; then
+        log_info "Certificado encontrado em: $CERT_DIR"
+        echo "$CERT_DIR"
+        return 0
+    else
+        log_warning "Certificado não encontrado em: $CERT_DIR"
+        return 1
+    fi
+}
+
 # Instalar certificado Let's Encrypt
 install_certificate() {
     log_info "Instalando/renovando certificado Let's Encrypt..."
@@ -102,24 +122,34 @@ install_certificate() {
     fi
     
     # Tentar renovar primeiro (se já existe)
-    if [ -d "$CERT_DIR" ]; then
+    FOUND_CERT_DIR=$(find_cert_dir)
+    if [ -n "$FOUND_CERT_DIR" ]; then
         log_info "Certificado existente encontrado. Tentando renovar..."
-        certbot renew --cert-name "${DOMAIN}" --quiet
+        certbot renew --cert-name "${DOMAIN}" --quiet 2>/dev/null || true
+    fi
+    
+    # Verificar se precisa criar novo
+    FOUND_CERT_DIR=$(find_cert_dir)
+    if [ -z "$FOUND_CERT_DIR" ]; then
+        # Se não existe, criar novo
+        log_info "Criando novo certificado..."
+        certbot certonly --standalone -d "${DOMAIN}" --non-interactive --agree-tos --email elislecio@gmail.com
+        
         if [ $? -eq 0 ]; then
-            log_success "Certificado renovado"
-            return 0
+            log_success "Certificado criado com sucesso"
+            # Encontrar o diretório criado
+            FOUND_CERT_DIR=$(find_cert_dir)
+        else
+            log_error "Erro ao criar certificado"
+            return 1
         fi
     fi
     
-    # Se não existe ou renovação falhou, criar novo
-    log_info "Criando novo certificado..."
-    certbot certonly --standalone -d "${DOMAIN}" --non-interactive --agree-tos --email elislecio@gmail.com
-    
-    if [ $? -eq 0 ]; then
-        log_success "Certificado criado com sucesso"
+    if [ -n "$FOUND_CERT_DIR" ]; then
+        CERT_DIR="$FOUND_CERT_DIR"
         return 0
     else
-        log_error "Erro ao criar certificado"
+        log_error "Não foi possível localizar o certificado"
         return 1
     fi
 }
@@ -127,6 +157,16 @@ install_certificate() {
 # Copiar certificado para aapanel
 copy_certificate_to_aapanel() {
     log_info "Copiando certificado para diretório do aapanel..."
+    
+    # Encontrar diretório do certificado
+    FOUND_CERT_DIR=$(find_cert_dir)
+    if [ -z "$FOUND_CERT_DIR" ]; then
+        log_error "Não foi possível encontrar o diretório do certificado"
+        return 1
+    fi
+    
+    CERT_DIR="$FOUND_CERT_DIR"
+    log_info "Usando certificado de: $CERT_DIR"
     
     # Criar diretório se não existir
     mkdir -p "${AAPANEL_CERT_DIR}"
@@ -136,7 +176,7 @@ copy_certificate_to_aapanel() {
         cp "${CERT_DIR}/fullchain.pem" "${AAPANEL_CERT_DIR}/"
         log_success "fullchain.pem copiado"
     else
-        log_error "Arquivo fullchain.pem não encontrado"
+        log_error "Arquivo fullchain.pem não encontrado em: ${CERT_DIR}"
         return 1
     fi
     
@@ -144,7 +184,7 @@ copy_certificate_to_aapanel() {
         cp "${CERT_DIR}/privkey.pem" "${AAPANEL_CERT_DIR}/"
         log_success "privkey.pem copiado"
     else
-        log_error "Arquivo privkey.pem não encontrado"
+        log_error "Arquivo privkey.pem não encontrado em: ${CERT_DIR}"
         return 1
     fi
     
@@ -262,9 +302,15 @@ main() {
         exit 1
     fi
     
+    # Aguardar Nginx parar completamente
+    sleep 2
+    
     # Verificar porta 80
     if ! check_port_80; then
-        log_warning "Porta 80 ainda está em uso. Tentando continuar..."
+        log_warning "Porta 80 ainda está em uso. Matando processos..."
+        # Matar processos do Nginx que ainda estão usando a porta
+        killall -9 nginx 2>/dev/null || true
+        sleep 2
     fi
     
     # Instalar certificado
