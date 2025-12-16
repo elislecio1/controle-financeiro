@@ -389,6 +389,7 @@ class AuthService {
   // Obter perfil do usuário
   async getUserProfile(userId: string): Promise<UserProfile | null> {
     try {
+      // Primeiro, tentar buscar o perfil diretamente
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -396,10 +397,18 @@ class AuthService {
         .single()
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // Perfil não encontrado, criar um padrão
+        // Se o erro for "não encontrado", tentar criar perfil padrão
+        if (error.code === 'PGRST116' || error.message?.includes('No rows')) {
+          console.log('Perfil não encontrado, criando perfil padrão...')
           return await this.createDefaultProfile(userId)
         }
+        
+        // Se for erro 500, pode ser problema de RLS - tentar usar RPC
+        if (error.code === 'PGRST301' || error.status === 500) {
+          console.warn('Erro 500 ao buscar perfil, tentando via RPC...')
+          return await this.getUserProfileViaRPC(userId)
+        }
+        
         console.error('Erro ao buscar perfil:', error)
         return null
       }
@@ -412,6 +421,66 @@ class AuthService {
       }
     } catch (error) {
       console.error('Erro ao obter perfil do usuário:', error)
+      // Última tentativa: usar RPC
+      try {
+        return await this.getUserProfileViaRPC(userId)
+      } catch (rpcError) {
+        console.error('Erro ao buscar perfil via RPC:', rpcError)
+        return null
+      }
+    }
+  }
+
+  // Buscar perfil via RPC (fallback para problemas de RLS)
+  private async getUserProfileViaRPC(userId: string): Promise<UserProfile | null> {
+    try {
+      const currentUser = this.authState.user
+      const userEmail = currentUser?.email || ''
+      const userName = currentUser?.name || 'Usuário'
+      
+      // Tentar usar a função RPC para criar/obter perfil
+      const { data, error } = await supabase.rpc('create_or_update_user_profile', {
+        p_user_id: userId,
+        p_email: userEmail,
+        p_name: userName,
+        p_role: 'user',
+        p_full_name: userName,
+        p_metadata: JSON.stringify({}),
+        p_preferences: JSON.stringify({
+          theme: 'light',
+          currency: 'BRL',
+          language: 'pt-BR',
+          dashboard: {
+            show_stats: true,
+            show_charts: true,
+            default_period: 'current_month'
+          },
+          date_format: 'DD/MM/YYYY',
+          notifications: {
+            sms: false,
+            push: true,
+            email: true
+          }
+        })
+      })
+
+      if (error) {
+        console.error('Erro ao buscar perfil via RPC:', error)
+        return null
+      }
+
+      if (!data) {
+        return null
+      }
+
+      return {
+        ...data,
+        preferences: typeof data.preferences === 'string' 
+          ? JSON.parse(data.preferences) 
+          : data.preferences
+      }
+    } catch (error) {
+      console.error('Erro ao buscar perfil via RPC:', error)
       return null
     }
   }
