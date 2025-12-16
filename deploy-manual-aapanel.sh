@@ -214,7 +214,14 @@ install_dependencies() {
         return 1
     fi
     
-    log_success "Dependências instaladas"
+    # Ajustar permissões do node_modules após instalação
+    log_info "Ajustando permissões do node_modules..."
+    chown -R www:www node_modules 2>/dev/null || true
+    chmod -R 755 node_modules 2>/dev/null || true
+    # Dar permissão de execução para binários
+    find node_modules/.bin -type f -exec chmod +x {} \; 2>/dev/null || true
+    
+    log_success "Dependências instaladas e permissões ajustadas"
     return 0
 }
 
@@ -224,10 +231,24 @@ build_project() {
     
     cd "$PROJECT_DIR" || return 1
     
+    # Garantir permissões antes do build
+    log_info "Verificando permissões antes do build..."
+    chown -R www:www node_modules/.bin 2>/dev/null || true
+    chmod -R 755 node_modules/.bin 2>/dev/null || true
+    find node_modules/.bin -type f -exec chmod +x {} \; 2>/dev/null || true
+    
     log_info "Executando npm run build..."
     if ! npm run build; then
         log_error "Erro ao fazer build"
-        return 1
+        log_info "Tentando ajustar permissões e tentar novamente..."
+        # Tentar novamente após ajustar permissões
+        chown -R www:www . 2>/dev/null || true
+        chmod -R 755 . 2>/dev/null || true
+        find node_modules/.bin -type f -exec chmod +x {} \; 2>/dev/null || true
+        if ! npm run build; then
+            log_error "Erro ao fazer build após ajustar permissões"
+            return 1
+        fi
     fi
     
     # Verificar se dist foi criado
