@@ -126,14 +126,11 @@ DROP POLICY IF EXISTS "Users can delete own transactions" ON transactions;
 DROP POLICY IF EXISTS "Users can delete own transactions or admin all" ON transactions;
 DROP POLICY IF EXISTS "Admins can view all transactions" ON transactions;
 
--- Política para SELECT: usuários veem suas próprias transações OU admin vê todas
-CREATE POLICY "Users can view own transactions or admin all"
+-- Política para SELECT: TODOS os usuários autenticados veem TODAS as transações
+CREATE POLICY "All authenticated users can view all transactions"
 ON transactions
 FOR SELECT
-USING (
-    auth.uid() = user_id 
-    OR public.is_admin(auth.uid())
-);
+USING (auth.role() = 'authenticated');
 
 -- Política para INSERT: usuários podem criar suas próprias transações
 CREATE POLICY "Users can insert own transactions"
