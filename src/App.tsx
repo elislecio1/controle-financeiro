@@ -20,6 +20,7 @@ import SystemLogs from './components/SystemLogs'
 import { useAuth } from './hooks/useAuth'
 import { formatarMoeda, formatarValorTabela, getClasseValor } from './utils/formatters'
 import AnalisesFinanceiras from './components/modules/TransactionsModule/AnalisesFinanceiras'
+import logger from './utils/logger'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
@@ -27,11 +28,12 @@ function App() {
   const navigate = useNavigate()
   const { user, profile, isAuthenticated } = useAuth()
   
-  // Log temporário para verificar configuração do Supabase
-  console.log('🔧 Verificando configuração do Supabase:')
-  console.log('URL:', import.meta.env.VITE_SUPABASE_URL)
-  console.log('Anon Key configurada:', !!import.meta.env.VITE_SUPABASE_ANON_KEY)
-  console.log('Configuração válida:', import.meta.env.VITE_SUPABASE_URL !== 'https://your-project.supabase.co' && import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your-anon-key')
+  // Log temporário para verificar configuração do Supabase (apenas em dev)
+  logger.debug('Verificando configuração do Supabase:', {
+    url: import.meta.env.VITE_SUPABASE_URL,
+    hasAnonKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+    isValid: import.meta.env.VITE_SUPABASE_URL !== 'https://your-project.supabase.co' && import.meta.env.VITE_SUPABASE_ANON_KEY !== 'your-anon-key'
+  })
   const [data, setData] = useState<SheetData[]>([])
   const [filteredData, setFilteredData] = useState<SheetData[]>([])
   const [loading, setLoading] = useState(true)
@@ -116,11 +118,11 @@ function App() {
   const loadData = async () => {
     try {
       setLoading(true)
-      console.log('🔄 Carregando dados do Supabase...')
+      logger.log('Carregando dados do Supabase...')
       
       // Carregar dados principais
       const cloudData = await supabaseService.getData()
-      console.log('✅ Dados carregados com sucesso:', cloudData.length, 'registros')
+      logger.success(`Dados carregados com sucesso: ${cloudData.length} registros`)
       setData(cloudData)
       
       // Carregar alertas ativos e executar verificações automáticas
@@ -128,7 +130,7 @@ function App() {
         const { alertasService } = await import('./services/alertas')
         
         // Executar verificações automáticas para gerar alertas
-        console.log('🔍 Executando verificações automáticas...')
+        logger.debug('Executando verificações automáticas...')
         const [vencimentos, metas, orcamentos, saldos] = await Promise.all([
           alertasService.verificarVencimentos(),
           alertasService.verificarMetas(),
@@ -138,12 +140,12 @@ function App() {
         
         // Combinar todos os alertas gerados
         const todosAlertas = [...vencimentos, ...metas, ...orcamentos, ...saldos]
-        console.log('✅ Verificações concluídas. Alertas gerados:', todosAlertas.length)
+        logger.success(`Verificações concluídas. Alertas gerados: ${todosAlertas.length}`)
         
         // Atualizar alertas ativos
         setAlertasAtivos(todosAlertas)
       } catch (error) {
-        console.log('⚠️ Erro ao executar verificações:', error)
+        logger.warn('Erro ao executar verificações:', error)
       }
       
       // Ordenar dados por data de vencimento por padrão
@@ -195,7 +197,7 @@ function App() {
         setConnectionStatus({})
       }, 5000)
     } catch (error: any) {
-      console.error('❌ Erro ao carregar dados:', error)
+      logger.error('Erro ao carregar dados:', error)
       
       // Verificar se é erro de configuração do Supabase
       if (error.message && error.message.includes('Supabase não configurado')) {
@@ -229,6 +231,61 @@ function App() {
     loadData()
   }, [])
 
+  // Configurar listeners de tempo real para sincronização automática
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      return
+    }
+
+    let unsubscribeFunctions: (() => void)[] = []
+
+    const setupRealtime = async () => {
+      try {
+        logger.debug('Configurando listeners de tempo real...')
+        
+        // Inicializar serviço de tempo real
+        await realtimeService.initialize()
+
+        // Listener para nova transação criada
+        const unsubscribeCreated = realtimeService.addListener('transaction_created', (notification) => {
+          logger.success('Nova transação criada - recarregando dados...')
+          setConnectionStatus({ success: true, message: notification.message || 'Nova transação criada!' })
+          loadData() // Recarregar dados automaticamente
+        })
+
+        // Listener para transação atualizada
+        const unsubscribeUpdated = realtimeService.addListener('transaction_updated', (notification) => {
+          logger.success('Transação atualizada - recarregando dados...')
+          setConnectionStatus({ success: true, message: notification.message || 'Transação atualizada!' })
+          loadData() // Recarregar dados automaticamente
+        })
+
+        // Listener para transação excluída
+        const unsubscribeDeleted = realtimeService.addListener('transaction_deleted', (notification) => {
+          logger.success('Transação excluída - recarregando dados...')
+          setConnectionStatus({ success: true, message: notification.message || 'Transação excluída!' })
+          loadData() // Recarregar dados automaticamente
+        })
+
+        unsubscribeFunctions = [unsubscribeCreated, unsubscribeUpdated, unsubscribeDeleted]
+        
+        logger.success('Listeners de tempo real configurados com sucesso')
+      } catch (error) {
+        logger.error('Erro ao configurar tempo real:', error)
+      }
+    }
+
+    setupRealtime()
+
+    // Cleanup: desconectar quando componente desmontar ou usuário sair
+    return () => {
+      unsubscribeFunctions.forEach(unsubscribe => unsubscribe())
+      realtimeService.disconnect().catch(err => {
+        logger.error('Erro ao desconectar realtime:', err)
+      })
+    }
+  }, [isAuthenticated, user])
+
   // Fechar menu do usuário quando clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -258,22 +315,22 @@ function App() {
 
   // Função para recarregar categorias e subcategorias
   const handleCategoriaSaved = async () => {
-    console.log('🔄 handleCategoriaSaved: Iniciando recarregamento de categorias...')
+    logger.debug('handleCategoriaSaved: Iniciando recarregamento de categorias...')
     try {
-      console.log('🔄 Carregando categorias...')
+      logger.debug('Carregando categorias...')
       const categoriasData = await supabaseService.getCategorias()
-      console.log('✅ Categorias carregadas:', categoriasData.length)
+      logger.success(`Categorias carregadas: ${categoriasData.length}`)
       
-      console.log('🔄 Carregando subcategorias...')
+      logger.debug('Carregando subcategorias...')
       const subcategoriasData = await supabaseService.getSubcategorias()
-      console.log('✅ Subcategorias carregadas:', subcategoriasData.length)
+      logger.success(`Subcategorias carregadas: ${subcategoriasData.length}`)
       
-      console.log('🔄 Atualizando estado das categorias...')
+      logger.debug('Atualizando estado das categorias...')
       setCategorias(categoriasData)
       setSubcategorias(subcategoriasData)
-      console.log('✅ Estado das categorias atualizado com sucesso')
+      logger.success('Estado das categorias atualizado com sucesso')
     } catch (error) {
-      console.error('❌ Erro ao recarregar categorias:', error)
+      logger.error('Erro ao recarregar categorias:', error)
     }
   }
 
@@ -282,7 +339,7 @@ function App() {
       const subcategoriasData = await supabaseService.getSubcategorias()
       setSubcategorias(subcategoriasData)
     } catch (error) {
-      console.error('Erro ao recarregar subcategorias:', error)
+      logger.error('Erro ao recarregar subcategorias:', error)
     }
   }
 
@@ -302,7 +359,7 @@ function App() {
       
       setConnectionStatus({ success: true, message: 'Dados exportados com sucesso!' })
     } catch (error: any) {
-      console.error('❌ Erro ao exportar dados:', error)
+      logger.error('Erro ao exportar dados:', error)
       setConnectionStatus({ 
         success: false, 
         message: 'Erro ao exportar dados. Tente novamente.' 
@@ -327,7 +384,7 @@ function App() {
         throw new Error('Formato de arquivo inválido')
       }
     } catch (error: any) {
-      console.error('❌ Erro ao importar dados:', error)
+      logger.error('Erro ao importar dados:', error)
       setConnectionStatus({ 
         success: false, 
         message: 'Erro ao importar dados. Verifique o formato do arquivo.' 

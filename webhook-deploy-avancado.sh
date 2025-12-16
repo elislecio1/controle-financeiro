@@ -124,6 +124,12 @@ check_prerequisites() {
         return 1
     fi
     
+    # Configurar diretório como seguro para Git (evitar erro de propriedade)
+    if [ -d "$PROJECT_DIR/.git" ]; then
+        log_info "Configurando diretório Git como seguro..."
+        git config --global --add safe.directory "$PROJECT_DIR" 2>/dev/null || true
+    fi
+    
     return 0
 }
 
@@ -139,19 +145,47 @@ update_repository() {
         return 1
     fi
     
+    # Corrigir problema de propriedade do Git (dubious ownership)
+    log_info "Configurando diretório como seguro para Git..."
+    git config --global --add safe.directory "$PROJECT_DIR" 2>/dev/null || true
+    
     # Stash de mudanças locais
     if [ -n "$(git status --porcelain)" ]; then
         log_warning "Há mudanças locais. Fazendo stash..."
         git stash
     fi
     
-    # Fetch e pull
-    git fetch origin
-    
-    if [ $? -ne 0 ]; then
-        log_error "Erro ao fazer fetch"
+    # Verificar remote
+    log_info "Verificando configuração do remote..."
+    if ! git remote get-url origin > /dev/null 2>&1; then
+        log_error "Remote 'origin' não configurado"
         return 1
     fi
+    
+    REMOTE_URL=$(git remote get-url origin)
+    log_info "Remote URL: $REMOTE_URL"
+    
+    # Verificar se é SSH
+    if [[ "$REMOTE_URL" != git@* ]]; then
+        log_warning "Remote não está usando SSH. Mudando para SSH..."
+        git remote set-url origin "git@github.com:elislecio1/controle-financeiro.git"
+        log_success "Remote atualizado para SSH"
+    fi
+    
+    # Fetch e pull
+    log_info "Executando git fetch origin..."
+    FETCH_OUTPUT=$(git fetch origin 2>&1)
+    FETCH_EXIT_CODE=$?
+    
+    if [ $FETCH_EXIT_CODE -ne 0 ]; then
+        log_error "Erro ao fazer fetch"
+        log_error "Detalhes do erro: $FETCH_OUTPUT"
+        log_error "Verificando conexão SSH..."
+        ssh -T git@github.com 2>&1 | tee -a "$LOG_FILE" || log_warning "Teste SSH falhou"
+        return 1
+    fi
+    
+    log_success "Fetch concluído com sucesso"
     
     # Verificar se há atualizações
     LOCAL=$(git rev-parse HEAD)
