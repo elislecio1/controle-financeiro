@@ -228,11 +228,65 @@ update_nginx_config() {
     cp "$NGINX_CONFIG" "${NGINX_CONFIG}.backup.$(date +%Y%m%d-%H%M%S)"
     log_info "Backup criado: ${NGINX_CONFIG}.backup.$(date +%Y%m%d-%H%M%S)"
     
-    # Verificar e atualizar caminhos dos certificados
-    sed -i "s|ssl_certificate.*|ssl_certificate ${AAPANEL_CERT_DIR}/fullchain.pem;|g" "$NGINX_CONFIG"
-    sed -i "s|ssl_certificate_key.*|ssl_certificate_key ${AAPANEL_CERT_DIR}/privkey.pem;|g" "$NGINX_CONFIG"
-    
-    log_success "Configuração do Nginx atualizada"
+    # Verificar se já tem listen 443
+    if grep -q "listen 443" "$NGINX_CONFIG"; then
+        log_info "Configuração SSL já existe. Atualizando caminhos dos certificados..."
+        
+        # Atualizar caminhos dos certificados
+        sed -i "s|ssl_certificate.*|ssl_certificate ${AAPANEL_CERT_DIR}/fullchain.pem;|g" "$NGINX_CONFIG"
+        sed -i "s|ssl_certificate_key.*|ssl_certificate_key ${AAPANEL_CERT_DIR}/privkey.pem;|g" "$NGINX_CONFIG"
+        
+        log_success "Caminhos dos certificados atualizados"
+    else
+        log_info "Adicionando configuração SSL ao bloco HTTPS..."
+        
+        # Criar arquivo temporário
+        TEMP_FILE=$(mktemp)
+        SERVER_COUNT=0
+        IN_HTTPS_SERVER=0
+        
+        while IFS= read -r line; do
+            # Detectar início de bloco server
+            if echo "$line" | grep -q "^server {"; then
+                SERVER_COUNT=$((SERVER_COUNT + 1))
+                echo "$line" >> "$TEMP_FILE"
+                
+                # Se for o segundo bloco server (HTTPS), adicionar SSL
+                if [ "$SERVER_COUNT" -eq 2 ]; then
+                    IN_HTTPS_SERVER=1
+                else
+                    IN_HTTPS_SERVER=0
+                fi
+                continue
+            fi
+            
+            # Se estiver no bloco HTTPS e encontrar server_name, adicionar SSL antes
+            if [ "$IN_HTTPS_SERVER" -eq 1 ] && echo "$line" | grep -q "server_name.*${DOMAIN}"; then
+                echo "    listen 443 ssl http2;" >> "$TEMP_FILE"
+                echo "    listen [::]:443 ssl http2;" >> "$TEMP_FILE"
+                echo "" >> "$TEMP_FILE"
+                echo "    # Certificados SSL" >> "$TEMP_FILE"
+                echo "    ssl_certificate ${AAPANEL_CERT_DIR}/fullchain.pem;" >> "$TEMP_FILE"
+                echo "    ssl_certificate_key ${AAPANEL_CERT_DIR}/privkey.pem;" >> "$TEMP_FILE"
+                echo "" >> "$TEMP_FILE"
+                echo "    # Configurações SSL" >> "$TEMP_FILE"
+                echo "    ssl_protocols TLSv1.2 TLSv1.3;" >> "$TEMP_FILE"
+                echo "    ssl_ciphers HIGH:!aNULL:!MD5;" >> "$TEMP_FILE"
+                echo "    ssl_prefer_server_ciphers on;" >> "$TEMP_FILE"
+                echo "    ssl_session_cache shared:SSL:10m;" >> "$TEMP_FILE"
+                echo "    ssl_session_timeout 10m;" >> "$TEMP_FILE"
+                echo "" >> "$TEMP_FILE"
+                IN_HTTPS_SERVER=0
+            fi
+            
+            echo "$line" >> "$TEMP_FILE"
+        done < "$NGINX_CONFIG"
+        
+        # Substituir arquivo original
+        mv "$TEMP_FILE" "$NGINX_CONFIG"
+        
+        log_success "Configuração SSL adicionada"
+    fi
 }
 
 # Testar configuração do Nginx
