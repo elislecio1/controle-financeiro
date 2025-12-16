@@ -1,6 +1,8 @@
 import React from 'react'
 import { useAuth } from '../../hooks/useAuth'
+import { useInactivityLogout } from '../../hooks/useInactivityLogout'
 import { AuthContainer } from './AuthContainer'
+import { InactivityWarning } from './InactivityWarning'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -13,7 +15,21 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredRole = 'user',
   fallback 
 }) => {
-  const { isAuthenticated, loading, user, profile, hasRole } = useAuth()
+  const { isAuthenticated, loading, user, profile, hasRole, signOut } = useAuth()
+  
+  // Configurar logout por inatividade (30 minutos de inatividade, aviso 5 minutos antes)
+  const {
+    showWarningModal,
+    secondsRemaining,
+    extendSession
+  } = useInactivityLogout({
+    inactivityTimeout: 30 * 60 * 1000, // 30 minutos
+    warningTimeout: 5 * 60 * 1000, // Aviso 5 minutos antes
+    showWarning: true,
+    onLogout: async () => {
+      await signOut()
+    }
+  })
 
   // Mostrar loading enquanto verifica autenticação
   if (loading) {
@@ -63,7 +79,21 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Se tudo OK, mostrar o conteúdo protegido
-  return <>{children}</>
+  return (
+    <>
+      {children}
+      {showWarningModal && (
+        <InactivityWarning
+          secondsRemaining={secondsRemaining}
+          onExtendSession={extendSession}
+          onLogout={async () => {
+            await signOut()
+            window.location.href = '/'
+          }}
+        />
+      )}
+    </>
+  )
 }
 
 // Componente para verificar permissões específicas
