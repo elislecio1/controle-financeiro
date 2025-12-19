@@ -12,9 +12,27 @@ echo "=========================================="
 
 cd "$PROJECT_DIR" || exit 1
 
-# 1. Salvar mudanças locais
+# 1. Salvar mudanças locais e arquivos não rastreados
 echo "📦 Salvando mudanças locais..."
 git stash save "Mudanças locais antes do pull - $(date +%Y%m%d-%H%M%S)" || true
+
+# 1.1. Mover arquivos não rastreados que podem conflitar
+echo "📦 Movendo arquivos não rastreados que podem conflitar..."
+UNTRACKED_FILES=$(git ls-files --others --exclude-standard)
+if [ -n "$UNTRACKED_FILES" ]; then
+    BACKUP_DIR=".backup-$(date +%Y%m%d-%H%M%S)"
+    mkdir -p "$BACKUP_DIR"
+    echo "$UNTRACKED_FILES" | while read -r file; do
+        if [ -f "$file" ]; then
+            echo "  Movendo: $file"
+            mkdir -p "$BACKUP_DIR/$(dirname "$file")" 2>/dev/null || true
+            mv "$file" "$BACKUP_DIR/$file" 2>/dev/null || true
+        fi
+    done
+    if [ -d "$BACKUP_DIR" ] && [ "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
+        echo "✅ Arquivos não rastreados movidos para: $BACKUP_DIR"
+    fi
+fi
 
 # 2. Fazer pull
 echo "⬇️ Fazendo pull do repositório..."
