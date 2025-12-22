@@ -66,8 +66,12 @@ echo ""
 
 # Verificar configuração atual
 log_info "Verificando configuração atual..."
-HAS_SSL_CERT=$(grep -c "ssl_certificate.*${DOMAIN}" "$NGINX_CONFIG" || echo "0")
-HAS_SSL_KEY=$(grep -c "ssl_certificate_key.*${DOMAIN}" "$NGINX_CONFIG" || echo "0")
+HAS_SSL_CERT=$(grep -c "ssl_certificate.*${DOMAIN}" "$NGINX_CONFIG" 2>/dev/null || echo "0")
+HAS_SSL_KEY=$(grep -c "ssl_certificate_key.*${DOMAIN}" "$NGINX_CONFIG" 2>/dev/null || echo "0")
+
+# Garantir que são números
+HAS_SSL_CERT=${HAS_SSL_CERT:-0}
+HAS_SSL_KEY=${HAS_SSL_KEY:-0}
 
 if [ "$HAS_SSL_CERT" -gt 0 ] && [ "$HAS_SSL_KEY" -gt 0 ]; then
     log_info "Certificados já configurados. Verificando se estão corretos..."
@@ -96,7 +100,7 @@ else
         IN_HTTPS_BLOCK=0
         SSL_ADDED=0
         
-        while IFS= read -r line; do
+        while IFS= read -r line || [ -n "$line" ]; do
             # Detectar início de bloco server com HTTPS
             if echo "$line" | grep -q "listen 443"; then
                 IN_HTTPS_BLOCK=1
@@ -104,9 +108,10 @@ else
                 continue
             fi
             
-            # Se estiver no bloco HTTPS e encontrar server_name, adicionar SSL antes
-            if [ "$IN_HTTPS_BLOCK" -eq 1 ] && [ "$SSL_ADDED" -eq 0 ] && echo "$line" | grep -q "server_name.*${DOMAIN}"; then
+            # Se estiver no bloco HTTPS e encontrar server_name, adicionar SSL depois
+            if [ "$IN_HTTPS_BLOCK" -eq 1 ] && [ "$SSL_ADDED" -eq 0 ] && echo "$line" | grep -q "server_name"; then
                 echo "$line" >> "$TEMP_FILE"
+                # Adicionar certificados logo após server_name
                 echo "" >> "$TEMP_FILE"
                 echo "    # Certificados SSL" >> "$TEMP_FILE"
                 echo "    ssl_certificate ${AAPANEL_CERT_DIR}/fullchain.pem;" >> "$TEMP_FILE"
@@ -161,7 +166,8 @@ echo ""
 
 # Testar configuração
 log_info "Testando configuração do Nginx..."
-if nginx -t 2>&1 | grep -q "successful"; then
+NGINX_TEST=$(nginx -t 2>&1)
+if echo "$NGINX_TEST" | grep -q "successful"; then
     log_success "✅ Configuração válida!"
     
     # Recarregar Nginx
@@ -198,10 +204,14 @@ if nginx -t 2>&1 | grep -q "successful"; then
 else
     log_error "❌ Configuração inválida!"
     log_info "Erros encontrados:"
-    nginx -t 2>&1 | grep -i error
+    echo "$NGINX_TEST" | grep -i error || echo "$NGINX_TEST"
     echo ""
-    log_info "Restaurando backup..."
-    cp "$BACKUP_FILE" "$NGINX_CONFIG"
+    log_info "Mostrando linhas SSL na configuração:"
+    grep -n "ssl_certificate" "$NGINX_CONFIG" || echo "Nenhuma linha SSL encontrada"
+    echo ""
+    log_warning "NÃO restaurando backup. Verifique manualmente a configuração."
+    log_info "Arquivo de configuração: $NGINX_CONFIG"
+    log_info "Backup disponível em: $BACKUP_FILE"
     exit 1
 fi
 
