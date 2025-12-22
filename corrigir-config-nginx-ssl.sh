@@ -66,12 +66,26 @@ echo ""
 
 # Verificar configuração atual
 log_info "Verificando configuração atual..."
-HAS_SSL_CERT=$(grep -c "ssl_certificate.*${DOMAIN}" "$NGINX_CONFIG" 2>/dev/null || echo "0")
-HAS_SSL_KEY=$(grep -c "ssl_certificate_key.*${DOMAIN}" "$NGINX_CONFIG" 2>/dev/null || echo "0")
+HAS_SSL_CERT=$(grep -c "ssl_certificate" "$NGINX_CONFIG" 2>/dev/null | head -1)
+HAS_SSL_KEY=$(grep -c "ssl_certificate_key" "$NGINX_CONFIG" 2>/dev/null | head -1)
 
-# Garantir que são números
+# Garantir que são números válidos
 HAS_SSL_CERT=${HAS_SSL_CERT:-0}
 HAS_SSL_KEY=${HAS_SSL_KEY:-0}
+
+# Converter para inteiro (remover espaços e quebras de linha)
+HAS_SSL_CERT=$(echo "$HAS_SSL_CERT" | tr -d '[:space:]')
+HAS_SSL_KEY=$(echo "$HAS_SSL_KEY" | tr -d '[:space:]')
+
+# Se ainda não for número, definir como 0
+if ! [[ "$HAS_SSL_CERT" =~ ^[0-9]+$ ]]; then
+    HAS_SSL_CERT=0
+fi
+if ! [[ "$HAS_SSL_KEY" =~ ^[0-9]+$ ]]; then
+    HAS_SSL_KEY=0
+fi
+
+log_info "SSL Cert encontrado: $HAS_SSL_CERT, SSL Key encontrado: $HAS_SSL_KEY"
 
 if [ "$HAS_SSL_CERT" -gt 0 ] && [ "$HAS_SSL_KEY" -gt 0 ]; then
     log_info "Certificados já configurados. Verificando se estão corretos..."
