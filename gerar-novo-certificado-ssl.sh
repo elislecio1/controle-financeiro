@@ -9,6 +9,7 @@ EMAIL="elislecio@gmail.com"
 AAPANEL_CERT_DIR="/www/server/panel/vhost/cert/${DOMAIN}"
 NGINX_CONFIG="/www/server/panel/vhost/nginx/${DOMAIN}.conf"
 WEBROOT="/www/wwwroot/${DOMAIN}"
+PROJECT_DIR="/www/wwwroot/${DOMAIN}"
 
 # Cores
 GREEN='\033[0;32m'
@@ -68,13 +69,25 @@ fi
 
 echo ""
 
-# 2. Verificar se o domínio está acessível
+# 2. Verificar se o domínio está acessível e se o diretório existe
 log_info "2️⃣ Verificando acessibilidade do domínio..."
 if curl -I "http://${DOMAIN}" > /dev/null 2>&1; then
     log_success "Domínio acessível via HTTP"
 else
     log_warning "Domínio não está acessível via HTTP"
     log_info "Certbot tentará mesmo assim..."
+fi
+
+# Verificar se diretório do projeto existe
+if [ ! -d "$PROJECT_DIR" ]; then
+    log_error "Diretório do projeto não encontrado: $PROJECT_DIR"
+    exit 1
+fi
+
+# Verificar se diretório dist existe (para webroot)
+if [ ! -d "${PROJECT_DIR}/dist" ]; then
+    log_warning "Diretório dist não encontrado. Será criado para webroot."
+    mkdir -p "${PROJECT_DIR}/dist"
 fi
 
 echo ""
@@ -106,35 +119,115 @@ if [ -d "${AAPANEL_CERT_DIR}" ]; then
     log_info "Certificados antigos movidos para: ${BACKUP_DIR}"
 fi
 
-# Remover certificado Let's Encrypt antigo (se existir)
+# Remover certificado Let's Encrypt antigo completamente
+log_info "Removendo certificados Let's Encrypt antigos..."
 CERT_DIR=$(find /etc/letsencrypt/live -maxdepth 1 -type d -name "${DOMAIN}*" | head -1)
 if [ -n "$CERT_DIR" ]; then
-    log_info "Removendo certificado Let's Encrypt antigo: $CERT_DIR"
+    log_info "Encontrado diretório antigo: $CERT_DIR"
+    # Tentar deletar via certbot primeiro
     certbot delete --cert-name "${DOMAIN}" --non-interactive 2>/dev/null || true
+    sleep 1
 fi
+
+# Remover manualmente se ainda existir
+if [ -d "/etc/letsencrypt/live/${DOMAIN}" ]; then
+    log_info "Removendo diretório live: /etc/letsencrypt/live/${DOMAIN}"
+    rm -rf "/etc/letsencrypt/live/${DOMAIN}" 2>/dev/null || true
+fi
+
+if [ -d "/etc/letsencrypt/archive/${DOMAIN}" ]; then
+    log_info "Removendo diretório archive: /etc/letsencrypt/archive/${DOMAIN}"
+    rm -rf "/etc/letsencrypt/archive/${DOMAIN}" 2>/dev/null || true
+fi
+
+if [ -f "/etc/letsencrypt/renewal/${DOMAIN}.conf" ]; then
+    log_info "Removendo arquivo renewal: /etc/letsencrypt/renewal/${DOMAIN}.conf"
+    rm -f "/etc/letsencrypt/renewal/${DOMAIN}.conf" 2>/dev/null || true
+fi
+
+# Remover qualquer diretório com sufixo
+for dir in /etc/letsencrypt/live/${DOMAIN}-*; do
+    if [ -d "$dir" ]; then
+        log_info "Removendo diretório com sufixo: $dir"
+        rm -rf "$dir" 2>/dev/null || true
+    fi
+done
+
+for dir in /etc/letsencrypt/archive/${DOMAIN}-*; do
+    if [ -d "$dir" ]; then
+        log_info "Removendo archive com sufixo: $dir"
+        rm -rf "$dir" 2>/dev/null || true
+    fi
+done
+
+log_success "Limpeza de certificados antigos concluída"
 
 echo ""
 
 # 5. Gerar novo certificado usando método standalone
 log_info "5️⃣ Gerando novo certificado SSL..."
-log_info "Usando método standalone (requer porta 80 livre)"
 
-certbot certonly \
+# Verificar se porta 80 está realmente livre
+if lsof -i :80 > /dev/null 2>&1; then
+    log_warning "Porta 80 ainda está em uso. Matando processos..."
+    killall -9 nginx 2>/dev/null || true
+    killall -9 apache2 2>/dev/null || true
+    sleep 3
+fi
+
+log_info "Tentando método standalone (requer porta 80 livre)..."
+
+CERTBOT_OUTPUT=$(certbot certonly \
     --standalone \
     -d "${DOMAIN}" \
     --non-interactive \
     --agree-tos \
     --email "${EMAIL}" \
     --preferred-challenges http \
-    --force-renewal
+    2>&1)
 
-if [ $? -eq 0 ]; then
+CERTBOT_EXIT=$?
+
+if [ $CERTBOT_EXIT -eq 0 ]; then
     log_success "Certificado gerado com sucesso!"
 else
-    log_error "Erro ao gerar certificado"
-    log_info "Tentando iniciar Nginx novamente..."
+    log_warning "Método standalone falhou. Verificando logs..."
+    log_info "Últimas linhas do log do Certbot:"
+    tail -20 /var/log/letsencrypt/letsencrypt.log 2>/dev/null | grep -i error || echo "$CERTBOT_OUTPUT" | tail -10
+    
+    # Tentar método webroot como alternativa
+    log_info "Tentando método webroot como alternativa..."
+    
+    # Criar diretório .well-known se não existir
+    mkdir -p "${WEBROOT}/.well-known/acme-challenge"
+    chown -R www:www "${WEBROOT}/.well-known" 2>/dev/null || chown -R www-data:www-data "${WEBROOT}/.well-known" 2>/dev/null
+    
+    # Iniciar Nginx para servir o webroot
     systemctl start nginx
-    exit 1
+    sleep 2
+    
+    CERTBOT_OUTPUT=$(certbot certonly \
+        --webroot \
+        -w "${WEBROOT}" \
+        -d "${DOMAIN}" \
+        --non-interactive \
+        --agree-tos \
+        --email "${EMAIL}" \
+        --preferred-challenges http \
+        2>&1)
+    
+    CERTBOT_EXIT=$?
+    
+    if [ $CERTBOT_EXIT -eq 0 ]; then
+        log_success "Certificado gerado com sucesso usando webroot!"
+    else
+        log_error "Erro ao gerar certificado com ambos os métodos"
+        log_info "Saída do Certbot:"
+        echo "$CERTBOT_OUTPUT" | tail -20
+        log_info "Verifique o log completo: tail -50 /var/log/letsencrypt/letsencrypt.log"
+        systemctl start nginx
+        exit 1
+    fi
 fi
 
 echo ""
