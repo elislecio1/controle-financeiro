@@ -1,369 +1,245 @@
-// Serviço de Tempo Real para Notificações e Sincronização
-import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+/**
+ * Serviço de Tempo Real usando Supabase Realtime
+ * 
+ * Fornece sincronização automática de dados entre múltiplos usuários
+ * sem necessidade de atualizar a página manualmente
+ */
+
 import { supabase } from './supabase'
-import { SheetData } from '../types'
+import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import logger from '../utils/logger'
 
 export interface RealtimeNotification {
   id: string
-  type: 'info' | 'success' | 'warning' | 'error'
-  title: string
+  type: 'transaction_created' | 'transaction_updated' | 'transaction_deleted'
   message: string
+  data?: any
   timestamp: Date
-  read: boolean
-  action?: {
-    label: string
-    callback: () => void
-  }
 }
 
-export interface RealtimeStats {
-  totalTransactions: number
-  totalValue: number
-  pendingTransactions: number
-  overdueTransactions: number
-  lastUpdate: Date
-}
+type RealtimeListener = (data: any) => void
+type ListenerMap = Map<string, Set<RealtimeListener>>
 
 class RealtimeService {
   private channels: Map<string, RealtimeChannel> = new Map()
-  private listeners: Map<string, Set<(data: any) => void>> = new Map()
-  private notifications: RealtimeNotification[] = []
-  private stats: RealtimeStats | null = null
+  private listeners: ListenerMap = new Map()
+  private isInitialized = false
 
-  constructor() {
-    this.initializeRealtime()
-  }
+  /**
+   * Inicializar serviço de tempo real
+   */
+  async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      logger.debug('RealtimeService já está inicializado')
+      return
+    }
 
-  // Inicializar funcionalidades de tempo real
-  private async initializeRealtime() {
     try {
-      console.log('🔄 Inicializando serviço de tempo real...')
-      
-      // Verificar se o usuário está autenticado
       const { data: { session } } = await supabase.auth.getSession()
+      
       if (!session?.user) {
-        console.log('⚠️ Usuário não autenticado, aguardando login...')
+        logger.warn('Usuário não autenticado. Realtime não será inicializado.')
         return
       }
 
-      await this.subscribeToTransactions(session.user.id)
-      await this.subscribeToNotifications(session.user.id)
-      await this.subscribeToStats(session.user.id)
+      logger.debug('Inicializando RealtimeService para usuário:', session.user.id)
       
-      console.log('✅ Serviço de tempo real inicializado')
+      await this.subscribeToTransactions(session.user.id)
+      
+      this.isInitialized = true
+      logger.success('RealtimeService inicializado com sucesso')
     } catch (error) {
-      console.error('❌ Erro ao inicializar tempo real:', error)
+      logger.error('Erro ao inicializar RealtimeService:', error)
+      throw error
     }
   }
 
-  // Subscrever a mudanças nas transações
-  private async subscribeToTransactions(userId: string) {
+  /**
+   * Subscrever a mudanças na tabela transactions
+   */
+  private async subscribeToTransactions(userId: string): Promise<void> {
     try {
+      // Remover canal existente se houver
+      const existingChannel = this.channels.get('transactions')
+      if (existingChannel) {
+        await supabase.removeChannel(existingChannel)
+      }
+
+      // Criar novo canal
       const channel = supabase
-        .channel('transactions_changes')
+        .channel('transactions_changes', {
+          config: {
+            broadcast: { self: true },
+            presence: { key: userId }
+          }
+        })
         .on(
           'postgres_changes',
           {
-            event: '*',
+            event: '*', // INSERT, UPDATE, DELETE
             schema: 'public',
             table: 'transactions',
             filter: `user_id=eq.${userId}`
           },
           (payload: RealtimePostgresChangesPayload<any>) => {
-            console.log('📊 Mudança detectada nas transações:', payload)
+            logger.debug('Mudança detectada nas transações:', payload.eventType)
             this.handleTransactionChange(payload)
           }
         )
-        .subscribe()
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            logger.success('Inscrito em mudanças de transações')
+          } else if (status === 'CHANNEL_ERROR') {
+            logger.error('Erro ao se inscrever no canal de transações')
+          } else {
+            logger.debug('Status do canal:', status)
+          }
+        })
 
       this.channels.set('transactions', channel)
-      console.log('✅ Inscrito em mudanças de transações')
     } catch (error) {
-      console.error('❌ Erro ao subscrever transações:', error)
+      logger.error('Erro ao subscrever transações:', error)
+      throw error
     }
   }
 
-  // Subscrever a notificações do sistema
-  private async subscribeToNotifications(userId: string) {
+  /**
+   * Processar mudanças nas transações
+   */
+  private handleTransactionChange(payload: RealtimePostgresChangesPayload<any>): void {
     try {
-      const channel = supabase
-        .channel('notifications')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${userId}`
-          },
-          (payload: RealtimePostgresChangesPayload<any>) => {
-            console.log('🔔 Nova notificação:', payload)
-            this.handleNewNotification(payload.new)
+      const { eventType, new: newRecord, old: oldRecord } = payload
+
+      let notification: RealtimeNotification
+      let listenerType: string
+
+      switch (eventType) {
+        case 'INSERT':
+          notification = {
+            id: newRecord.id,
+            type: 'transaction_created',
+            message: 'Nova transação criada',
+            data: newRecord,
+            timestamp: new Date()
           }
-        )
-        .subscribe()
+          listenerType = 'transaction_created'
+          logger.debug('Nova transação criada:', newRecord)
+          break
 
-      this.channels.set('notifications', channel)
-      console.log('✅ Inscrito em notificações')
-    } catch (error) {
-      console.error('❌ Erro ao subscrever notificações:', error)
-    }
-  }
-
-  // Subscrever a estatísticas em tempo real
-  private async subscribeToStats(userId: string) {
-    try {
-      const channel = supabase
-        .channel('stats')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'transactions',
-            filter: `user_id=eq.${userId}`
-          },
-          () => {
-            console.log('📈 Atualizando estatísticas...')
-            this.updateStats(userId)
+        case 'UPDATE':
+          notification = {
+            id: newRecord.id,
+            type: 'transaction_updated',
+            message: 'Transação atualizada',
+            data: { new: newRecord, old: oldRecord },
+            timestamp: new Date()
           }
-        )
-        .subscribe()
+          listenerType = 'transaction_updated'
+          logger.debug('Transação atualizada:', { new: newRecord, old: oldRecord })
+          break
 
-      this.channels.set('stats', channel)
-      console.log('✅ Inscrito em atualizações de estatísticas')
-    } catch (error) {
-      console.error('❌ Erro ao subscrever estatísticas:', error)
-    }
-  }
+        case 'DELETE':
+          notification = {
+            id: oldRecord.id,
+            type: 'transaction_deleted',
+            message: 'Transação excluída',
+            data: oldRecord,
+            timestamp: new Date()
+          }
+          listenerType = 'transaction_deleted'
+          logger.debug('Transação excluída:', oldRecord)
+          break
 
-  // Processar mudanças nas transações
-  private handleTransactionChange(payload: RealtimePostgresChangesPayload<any>) {
-    const { eventType, new: newRecord, old: oldRecord } = payload
-
-    switch (eventType) {
-      case 'INSERT':
-        this.notifyListeners('transaction_created', {
-          type: 'success',
-          title: 'Nova Transação',
-          message: `Transação "${newRecord.descricao}" foi criada`,
-          data: newRecord
-        })
-        break
-
-      case 'UPDATE':
-        this.notifyListeners('transaction_updated', {
-          type: 'info',
-          title: 'Transação Atualizada',
-          message: `Transação "${newRecord.descricao}" foi modificada`,
-          data: { old: oldRecord, new: newRecord }
-        })
-        break
-
-      case 'DELETE':
-        this.notifyListeners('transaction_deleted', {
-          type: 'warning',
-          title: 'Transação Excluída',
-          message: `Transação foi removida`,
-          data: oldRecord
-        })
-        break
-    }
-
-    // Invalidar cache
-    this.invalidateCache()
-  }
-
-  // Processar nova notificação
-  private handleNewNotification(notification: any) {
-    const realtimeNotification: RealtimeNotification = {
-      id: notification.id,
-      type: notification.type || 'info',
-      title: notification.title,
-      message: notification.message,
-      timestamp: new Date(notification.created_at),
-      read: false
-    }
-
-    this.notifications.unshift(realtimeNotification)
-    this.notifyListeners('new_notification', realtimeNotification)
-
-    // Mostrar notificação visual
-    this.showBrowserNotification(realtimeNotification)
-  }
-
-  // Atualizar estatísticas
-  private async updateStats(userId: string) {
-    try {
-      const { data: transactions, error } = await supabase
-        .from('transactions')
-        .select('valor, status, vencimento')
-        .eq('user_id', userId)
-
-      if (error) {
-        console.error('❌ Erro ao buscar estatísticas:', error)
-        return
+        default:
+          logger.warn('Tipo de evento desconhecido:', eventType)
+          return
       }
 
-      const now = new Date()
-      const totalTransactions = transactions.length
-      const totalValue = transactions.reduce((sum, t) => sum + Math.abs(t.valor), 0)
-      const pendingTransactions = transactions.filter(t => t.status === 'pendente').length
-      const overdueTransactions = transactions.filter(t => {
-        if (t.status === 'pago') return false
-        const vencimento = new Date(t.vencimento)
-        return vencimento < now
-      }).length
-
-      this.stats = {
-        totalTransactions,
-        totalValue,
-        pendingTransactions,
-        overdueTransactions,
-        lastUpdate: now
-      }
-
-      this.notifyListeners('stats_updated', this.stats)
+      // Notificar todos os listeners
+      this.notifyListeners(listenerType, notification)
     } catch (error) {
-      console.error('❌ Erro ao atualizar estatísticas:', error)
+      logger.error('Erro ao processar mudança de transação:', error)
     }
   }
 
-  // Mostrar notificação do navegador
-  private showBrowserNotification(notification: RealtimeNotification) {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(notification.title, {
-        body: notification.message,
-        icon: '/favicon.ico',
-        tag: notification.id
-      })
-    }
-  }
-
-  // Solicitar permissão para notificações
-  async requestNotificationPermission(): Promise<boolean> {
-    if (!('Notification' in window)) {
-      console.warn('⚠️ Notificações não suportadas neste navegador')
-      return false
+  /**
+   * Adicionar listener para eventos
+   */
+  addListener(eventType: string, callback: RealtimeListener): () => void {
+    if (!this.listeners.has(eventType)) {
+      this.listeners.set(eventType, new Set())
     }
 
-    if (Notification.permission === 'granted') {
-      return true
-    }
+    const listeners = this.listeners.get(eventType)!
+    listeners.add(callback)
 
-    if (Notification.permission === 'denied') {
-      console.warn('⚠️ Permissão de notificação negada')
-      return false
-    }
-
-    const permission = await Notification.requestPermission()
-    return permission === 'granted'
-  }
-
-  // Adicionar listener para eventos
-  addListener(event: string, callback: (data: any) => void): () => void {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, new Set())
-    }
-    
-    this.listeners.get(event)!.add(callback)
+    logger.debug(`Listener adicionado para evento: ${eventType}`)
 
     // Retornar função de unsubscribe
     return () => {
-      this.listeners.get(event)?.delete(callback)
+      listeners.delete(callback)
+      if (listeners.size === 0) {
+        this.listeners.delete(eventType)
+      }
+      logger.debug(`Listener removido para evento: ${eventType}`)
     }
   }
 
-  // Notificar listeners
-  private notifyListeners(event: string, data: any) {
-    const listeners = this.listeners.get(event)
+  /**
+   * Notificar todos os listeners de um evento
+   */
+  private notifyListeners(eventType: string, data: any): void {
+    const listeners = this.listeners.get(eventType)
     if (listeners) {
       listeners.forEach(callback => {
         try {
           callback(data)
         } catch (error) {
-          console.error('❌ Erro ao executar listener:', error)
+          logger.error(`Erro ao executar listener para ${eventType}:`, error)
         }
       })
     }
   }
 
-  // Invalidar cache
-  private invalidateCache() {
-    // Importar dinamicamente para evitar dependência circular
-    import('./cacheService').then(({ cacheService }) => {
-      cacheService.invalidateTable('transactions')
-    })
-  }
-
-  // Obter notificações
-  getNotifications(): RealtimeNotification[] {
-    return [...this.notifications]
-  }
-
-  // Marcar notificação como lida
-  markNotificationAsRead(id: string): void {
-    const notification = this.notifications.find(n => n.id === id)
-    if (notification) {
-      notification.read = true
-    }
-  }
-
-  // Limpar notificações lidas
-  clearReadNotifications(): void {
-    this.notifications = this.notifications.filter(n => !n.read)
-  }
-
-  // Obter estatísticas
-  getStats(): RealtimeStats | null {
-    return this.stats
-  }
-
-  // Enviar notificação personalizada
-  async sendNotification(
-    userId: string,
-    type: RealtimeNotification['type'],
-    title: string,
-    message: string
-  ): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: userId,
-          type,
-          title,
-          message,
-          read: false
-        })
-
-      if (error) {
-        console.error('❌ Erro ao enviar notificação:', error)
-        throw error
+  /**
+   * Desconectar todos os canais
+   */
+  async disconnect(): Promise<void> {
+    logger.debug('Desconectando RealtimeService...')
+    
+    for (const [name, channel] of this.channels.entries()) {
+      try {
+        await supabase.removeChannel(channel)
+        logger.debug(`Canal ${name} removido`)
+      } catch (error) {
+        logger.error(`Erro ao remover canal ${name}:`, error)
       }
-    } catch (error) {
-      console.error('❌ Erro ao enviar notificação:', error)
-      throw error
     }
-  }
 
-  // Desconectar todos os canais
-  disconnect(): void {
-    this.channels.forEach((channel, name) => {
-      console.log(`🔌 Desconectando canal: ${name}`)
-      supabase.removeChannel(channel)
-    })
     this.channels.clear()
     this.listeners.clear()
+    this.isInitialized = false
+    
+    logger.success('RealtimeService desconectado')
   }
 
-  // Reconectar após login
-  async reconnect(userId: string): Promise<void> {
-    this.disconnect()
-    await this.initializeRealtime()
+  /**
+   * Reconectar (útil após logout/login)
+   */
+  async reconnect(): Promise<void> {
+    await this.disconnect()
+    await this.initialize()
+  }
+
+  /**
+   * Verificar se está conectado
+   */
+  isConnected(): boolean {
+    return this.isInitialized && this.channels.size > 0
   }
 }
 
-// Instância singleton do serviço de tempo real
+// Exportar instância singleton
 export const realtimeService = new RealtimeService()
 export default realtimeService
+
