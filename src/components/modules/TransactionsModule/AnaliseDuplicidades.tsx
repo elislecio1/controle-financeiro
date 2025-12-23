@@ -12,6 +12,7 @@ import {
   Building
 } from 'lucide-react';
 import { supabaseService } from '../../../services/supabase';
+import { cacheService } from '../../../services/cacheService';
 
 interface AnalisesFinanceirasProps {
   data: any[];
@@ -690,7 +691,9 @@ export default function AnalisesFinanceiras({
 
       // Recarregar dados do Supabase para garantir sincronização (em background)
       console.log('🔄 Sincronizando dados com Supabase...');
-      const updatedData = await supabaseService.getData(true);
+      // Invalidar cache antes de recarregar
+      cacheService.invalidateTable('transactions');
+      const updatedData = await supabaseService.getData();
       console.log('✅ Dados sincronizados:', updatedData.length, 'registros');
       
       // Atualizar dados novamente com os dados do servidor (garantir consistência)
@@ -701,7 +704,9 @@ export default function AnalisesFinanceiras({
       console.error('❌ Erro ao marcar como não duplicada:', error);
       // Em caso de erro, recarregar os dados originais
       try {
-        const originalData = await supabaseService.getData(true);
+        // Invalidar cache antes de recarregar
+        cacheService.invalidateTable('transactions');
+        const originalData = await supabaseService.getData();
         onDataChange(originalData);
       } catch (reloadError) {
         console.error('❌ Erro ao recarregar dados após erro:', reloadError);

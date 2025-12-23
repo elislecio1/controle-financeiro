@@ -293,9 +293,6 @@ function App() {
         setRealtimeStats(stats)
       })
 
-      // Solicitar permissão para notificações do navegador
-      realtimeService.requestNotificationPermission()
-
       // Configurar backup automático
       backupService.scheduleAutomaticBackup()
 
