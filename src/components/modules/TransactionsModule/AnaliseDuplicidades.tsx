@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
   Search, 
   AlertTriangle, 
@@ -398,12 +398,55 @@ export default function AnalisesFinanceiras({
     );
   }
 
+  // Função auxiliar para verificar se uma transação está marcada como "não duplicada"
+  const isNotDuplicate = useCallback((transaction: any): boolean => {
+    if (!transaction.tags) return false;
+    
+    // Se tags é um array
+    if (Array.isArray(transaction.tags)) {
+      return transaction.tags.some((tag: any) => {
+        const tagStr = String(tag).toLowerCase();
+        return tagStr === 'não duplicada' || tagStr === 'nao duplicada' || tagStr.includes('não duplicada') || tagStr.includes('nao duplicada');
+      });
+    }
+    
+    // Se tags é um objeto JSONB, verificar se tem a propriedade
+    if (typeof transaction.tags === 'object' && transaction.tags !== null) {
+      return transaction.tags['Não Duplicada'] === true || transaction.tags['Nao Duplicada'] === true ||
+             transaction.tags['não duplicada'] === true || transaction.tags['nao duplicada'] === true;
+    }
+    
+    // Se tags é uma string, verificar se contém
+    if (typeof transaction.tags === 'string') {
+      try {
+        const parsed = JSON.parse(transaction.tags);
+        if (Array.isArray(parsed)) {
+          return parsed.some((tag: any) => {
+            const tagStr = String(tag).toLowerCase();
+            return tagStr === 'não duplicada' || tagStr === 'nao duplicada' || tagStr.includes('não duplicada') || tagStr.includes('nao duplicada');
+          });
+        }
+        if (typeof parsed === 'object' && parsed !== null) {
+          return parsed['Não Duplicada'] === true || parsed['Nao Duplicada'] === true ||
+                 parsed['não duplicada'] === true || parsed['nao duplicada'] === true;
+        }
+      } catch {
+        const tagStr = transaction.tags.toLowerCase();
+        return tagStr.includes('não duplicada') || tagStr.includes('nao duplicada');
+      }
+    }
+    
+    return false;
+  }, []);
+
   // Algoritmo para detectar duplicatas
   const duplicateGroups = useMemo(() => {
     console.log('AnaliseDuplicidades - useMemo para duplicateGroups iniciado.');
-    console.log('AnaliseDuplicidades - data:', data);
+    console.log('AnaliseDuplicidades - data recebida:', data?.length || 0, 'registros');
     console.log('AnaliseDuplicidades - filterType:', filterType);
+    
     if (!data || !Array.isArray(data) || data.length === 0) {
+      console.log('AnaliseDuplicidades - Sem dados para processar');
       return [];
     }
 
@@ -411,16 +454,26 @@ export default function AnalisesFinanceiras({
     const relevantTransactions = filterRelevantTransactions(data);
     console.log('AnaliseDuplicidades - Transações relevantes (últimos 3 meses):', relevantTransactions.length);
 
+    // Filtrar transações marcadas como "não duplicadas"
+    const transactionsNotMarkedAsDuplicate = relevantTransactions.filter(t => {
+      const isNotDup = isNotDuplicate(t);
+      if (isNotDup) {
+        console.log('AnaliseDuplicidades - Transação marcada como não duplicada, excluindo:', t.id, t.descricao);
+      }
+      return !isNotDup;
+    });
+    console.log('AnaliseDuplicidades - Transações não marcadas como não duplicadas:', transactionsNotMarkedAsDuplicate.length);
+
     // Detectar e excluir transações recorrentes (mensalidades)
-    const recurringIds = detectRecurringTransactions(relevantTransactions);
+    const recurringIds = detectRecurringTransactions(transactionsNotMarkedAsDuplicate);
     console.log('AnaliseDuplicidades - Transações recorrentes detectadas:', recurringIds.size);
     
     // Detectar e excluir transferências
-    const transferIds = detectTransfers(relevantTransactions);
+    const transferIds = detectTransfers(transactionsNotMarkedAsDuplicate);
     console.log('AnaliseDuplicidades - Transferências detectadas:', transferIds.size);
 
-    // Filtrar transações não recorrentes
-    const nonRecurringTransactions = relevantTransactions.filter(t => !recurringIds.has(t.id) && !transferIds.has(t.id));
+    // Filtrar transações não recorrentes e não marcadas como não duplicadas
+    const nonRecurringTransactions = transactionsNotMarkedAsDuplicate.filter(t => !recurringIds.has(t.id) && !transferIds.has(t.id));
     console.log('AnaliseDuplicidades - Transações não recorrentes para análise:', nonRecurringTransactions.length);
 
     // Armazenar informações sobre transações recorrentes para exibição
@@ -430,46 +483,29 @@ export default function AnalisesFinanceiras({
     // Armazenar informações sobre transferências para exibição
     const transferTransactions = relevantTransactions.filter(t => transferIds.has(t.id));
     console.log('AnaliseDuplicidades - Transferências:', transferTransactions.length);
-    
-    // Atualizar contadores
-    setRecurringCount(recurringTransactions.length);
-    setTransferCount(transferTransactions.length);
 
     const groups: DuplicateGroup[] = [];
     const processed = new Set<string>();
 
     nonRecurringTransactions.forEach((transaction, index) => {
-      console.log(`AnaliseDuplicidades - Processando transação ${index}:`, transaction);
-      
       if (processed.has(transaction.id)) {
-        console.log(`AnaliseDuplicidades - Transação ${index} já processada, pulando.`);
         return;
       }
 
       const similarTransactions = [transaction];
       processed.add(transaction.id);
-      console.log(`AnaliseDuplicidades - Transação ${index} adicionada ao grupo.`);
 
       // Buscar transações similares
-      console.log(`AnaliseDuplicidades - Buscando transações similares para transação ${index}`);
-      nonRecurringTransactions.slice(index + 1).forEach((otherTransaction, otherIndex) => {
-        console.log(`AnaliseDuplicidades - Comparando com transação ${index + otherIndex + 1}:`, otherTransaction);
-        
+      nonRecurringTransactions.slice(index + 1).forEach((otherTransaction) => {
         if (processed.has(otherTransaction.id)) {
-          console.log(`AnaliseDuplicidades - Transação ${index + otherIndex + 1} já processada, pulando.`);
           return;
         }
 
-        console.log(`AnaliseDuplicidades - Calculando similaridade entre transações ${index} e ${index + otherIndex + 1}`);
         const similarity = calculateSimilarity(transaction, otherTransaction);
-        console.log(`AnaliseDuplicidades - Similaridade calculada:`, similarity);
         
         if (similarity.score >= 0.7) { // 70% de similaridade - threshold otimizado
-          console.log(`AnaliseDuplicidades - Transação ${index + otherIndex + 1} é similar (${similarity.score}), adicionando ao grupo.`);
           similarTransactions.push(otherTransaction);
           processed.add(otherTransaction.id);
-        } else {
-          console.log(`AnaliseDuplicidades - Transação ${index + otherIndex + 1} não é similar (${similarity.score}), ignorando.`);
         }
       });
 
@@ -488,15 +524,39 @@ export default function AnalisesFinanceiras({
       }
     });
 
+    console.log('AnaliseDuplicidades - Grupos de duplicatas encontrados:', groups.length);
+
     // Filtrar por tipo de similaridade
-    return groups.filter(group => {
+    const filteredGroups = groups.filter(group => {
       if (filterType === 'all') return true;
       if (filterType === 'high') return group.similarityScore >= 0.9;
       if (filterType === 'medium') return group.similarityScore >= 0.7 && group.similarityScore < 0.9;
       if (filterType === 'low') return group.similarityScore < 0.7;
       return true;
     });
-  }, [data, filterType]);
+
+    console.log('AnaliseDuplicidades - Grupos após filtro:', filteredGroups.length);
+    return filteredGroups;
+  }, [data, filterType, isNotDuplicate]);
+
+  // Atualizar contadores quando os grupos de duplicatas mudarem
+  useEffect(() => {
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      setRecurringCount(0);
+      setTransferCount(0);
+      return;
+    }
+
+    const relevantTransactions = filterRelevantTransactions(data);
+    const transactionsNotMarkedAsDuplicate = relevantTransactions.filter(t => !isNotDuplicate(t));
+    const recurringIds = detectRecurringTransactions(transactionsNotMarkedAsDuplicate);
+    const transferIds = detectTransfers(transactionsNotMarkedAsDuplicate);
+    const recurringTransactions = relevantTransactions.filter(t => recurringIds.has(t.id));
+    const transferTransactions = relevantTransactions.filter(t => transferIds.has(t.id));
+    
+    setRecurringCount(recurringTransactions.length);
+    setTransferCount(transferTransactions.length);
+  }, [data, isNotDuplicate]);
 
   // Funções auxiliares
   const formatarMoeda = (valor: number) => {
@@ -526,27 +586,126 @@ export default function AnalisesFinanceiras({
   const handleMarkAsNotDuplicate = async (groupId: string) => {
     setLoading(true);
     try {
+      console.log('🔄 Marcando grupo como não duplicado:', groupId);
+      
       // Marcar transações como não duplicadas (adicionar tag)
       const group = duplicateGroups.find(g => g.id === groupId);
-      if (!group) return;
-
-      for (const transaction of group.transactions) {
-        const currentTags = transaction.tags || [];
-        const updatedTags = [...currentTags, 'Não Duplicada'];
-        
-        await supabaseService.updateTransaction(transaction.id, {
-          tags: updatedTags,
-
-        });
+      if (!group) {
+        console.error('❌ Grupo não encontrado:', groupId);
+        return;
       }
 
-      // Recarregar dados
-              const updatedData = await supabaseService.getData();
+      console.log('📝 Processando', group.transactions.length, 'transações do grupo');
+
+      // IDs das transações que serão atualizadas
+      const transactionIds = group.transactions.map(t => t.id);
+      
+      // Atualizar dados localmente primeiro (otimistic update) para atualizar a UI imediatamente
+      const updatedDataLocal = data.map(transaction => {
+        if (transactionIds.includes(transaction.id)) {
+          // Normalizar tags existentes
+          let currentTags: string[] = [];
+          
+          if (transaction.tags) {
+            if (Array.isArray(transaction.tags)) {
+              currentTags = [...transaction.tags];
+            } else if (typeof transaction.tags === 'string') {
+              try {
+                const parsed = JSON.parse(transaction.tags);
+                currentTags = Array.isArray(parsed) ? [...parsed] : [];
+              } catch {
+                currentTags = [];
+              }
+            } else if (typeof transaction.tags === 'object' && transaction.tags !== null) {
+              // Se for objeto, converter para array de chaves onde o valor é true
+              currentTags = Object.keys(transaction.tags).filter(key => transaction.tags[key] === true);
+            }
+          }
+          
+          // Verificar se a tag já existe (evitar duplicatas)
+          const tagExists = currentTags.some(tag => {
+            const tagStr = String(tag).toLowerCase();
+            return tagStr === 'não duplicada' || tagStr === 'nao duplicada' || 
+                   tagStr.includes('não duplicada') || tagStr.includes('nao duplicada');
+          });
+          
+          if (!tagExists) {
+            const updatedTags = [...currentTags, 'Não Duplicada'];
+            console.log('🔄 Atualizando transação localmente:', transaction.id, transaction.descricao);
+            return { ...transaction, tags: updatedTags };
+          }
+        }
+        return transaction;
+      });
+
+      // Atualizar dados no componente pai IMEDIATAMENTE (para atualizar a UI)
+      console.log('🔄 Atualizando dados localmente para refletir mudanças imediatamente...');
+      onDataChange(updatedDataLocal);
+
+      // Agora atualizar no Supabase
+      for (const transaction of group.transactions) {
+        // Normalizar tags existentes
+        let currentTags: string[] = [];
+        
+        if (transaction.tags) {
+          if (Array.isArray(transaction.tags)) {
+            currentTags = [...transaction.tags];
+          } else if (typeof transaction.tags === 'string') {
+            try {
+              const parsed = JSON.parse(transaction.tags);
+              currentTags = Array.isArray(parsed) ? [...parsed] : [];
+            } catch {
+              currentTags = [];
+            }
+          } else if (typeof transaction.tags === 'object' && transaction.tags !== null) {
+            // Se for objeto, converter para array de chaves onde o valor é true
+            currentTags = Object.keys(transaction.tags).filter(key => transaction.tags[key] === true);
+          }
+        }
+        
+        // Verificar se a tag já existe (evitar duplicatas)
+        const tagExists = currentTags.some(tag => {
+          const tagStr = String(tag).toLowerCase();
+          return tagStr === 'não duplicada' || tagStr === 'nao duplicada' || 
+                 tagStr.includes('não duplicada') || tagStr.includes('nao duplicada');
+        });
+        
+        if (!tagExists) {
+          const updatedTags = [...currentTags, 'Não Duplicada'];
+          console.log('💾 Salvando tag "Não Duplicada" no Supabase para transação:', transaction.id, transaction.descricao);
+          
+          const { success, message } = await supabaseService.updateTransaction(transaction.id, {
+            tags: updatedTags,
+          });
+          
+          if (!success) {
+            console.error('❌ Erro ao atualizar transação no Supabase:', transaction.id, message);
+          } else {
+            console.log('✅ Transação atualizada no Supabase com sucesso:', transaction.id);
+          }
+        } else {
+          console.log('⏭️ Transação já possui tag "Não Duplicada":', transaction.id);
+        }
+      }
+
+      // Recarregar dados do Supabase para garantir sincronização (em background)
+      console.log('🔄 Sincronizando dados com Supabase...');
+      const updatedData = await supabaseService.getData(true);
+      console.log('✅ Dados sincronizados:', updatedData.length, 'registros');
+      
+      // Atualizar dados novamente com os dados do servidor (garantir consistência)
       onDataChange(updatedData);
       
-      alert('Transações marcadas como não duplicadas!');
+      console.log('✅ Transações marcadas como não duplicadas! Elas não aparecerão mais na análise.');
     } catch (error) {
-      console.error('Erro ao marcar como não duplicada:', error);
+      console.error('❌ Erro ao marcar como não duplicada:', error);
+      // Em caso de erro, recarregar os dados originais
+      try {
+        const originalData = await supabaseService.getData(true);
+        onDataChange(originalData);
+      } catch (reloadError) {
+        console.error('❌ Erro ao recarregar dados após erro:', reloadError);
+      }
       alert('Erro ao processar. Tente novamente.');
     } finally {
       setLoading(false);
@@ -615,6 +774,7 @@ export default function AnalisesFinanceiras({
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as any)}
+            aria-label="Filtrar por similaridade"
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="all">Todas</option>
