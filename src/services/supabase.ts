@@ -173,7 +173,8 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       // Usar cache para melhorar performance
-      const cacheKey = `transactions:${session.user.id}`
+      // Cache agora inclui transações de todas as empresas do usuário
+      const cacheKey = `transactions:${session.user.id}:empresas`
       const cachedData = cacheService.get<SheetData[]>(cacheKey)
       
       if (cachedData) {
@@ -194,10 +195,13 @@ class SupabaseServiceImpl implements SupabaseService {
         throw new Error(`Erro na conexão: ${testError.message}`)
       }
 
+      // RLS (Row Level Security) filtra automaticamente:
+      // - Transações próprias do usuário
+      // - Transações da mesma empresa (se participa da empresa)
+      // - Todas as transações se for admin
       const { data, error } = await supabase
         .from(this.TABLE_NAME)
         .select('*')
-        .eq('user_id', session.user.id) // Filtrar por usuário
         .order('data', { ascending: true })
 
       if (error) {
@@ -262,14 +266,15 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       // Usar cache para contagem total
-      const countCacheKey = `transactions_count:${session.user.id}`
+      // Cache agora inclui contagem de todas as empresas
+      const countCacheKey = `transactions_count:${session.user.id}:empresas`
       let totalCount = cacheService.get<number>(countCacheKey)
 
       if (totalCount === null) {
+        // RLS filtra automaticamente por empresa
         const { count, error: countError } = await supabase
           .from(this.TABLE_NAME)
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', session.user.id)
 
         if (countError) {
           console.error('❌ Erro ao contar registros:', countError)
@@ -284,8 +289,8 @@ class SupabaseServiceImpl implements SupabaseService {
       const offset = (page - 1) * limit
       const totalPages = Math.ceil(totalCount / limit)
 
-      // Usar cache para dados paginados
-      const cacheKey = `transactions_paginated:${session.user.id}:${page}:${limit}:${sortBy}:${sortOrder}`
+      // Cache agora inclui transações de todas as empresas
+      const cacheKey = `transactions_paginated:${session.user.id}:empresas:${page}:${limit}:${sortBy}:${sortOrder}`
       const cachedData = cacheService.get<SheetData[]>(cacheKey)
 
       if (cachedData) {
@@ -304,10 +309,10 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       // Buscar dados paginados
+      // RLS filtra automaticamente por empresa
       const { data, error } = await supabase
         .from(this.TABLE_NAME)
         .select('*')
-        .eq('user_id', session.user.id)
         .order(sortBy, { ascending: sortOrder === 'asc' })
         .range(offset, offset + limit - 1)
 
@@ -383,10 +388,10 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       // Construir query base
+      // RLS filtra automaticamente por empresa
       let query = supabase
         .from(this.TABLE_NAME)
         .select('*', { count: 'exact' })
-        .eq('user_id', session.user.id)
 
       // Aplicar filtros
       if (filters.search) {

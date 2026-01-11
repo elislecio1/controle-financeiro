@@ -1,116 +1,84 @@
-# 🔧 Corrigir Tela em Branco - Erro MIME Type
+# 🔧 Como Corrigir Tela Branca
 
-## ❌ Problema
+## 🔴 Problema Identificado
 
-```
-Failed to load module script: Expected a JavaScript-or-Wasm module script 
-but the server responded with a MIME type of "application/octet-stream"
-```
-
-**Causa**: O Nginx está servindo arquivos JavaScript com o tipo MIME errado (`application/octet-stream` ao invés de `application/javascript`).
-
----
+O arquivo `.env` está com valores **placeholder** (exemplo), não com as credenciais reais do Supabase.
 
 ## ✅ Solução
 
-### Passo 1: Atualizar Configuração Nginx
+### Passo 1: Editar o arquivo `.env`
 
-A configuração precisa incluir tipos MIME corretos para arquivos JavaScript.
+Abra o arquivo `.env` na raiz do projeto e substitua pelos valores reais:
 
-**Use o arquivo**: `nginx-cf-don-cim-CORRIGIDO.conf`
-
-### Passo 2: Aplicar no aapanel
-
-1. **Website** → `cf.don.cim.br` → **Settings** → **Config File**
-2. Apague todo o conteúdo atual
-3. Copie o conteúdo do arquivo `nginx-cf-don-cim-CORRIGIDO.conf`
-4. **Save** → **Test Config** → **Reload**
-
-### Passo 3: Limpar Cache do Navegador
-
-Após atualizar a configuração:
-- Pressione `Ctrl + Shift + R` (ou `Cmd + Shift + R` no Mac)
-- Ou abra em janela anônima/privada
-
----
-
-## 🔍 O Que Foi Corrigido
-
-### Adicionado na configuração:
-
-```nginx
-# Tipos MIME corretos para JavaScript
-location ~* \.(js|mjs)$ {
-    add_header Content-Type application/javascript;
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-    access_log off;
-}
-
-# Tipo MIME para CSS
-location ~ .*\.css$ {
-    add_header Content-Type text/css;
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-    error_log /dev/null;
-    access_log /dev/null; 
-}
-
-# Tipo MIME para HTML
-location = /index.html {
-    add_header Content-Type text/html;
-    # ... outras configurações
-}
+```env
+VITE_SUPABASE_URL=https://eshaahpcddqkeevxpgfk.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_SV3lBKi83O1jhjIYPW_bjQ_m5vK9lBD
+NEXT_PUBLIC_SUPABASE_URL=https://eshaahpcddqkeevxpgfk.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_SV3lBKi83O1jhjIYPW_bjQ_m5vK9lBD
 ```
 
----
+**⚠️ IMPORTANTE**: Use suas credenciais reais do Supabase!
 
-## 🧪 Verificar se Funcionou
+### Passo 2: Reiniciar o servidor
 
-1. **Recarregue a página** (Ctrl + Shift + R)
-2. **Abra o Console** (F12)
-3. **Verifique se não há mais erros de MIME type**
-4. **A aplicação deve carregar normalmente**
+Após editar o `.env`:
 
----
+1. **Pare o servidor atual** (Ctrl+C no terminal)
+2. **Inicie novamente**:
+   ```bash
+   npm run dev
+   ```
 
-## 🐛 Se Ainda Não Funcionar
+### Passo 3: Limpar cache do navegador
 
-### Verificar se build está completo
+1. Pressione `Ctrl + Shift + R` (hard refresh)
+2. Ou abra o DevTools (F12) → Network → Marque "Disable cache"
 
-```bash
-cd /www/wwwroot/cf.don.cim.br
-ls -la dist/
-# Deve mostrar index.html e pasta assets/
-```
+## 🔍 Verificar Erros no Console
 
-### Verificar permissões
+1. Abra o DevTools (F12)
+2. Vá na aba **Console**
+3. Procure por erros em vermelho
+4. Erros comuns:
+   - `Supabase não configurado`
+   - `Failed to fetch`
+   - `Invalid API key`
 
-```bash
-chown -R www:www /www/wwwroot/cf.don.cim.br/dist
-chmod -R 755 /www/wwwroot/cf.don.cim.br/dist
-```
+## 📝 Como Obter as Credenciais do Supabase
 
-### Verificar logs do Nginx
+1. Acesse: https://app.supabase.com
+2. Selecione seu projeto
+3. Vá em **Settings** → **API**
+4. Copie:
+   - **Project URL** → `VITE_SUPABASE_URL`
+   - **anon/public key** → `VITE_SUPABASE_ANON_KEY`
 
-```bash
-tail -f /www/wwwlogs/cf.don.cim.br.error.log
-```
+## 🐛 Outras Causas Possíveis
 
-### Testar configuração Nginx
+### Erro de JavaScript
+- Abra o DevTools (F12) → Console
+- Veja se há erros em vermelho
+- Copie os erros e verifique
 
-```bash
-sudo nginx -t
-```
+### Erro de Compilação
+- Verifique o terminal onde o `npm run dev` está rodando
+- Procure por erros de TypeScript ou compilação
 
----
+### Problema de Roteamento
+- Verifique se está acessando `http://localhost:3000` (não 3001)
+- Tente acessar diretamente: `http://localhost:3000`
 
-## 📝 Resumo
+## ✅ Checklist
 
-1. ✅ Use `nginx-cf-don-cim-CORRIGIDO.conf` (com tipos MIME corretos)
-2. ✅ Aplique no aapanel
-3. ✅ Limpe cache do navegador
-4. ✅ Recarregue a página
+- [ ] Arquivo `.env` configurado com credenciais reais
+- [ ] Servidor reiniciado após editar `.env`
+- [ ] Cache do navegador limpo (Ctrl+Shift+R)
+- [ ] Console do navegador verificado (F12)
+- [ ] Sem erros no terminal do servidor
 
-**✅ Isso deve resolver o problema da tela em branco!**
+## 🆘 Ainda com Problemas?
 
+1. **Verifique o console do navegador** (F12 → Console)
+2. **Verifique o terminal** onde o servidor está rodando
+3. **Tente em modo anônimo** do navegador
+4. **Verifique se a porta está correta** (3000, não 3001)

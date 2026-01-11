@@ -1,0 +1,2 @@
+cd /www/wwwroot/cf.don.cim.br && git pull origin main && npm install && npm run build && chown -R www:www . && chmod -R 755 dist/ && systemctl reload nginx && echo "✅ Deploy concluído! Acesse: https://cf.don.cim.br"
+

@@ -1,0 +1,19 @@
+# 🚀 COMANDO DE DEPLOY COMPLETO - aapanel
+# Diretório: /www/wwwroot/sites/elislecio/cf.don.cim.br
+
+cd /www/wwwroot/sites/elislecio/cf.don.cim.br && \
+echo "🚀 Iniciando deploy..." && \
+git fetch origin && \
+git pull origin main && \
+echo "📦 Instalando dependências..." && \
+npm install && \
+echo "🔨 Fazendo build..." && \
+npm run build && \
+echo "🔐 Ajustando permissões..." && \
+chown -R www:www /www/wwwroot/sites/elislecio/cf.don.cim.br && \
+chmod -R 755 /www/wwwroot/sites/elislecio/cf.don.cim.br && \
+chmod -R 755 dist/ && \
+echo "🔄 Recarregando Nginx..." && \
+nginx -t && systemctl reload nginx && \
+echo "✅ Deploy concluído! Acesse: https://cf.don.cim.br"
+

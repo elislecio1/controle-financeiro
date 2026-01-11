@@ -1,0 +1,10 @@
+Execute este script no SQL Editor do Supabase:
+
+1. Acesse: https://app.supabase.com
+2. SQL Editor → New Query
+3. Cole o conteúdo de: CONFIGURAR_RLS_EMPRESA_COMPARTILHADA.sql
+4. Clique em Run
+5. Aguarde a execução
+
+Após executar, os usuários verão todas as transações da empresa que participam!
+
