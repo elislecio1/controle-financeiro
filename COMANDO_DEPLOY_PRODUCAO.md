@@ -39,11 +39,11 @@ npm install && \
 echo "🔨 Fazendo build..." && \
 npm run build && \
 echo "🔐 Ajustando permissões..." && \
-chown -R www:www /www/wwwroot/sites/elislecio/cf.don.cim.br && \
-chmod -R 755 /www/wwwroot/sites/elislecio/cf.don.cim.br && \
-chmod -R 755 dist/ && \
+sudo chown -R www:www /www/wwwroot/sites/elislecio/cf.don.cim.br && \
+sudo chmod -R 755 /www/wwwroot/sites/elislecio/cf.don.cim.br && \
+sudo chmod -R 755 dist/ && \
 echo "🔄 Recarregando Nginx..." && \
-nginx -t && systemctl reload nginx && \
+sudo nginx -t && sudo systemctl reload nginx && \
 echo "✅ Deploy concluído! Acesse: https://cf.don.cim.br"
 ```
 
@@ -54,7 +54,7 @@ echo "✅ Deploy concluído! Acesse: https://cf.don.cim.br"
 Se você tem certeza de que tudo está configurado:
 
 ```bash
-cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git pull origin main && npm install && npm run build && chown -R www:www . && systemctl reload nginx && echo "✅ Deploy concluído!"
+cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git pull origin main && npm install && npm run build && sudo chown -R www:www . && sudo systemctl reload nginx && echo "✅ Deploy concluído!"
 ```
 
 ---
@@ -85,7 +85,7 @@ git clone https://github.com/seu-usuario/controle-financeiro.git cf.don.cim.br
 cd cf.don.cim.br
 npm install
 npm run build
-chown -R www:www /www/wwwroot/sites/elislecio/cf.don.cim.br
+sudo chown -R www:www /www/wwwroot/sites/elislecio/cf.don.cim.br
 ```
 
 ---
@@ -132,8 +132,8 @@ tail -f /www/wwwlogs/cf.don.cim.br.log
 
 ### Erro: "Permission denied"
 ```bash
-chown -R www:www /www/wwwroot/sites/elislecio/cf.don.cim.br
-chmod -R 755 /www/wwwroot/sites/elislecio/cf.don.cim.br
+sudo chown -R www:www /www/wwwroot/sites/elislecio/cf.don.cim.br
+sudo chmod -R 755 /www/wwwroot/sites/elislecio/cf.don.cim.br
 ```
 
 ### Erro: "Build falhou"
@@ -148,13 +148,13 @@ npm run build
 ### Erro: "Nginx não recarrega"
 ```bash
 # Verificar configuração
-nginx -t
+sudo nginx -t
 
 # Se estiver OK, recarregar manualmente
-systemctl reload nginx
+sudo systemctl reload nginx
 
 # Ou reiniciar
-systemctl restart nginx
+sudo systemctl restart nginx
 ```
 
 ---
@@ -164,13 +164,13 @@ systemctl restart nginx
 Depois da primeira configuração, use este comando para atualizar:
 
 ```bash
-cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git pull && npm install && npm run build && chown -R www:www . && systemctl reload nginx
+cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git pull && npm install && npm run build && sudo chown -R www:www . && sudo systemctl reload nginx
 ```
 
 Ou crie um alias:
 
 ```bash
-echo 'alias deploy-cf="cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git pull && npm install && npm run build && chown -R www:www . && systemctl reload nginx"' >> ~/.bashrc
+echo 'alias deploy-cf="cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git pull && npm install && npm run build && sudo chown -R www:www . && sudo systemctl reload nginx"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -203,7 +203,7 @@ Após executar:
 
 **Para deploy rápido, use:**
 ```bash
-cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git pull origin main && npm install && npm run build && chown -R www:www . && systemctl reload nginx
+cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git pull origin main && npm install && npm run build && sudo chown -R www:www . && sudo systemctl reload nginx
 ```
 
 **Para deploy completo com verificações, use:**

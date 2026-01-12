@@ -37,12 +37,12 @@ npm install
 npm run build
 
 # 5. Permissões
-chown -R www:www "$PROJECT_DIR"
-chmod -R 755 "$PROJECT_DIR"
-chmod -R 755 dist/
+sudo chown -R www:www "$PROJECT_DIR"
+sudo chmod -R 755 "$PROJECT_DIR"
+sudo chmod -R 755 dist/
 
 # 6. Recarregar Nginx
-nginx -t && systemctl reload nginx
+sudo nginx -t && sudo systemctl reload nginx
 
 echo "✅ Deploy concluído!"
 

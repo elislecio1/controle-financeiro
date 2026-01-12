@@ -104,18 +104,18 @@ log "✅ Build criado com sucesso"
 
 # 5. Ajustar permissões
 log "🔐 Ajustando permissões..."
-chown -R www:www "$PROJECT_DIR" 2>&1 | tee -a "$LOG_FILE"
-chmod -R 755 "$PROJECT_DIR" 2>&1 | tee -a "$LOG_FILE"
-chmod -R 755 dist/ 2>&1 | tee -a "$LOG_FILE"
+sudo chown -R www:www "$PROJECT_DIR" 2>&1 | tee -a "$LOG_FILE"
+sudo chmod -R 755 "$PROJECT_DIR" 2>&1 | tee -a "$LOG_FILE"
+sudo chmod -R 755 dist/ 2>&1 | tee -a "$LOG_FILE"
 
 log "✅ Permissões ajustadas"
 
 # 6. Recarregar Nginx
 log "🔄 Recarregando Nginx..."
-nginx -t 2>&1 | tee -a "$LOG_FILE"
+sudo nginx -t 2>&1 | tee -a "$LOG_FILE"
 
 if [ $? -eq 0 ]; then
-    systemctl reload nginx 2>&1 | tee -a "$LOG_FILE"
+    sudo systemctl reload nginx 2>&1 | tee -a "$LOG_FILE"
     log "✅ Nginx recarregado"
 else
     log "⚠️ Erro na configuração do Nginx (mas build está pronto)"

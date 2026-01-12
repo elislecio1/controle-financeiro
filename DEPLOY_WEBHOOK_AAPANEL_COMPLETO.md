@@ -42,12 +42,12 @@ npm install
 npm run build
 
 # 5. Permissões
-chown -R www:www "$PROJECT_DIR"
-chmod -R 755 "$PROJECT_DIR"
-chmod -R 755 dist/
+sudo chown -R www:www "$PROJECT_DIR"
+sudo chmod -R 755 "$PROJECT_DIR"
+sudo chmod -R 755 dist/
 
 # 6. Recarregar Nginx
-nginx -t && systemctl reload nginx
+sudo nginx -t && sudo sudo systemctl reload nginx
 
 echo "✅ Deploy concluído!"
 ```
@@ -97,7 +97,7 @@ Se quiser uma versão com logs mais detalhados, use o arquivo:
 3. ✅ **Instala dependências** (`npm install`)
 4. ✅ **Faz build** (`npm run build`)
 5. ✅ **Ajusta permissões** (`chown` e `chmod`)
-6. ✅ **Recarrega Nginx** (`systemctl reload nginx`)
+6. ✅ **Recarrega Nginx** (`sudo systemctl reload nginx`)
 
 ---
 
@@ -112,7 +112,7 @@ Se quiser uma versão com logs mais detalhados, use o arquivo:
 ### Erro: "Permission denied"
 **Solução**: O script ajusta permissões automaticamente. Se persistir, execute manualmente:
 ```bash
-chown -R www:www /www/wwwroot/sites/elislecio/cf.don.cim.br
+sudo chown -R www:www /www/wwwroot/sites/elislecio/cf.don.cim.br
 ```
 
 ### Erro: "Build falhou"

@@ -260,9 +260,9 @@ print_info "══════════════════════�
 echo ""
 
 print_info "Ajustando permissões do diretório..."
-chown -R www:www "$PROJECT_DIR" 2>&1 | tee -a "$LOG_FILE"
-chmod -R 755 "$PROJECT_DIR" 2>&1 | tee -a "$LOG_FILE"
-chmod -R 755 dist/ 2>&1 | tee -a "$LOG_FILE"
+sudo chown -R www:www "$PROJECT_DIR" 2>&1 | tee -a "$LOG_FILE"
+sudo chmod -R 755 "$PROJECT_DIR" 2>&1 | tee -a "$LOG_FILE"
+sudo chmod -R 755 dist/ 2>&1 | tee -a "$LOG_FILE"
 
 print_success "Permissões ajustadas!"
 
@@ -274,17 +274,17 @@ print_info "══════════════════════�
 echo ""
 
 print_info "Testando configuração do Nginx..."
-nginx -t 2>&1 | tee -a "$LOG_FILE"
+sudo nginx -t 2>&1 | tee -a "$LOG_FILE"
 
 if [ $? -eq 0 ]; then
     print_info "Recarregando Nginx..."
-    systemctl reload nginx 2>&1 | tee -a "$LOG_FILE"
+    sudo systemctl reload nginx 2>&1 | tee -a "$LOG_FILE"
     
     if [ $? -eq 0 ]; then
         print_success "Nginx recarregado com sucesso!"
     else
         print_warning "Erro ao recarregar Nginx, mas o build está pronto."
-        print_info "Recarregue manualmente: systemctl reload nginx"
+        print_info "Recarregue manualmente: sudo systemctl reload nginx"
     fi
 else
     print_warning "Configuração do Nginx tem erros!"
