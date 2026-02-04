@@ -1289,12 +1289,26 @@ function App() {
                         onClick={async () => {
                           setShowUserMenu(false)
                           try {
-                            await signOut()
-                            navigate('/login')
+                            console.log('🚪 Iniciando logout...')
+                            
+                            // Limpar estado local primeiro
+                            setData([])
+                            setFilteredData([])
+                            
+                            // Fazer logout
+                            const result = await signOut()
+                            console.log('✅ Logout concluído:', result)
+                            
+                            // Aguardar um pouco para garantir que tudo foi limpo
+                            await new Promise(resolve => setTimeout(resolve, 100))
+                            
+                            // Forçar reload completo da página para garantir limpeza total
+                            // Usar '/' porque o App mostra AuthContainer quando não autenticado
+                            window.location.href = '/'
                           } catch (error) {
-                            console.error('Erro ao fazer logout:', error)
+                            console.error('❌ Erro ao fazer logout:', error)
                             // Forçar navegação mesmo se houver erro
-                            navigate('/login')
+                            window.location.href = '/'
                           }
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"

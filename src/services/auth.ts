@@ -390,35 +390,45 @@ class AuthService {
   // Logout
   async signOut(): Promise<{ success: boolean; error?: string }> {
     try {
+      console.log('🚪 Iniciando processo de logout...')
       this.updateAuthState({ loading: true })
 
       // Limpar serviços e subscriptions antes de fazer logout
       try {
+        console.log('🧹 Limpando serviços...')
+        
         // Limpar Realtime subscriptions
         const { realtimeService } = await import('./realtimeService')
         realtimeService.unsubscribeAll()
+        console.log('✅ Realtime subscriptions limpas')
         
         // Parar monitoramento
         const { monitoringService } = await import('./monitoringService')
         monitoringService.stopMonitoring()
+        console.log('✅ Monitoramento parado')
         
         // Parar análise de IA
         const { aiFinancialService } = await import('./aiFinancialService')
         aiFinancialService.stopAnalysis()
+        console.log('✅ Análise de IA parada')
         
-        console.log('✅ Serviços limpos antes do logout')
+        console.log('✅ Todos os serviços limpos')
       } catch (cleanupError) {
         console.warn('⚠️ Erro ao limpar serviços no logout:', cleanupError)
         // Continuar com logout mesmo se cleanup falhar
       }
 
+      console.log('🔐 Fazendo signOut do Supabase...')
       const { error } = await supabase.auth.signOut()
 
       if (error) {
+        console.error('❌ Erro no signOut do Supabase:', error)
         const authError = this.formatError(error)
         this.updateAuthState({ loading: false, error: authError.message })
         return { success: false, error: authError.message }
       }
+
+      console.log('✅ SignOut do Supabase concluído')
 
       // Limpar estado de autenticação
       this.updateAuthState({
@@ -429,8 +439,10 @@ class AuthService {
         error: null
       })
 
+      console.log('✅ Estado de autenticação limpo')
       return { success: true }
     } catch (error) {
+      console.error('❌ Erro inesperado no logout:', error)
       const errorMsg = 'Erro ao fazer logout'
       this.updateAuthState({ loading: false, error: errorMsg })
       return { success: false, error: errorMsg }
