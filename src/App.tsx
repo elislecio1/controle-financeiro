@@ -1286,8 +1286,17 @@ function App() {
                       
                       {/* Botão de Logout */}
                       <button
-                        onClick={async () => {
+                        onClick={async (e) => {
                           setShowUserMenu(false)
+                          
+                          // Desabilitar o botão para evitar cliques múltiplos
+                          const button = e.currentTarget as HTMLButtonElement
+                          if (button) {
+                            button.disabled = true
+                            button.style.opacity = '0.5'
+                            button.style.cursor = 'not-allowed'
+                          }
+                          
                           try {
                             console.log('🚪 Iniciando logout...')
                             
@@ -1295,20 +1304,28 @@ function App() {
                             setData([])
                             setFilteredData([])
                             
-                            // Fazer logout
-                            const result = await signOut()
+                            // Fazer logout com timeout para não travar
+                            const logoutPromise = signOut()
+                            const timeoutPromise = new Promise<{ success: boolean }>((resolve) => {
+                              setTimeout(() => {
+                                console.warn('⚠️ Timeout no logout, forçando navegação...')
+                                resolve({ success: true })
+                              }, 3000) // Timeout de 3 segundos
+                            })
+                            
+                            const result = await Promise.race([logoutPromise, timeoutPromise])
                             console.log('✅ Logout concluído:', result)
                             
                             // Aguardar um pouco para garantir que tudo foi limpo
-                            await new Promise(resolve => setTimeout(resolve, 100))
+                            await new Promise(resolve => setTimeout(resolve, 200))
                             
                             // Forçar reload completo da página para garantir limpeza total
-                            // Usar '/' porque o App mostra AuthContainer quando não autenticado
-                            window.location.href = '/'
+                            // Usar replace para não adicionar ao histórico
+                            window.location.replace('/')
                           } catch (error) {
                             console.error('❌ Erro ao fazer logout:', error)
                             // Forçar navegação mesmo se houver erro
-                            window.location.href = '/'
+                            window.location.replace('/')
                           }
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"

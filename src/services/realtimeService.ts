@@ -431,11 +431,32 @@ class RealtimeService {
    */
   unsubscribeAll(): void {
     console.log('🔌 Desinscrevendo de todas as subscriptions...')
-    this.subscriptions.forEach((sub) => {
-      sub.unsubscribe()
-    })
-    this.subscriptions.clear()
-    this.callbacks.clear()
+    try {
+      // Desconectar todos os canais
+      this.subscriptions.forEach((sub, channelName) => {
+        try {
+          console.log(`🔌 Desconectando canal: ${channelName}`)
+          // Remover o canal do Supabase
+          supabase.removeChannel(sub.channel)
+          // Chamar unsubscribe se existir
+          if (sub.unsubscribe) {
+            sub.unsubscribe()
+          }
+        } catch (error) {
+          console.warn(`⚠️ Erro ao desconectar canal ${channelName}:`, error)
+        }
+      })
+      
+      // Limpar todas as subscriptions e callbacks
+      this.subscriptions.clear()
+      this.callbacks.clear()
+      console.log('✅ Todas as subscriptions foram desconectadas')
+    } catch (error) {
+      console.error('❌ Erro ao desinscrever todas as subscriptions:', error)
+      // Limpar mesmo se houver erro
+      this.subscriptions.clear()
+      this.callbacks.clear()
+    }
   }
 
   /**

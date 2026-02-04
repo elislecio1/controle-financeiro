@@ -394,29 +394,59 @@ class AuthService {
       this.updateAuthState({ loading: true })
 
       // Limpar serviços e subscriptions antes de fazer logout
+      // Usar Promise.allSettled para garantir que todos os serviços sejam limpos mesmo se algum falhar
       try {
         console.log('🧹 Limpando serviços...')
         
-        // Limpar Realtime subscriptions
-        const { realtimeService } = await import('./realtimeService')
-        realtimeService.unsubscribeAll()
-        console.log('✅ Realtime subscriptions limpas')
+        const cleanupPromises = [
+          // Limpar Realtime subscriptions
+          (async () => {
+            try {
+              const { realtimeService } = await import('./realtimeService')
+              realtimeService.unsubscribeAll()
+              console.log('✅ Realtime subscriptions limpas')
+            } catch (err) {
+              console.warn('⚠️ Erro ao limpar Realtime:', err)
+            }
+          })(),
+          
+          // Parar monitoramento
+          (async () => {
+            try {
+              const { monitoringService } = await import('./monitoringService')
+              monitoringService.stopMonitoring()
+              console.log('✅ Monitoramento parado')
+            } catch (err) {
+              console.warn('⚠️ Erro ao parar monitoramento:', err)
+            }
+          })(),
+          
+          // Parar análise de IA
+          (async () => {
+            try {
+              const { aiFinancialService } = await import('./aiFinancialService')
+              aiFinancialService.stopAnalysis()
+              console.log('✅ Análise de IA parada')
+            } catch (err) {
+              console.warn('⚠️ Erro ao parar análise de IA:', err)
+            }
+          })()
+        ]
         
-        // Parar monitoramento
-        const { monitoringService } = await import('./monitoringService')
-        monitoringService.stopMonitoring()
-        console.log('✅ Monitoramento parado')
+        // Aguardar todos os cleanups (com timeout para não travar)
+        await Promise.race([
+          Promise.allSettled(cleanupPromises),
+          new Promise(resolve => setTimeout(resolve, 2000)) // Timeout de 2 segundos
+        ])
         
-        // Parar análise de IA
-        const { aiFinancialService } = await import('./aiFinancialService')
-        aiFinancialService.stopAnalysis()
-        console.log('✅ Análise de IA parada')
-        
-        console.log('✅ Todos os serviços limpos')
+        console.log('✅ Limpeza de serviços concluída')
       } catch (cleanupError) {
         console.warn('⚠️ Erro ao limpar serviços no logout:', cleanupError)
         // Continuar com logout mesmo se cleanup falhar
       }
+
+      // Aguardar um pouco para garantir que as subscriptions foram desconectadas
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       console.log('🔐 Fazendo signOut do Supabase...')
       const { error } = await supabase.auth.signOut()
@@ -424,7 +454,14 @@ class AuthService {
       if (error) {
         console.error('❌ Erro no signOut do Supabase:', error)
         const authError = this.formatError(error)
-        this.updateAuthState({ loading: false, error: authError.message })
+        // Mesmo com erro, limpar o estado local
+        this.updateAuthState({
+          user: null,
+          profile: null,
+          isAuthenticated: false,
+          loading: false,
+          error: authError.message
+        })
         return { success: false, error: authError.message }
       }
 
@@ -443,9 +480,15 @@ class AuthService {
       return { success: true }
     } catch (error) {
       console.error('❌ Erro inesperado no logout:', error)
-      const errorMsg = 'Erro ao fazer logout'
-      this.updateAuthState({ loading: false, error: errorMsg })
-      return { success: false, error: errorMsg }
+      // Mesmo com erro, limpar o estado local
+      this.updateAuthState({
+        user: null,
+        profile: null,
+        isAuthenticated: false,
+        loading: false,
+        error: null
+      })
+      return { success: true } // Retornar success para permitir navegação
     }
   }
 
