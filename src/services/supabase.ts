@@ -1537,6 +1537,23 @@ class SupabaseServiceImpl implements SupabaseService {
       
       console.log('📊 Buscando contas bancárias no Supabase...')
       
+      // Primeiro, buscar TODAS as contas para diagnóstico
+      const { data: todasContas, error: errorTodas } = await supabase
+        .from('contas_bancarias')
+        .select('*')
+        .order('nome')
+
+      if (errorTodas) {
+        console.error('❌ Erro ao buscar todas as contas bancárias:', errorTodas)
+        throw new Error(`Erro ao buscar contas bancárias: ${errorTodas.message}`)
+      }
+
+      console.log('📊 Total de contas no banco:', todasContas?.length || 0)
+      console.log('📊 Contas ativas:', todasContas?.filter(c => c.ativo === true).length || 0)
+      console.log('📊 Contas inativas:', todasContas?.filter(c => c.ativo === false).length || 0)
+      console.log('📊 Contas sem status (ativo = NULL):', todasContas?.filter(c => c.ativo === null || c.ativo === undefined).length || 0)
+      
+      // Agora filtrar apenas as ativas
       const { data, error } = await supabase
         .from('contas_bancarias')
         .select('*')
@@ -1544,11 +1561,34 @@ class SupabaseServiceImpl implements SupabaseService {
         .order('nome')
 
       if (error) {
-        console.error('❌ Erro ao buscar contas bancárias:', error)
-        throw new Error(`Erro ao buscar contas bancárias: ${error.message}`)
+        console.error('❌ Erro ao buscar contas bancárias ativas:', error)
+        // Se houver erro, tentar buscar todas (sem filtro de ativo)
+        console.warn('⚠️ Tentando buscar todas as contas (sem filtro de ativo)...')
+        const { data: dataFallback, error: errorFallback } = await supabase
+          .from('contas_bancarias')
+          .select('*')
+          .order('nome')
+        
+        if (errorFallback) {
+          throw new Error(`Erro ao buscar contas bancárias: ${errorFallback.message}`)
+        }
+        
+        console.log('✅ Contas bancárias carregadas (fallback):', dataFallback?.length || 0, 'registros')
+        const contasMapeadasFallback: ContaBancaria[] = (dataFallback || []).map(item => ({
+          id: String(item.id),
+          nome: String(item.nome),
+          tipo: String(item.tipo) as 'conta_corrente' | 'poupanca' | 'investimento' | 'cartao_credito' | 'cartao_debito',
+          banco: String(item.banco),
+          agencia: String(item.agencia),
+          conta: String(item.conta),
+          saldo: Number(item.saldo),
+          limite: Number(item.limite),
+          ativo: Boolean(item.ativo ?? true) // Se NULL, considerar como true
+        }))
+        return contasMapeadasFallback
       }
 
-             console.log('✅ Contas bancárias carregadas:', data?.length || 0, 'registros')
+      console.log('✅ Contas bancárias ativas carregadas:', data?.length || 0, 'registros')
        
        // Converter dados unknown para ContaBancaria[]
        const contasMapeadas: ContaBancaria[] = (data || []).map(item => ({

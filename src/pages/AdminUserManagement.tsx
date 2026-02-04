@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, Shield, User, Mail, Calendar } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, Shield, User, Mail, Calendar, CheckCircle } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../services/supabase'
 
@@ -169,20 +169,35 @@ const AdminUserManagement: React.FC = () => {
 
   // Deletar usuário
   const deleteUser = async (userId: string, userEmail: string) => {
-    if (!confirm(`Tem certeza que deseja deletar o usuário ${userEmail}?`)) {
+    if (!confirm(`Tem certeza que deseja deletar o usuário ${userEmail}? Esta ação não pode ser desfeita.`)) {
       return
     }
 
     try {
       setError(null)
 
-      const { error } = await supabase.rpc('delete_admin_user', {
-        user_id: userId
-      })
+      // Tentar deletar via RPC primeiro
+      let error: any = null
+      
+      try {
+        const result = await supabase.rpc('delete_admin_user', {
+          user_id: userId
+        })
+        error = result.error
+      } catch (rpcError) {
+        console.warn('RPC delete_admin_user não disponível, tentando método alternativo...', rpcError)
+        // Fallback: deletar diretamente da tabela user_profiles
+        const { error: deleteError } = await supabase
+          .from('user_profiles')
+          .delete()
+          .eq('user_id', userId)
+        
+        error = deleteError
+      }
 
       if (error) {
         console.error('Erro ao deletar usuário:', error)
-        setError(error.message)
+        setError(error.message || 'Erro ao deletar usuário. Verifique se a função delete_admin_user existe no banco de dados.')
         return
       }
 
@@ -191,6 +206,129 @@ const AdminUserManagement: React.FC = () => {
     } catch (err) {
       console.error('Erro inesperado:', err)
       setError('Erro inesperado ao deletar usuário')
+    }
+  }
+
+  // Confirmar email do usuário (resolver status "Pendente")
+  const confirmUserEmail = async (userId: string, userEmail: string) => {
+    if (!confirm(`Deseja confirmar o email do usuário ${userEmail}?`)) {
+      return
+    }
+
+    try {
+      setError(null)
+
+      // Tentar confirmar via RPC primeiro
+      let error: any = null
+      
+      try {
+        const result = await supabase.rpc('confirm_user_email', {
+          target_user_id: userId
+        })
+        error = result.error
+      } catch (rpcError) {
+        console.warn('RPC confirm_user_email não disponível, tentando método alternativo...', rpcError)
+        // Fallback: atualizar status no perfil
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({ status: 'active', updated_at: new Date().toISOString() })
+          .eq('user_id', userId)
+        
+        error = updateError
+      }
+
+      if (error) {
+        console.error('Erro ao confirmar email:', error)
+        setError(error.message || 'Erro ao confirmar email. Para confirmar completamente, use o dashboard do Supabase.')
+        return
+      }
+
+      await loadUsers()
+      alert('Email confirmado com sucesso! Nota: Para confirmar completamente no auth.users, use o dashboard do Supabase.')
+    } catch (err) {
+      console.error('Erro inesperado:', err)
+      setError('Erro inesperado ao confirmar email')
+    }
+  }
+
+  // Editar usuário
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null)
+  const [editFormData, setEditFormData] = useState({
+    email: '',
+    name: '',
+    full_name: '',
+    role: 'user' as 'admin' | 'user' | 'viewer'
+  })
+
+  const startEdit = (user: AdminUser) => {
+    setEditingUser(user)
+    setEditFormData({
+      email: user.email,
+      name: user.raw_user_meta_data?.name || user.raw_user_meta_data?.full_name || '',
+      full_name: user.raw_user_meta_data?.full_name || user.raw_user_meta_data?.name || '',
+      role: (user.role as any) || 'user'
+    })
+  }
+
+  const cancelEdit = () => {
+    setEditingUser(null)
+    setEditFormData({
+      email: '',
+      name: '',
+      full_name: '',
+      role: 'user'
+    })
+  }
+
+  const saveEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!editingUser) return
+
+    try {
+      setError(null)
+
+      // Tentar atualizar via RPC primeiro
+      let error: any = null
+      
+      try {
+        const result = await supabase.rpc('update_admin_user', {
+          target_user_id: editingUser.id,
+          new_email: editFormData.email || null,
+          new_name: editFormData.name || null,
+          new_full_name: editFormData.full_name || null,
+          new_role: editFormData.role || null
+        })
+        error = result.error
+      } catch (rpcError) {
+        console.warn('RPC update_admin_user não disponível, tentando método alternativo...', rpcError)
+        // Fallback: atualizar diretamente na tabela user_profiles
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({
+            email: editFormData.email || undefined,
+            name: editFormData.name || undefined,
+            full_name: editFormData.full_name || undefined,
+            role: editFormData.role,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', editingUser.id)
+        
+        error = updateError
+      }
+
+      if (error) {
+        console.error('Erro ao atualizar usuário:', error)
+        setError(error.message || 'Erro ao atualizar usuário')
+        return
+      }
+
+      cancelEdit()
+      await loadUsers()
+      alert('Usuário atualizado com sucesso!')
+    } catch (err) {
+      console.error('Erro inesperado:', err)
+      setError('Erro inesperado ao atualizar usuário')
     }
   }
 
@@ -340,6 +478,84 @@ const AdminUserManagement: React.FC = () => {
           </div>
         )}
 
+        {/* Edit User Modal */}
+        {editingUser && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Editar Usuário</h3>
+                <form onSubmit={saveEdit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nome
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.name}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Nome do usuário"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nome Completo
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.full_name}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Nome completo"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={editFormData.email}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="email@exemplo.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Role
+                    </label>
+                    <select
+                      value={editFormData.role}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, role: e.target.value as any }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="user">Usuário</option>
+                      <option value="admin">Administrador</option>
+                      <option value="viewer">Visualizador</option>
+                    </select>
+                  </div>
+                  <div className="flex justify-end space-x-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      Salvar
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Users List */}
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200">
@@ -424,13 +640,31 @@ const AdminUserManagement: React.FC = () => {
                         }
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => deleteUser(user.id, user.email)}
-                          className="text-red-600 hover:text-red-900 ml-2"
-                          title="Deletar usuário"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex justify-end items-center space-x-2">
+                          {!user.email_confirmed_at && (
+                            <button
+                              onClick={() => confirmUserEmail(user.id, user.email)}
+                              className="text-yellow-600 hover:text-yellow-900"
+                              title="Confirmar email"
+                            >
+                              <Mail className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => startEdit(user)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Editar usuário"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteUser(user.id, user.email)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Deletar usuário"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
