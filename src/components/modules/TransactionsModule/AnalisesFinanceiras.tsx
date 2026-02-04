@@ -146,11 +146,14 @@ const agruparPorPeriodo = (data: any[], tipoFiltro: string) => {
       agrupado[chave] = { receitas: 0, despesas: 0, saldo: 0 };
     }
     
-    if (valor > 0) {
-      agrupado[chave].receitas += valor;
-    } else {
-      agrupado[chave].despesas += Math.abs(valor);
+    // Usar o campo 'tipo' do banco de dados para classificar receitas e despesas
+    const valorAbsoluto = Math.abs(valor);
+    if (item.tipo === 'receita' || item.tipo === 'investimento') {
+      agrupado[chave].receitas += valorAbsoluto;
+    } else if (item.tipo === 'despesa') {
+      agrupado[chave].despesas += valorAbsoluto;
     }
+    // Transferências não são contabilizadas como receita ou despesa
     
     agrupado[chave].saldo = agrupado[chave].receitas - agrupado[chave].despesas;
   });
@@ -219,7 +222,8 @@ const agruparPorCategoria = (data: any[]) => {
   const agrupado: { [key: string]: number } = {};
   
   data.forEach(item => {
-    if (parseFloat(item.valor) < 0) {
+    // Usar o campo 'tipo' do banco de dados para identificar despesas
+    if (item.tipo === 'despesa') {
       const categoria = item.categoria || 'Sem categoria';
       const valor = Math.abs(parseFloat(item.valor) || 0);
       agrupado[categoria] = (agrupado[categoria] || 0) + valor;
@@ -237,9 +241,10 @@ const agruparPorCliente = (data: any[]) => {
   const agrupado: { [key: string]: number } = {};
   
   data.forEach(item => {
-    if (parseFloat(item.valor) > 0) {
+    // Usar o campo 'tipo' do banco de dados para identificar receitas
+    if (item.tipo === 'receita' || item.tipo === 'investimento') {
       const cliente = item.empresa || item.contato || 'Cliente não identificado';
-      const valor = parseFloat(item.valor) || 0;
+      const valor = Math.abs(parseFloat(item.valor) || 0);
       agrupado[cliente] = (agrupado[cliente] || 0) + valor;
     }
   });
@@ -252,10 +257,11 @@ const agruparPorCliente = (data: any[]) => {
 
 // Função para calcular DRE
 const calcularDRE = (data: any[]) => {
-  const receitas = data.filter(item => parseFloat(item.valor) > 0);
-  const despesas = data.filter(item => parseFloat(item.valor) < 0);
+  // Usar o campo 'tipo' do banco de dados para classificar receitas e despesas
+  const receitas = data.filter(item => item.tipo === 'receita' || item.tipo === 'investimento');
+  const despesas = data.filter(item => item.tipo === 'despesa');
   
-  const receitaBruta = receitas.reduce((total, item) => total + (parseFloat(item.valor) || 0), 0);
+  const receitaBruta = receitas.reduce((total, item) => total + Math.abs(parseFloat(item.valor) || 0), 0);
   const despesasTotal = despesas.reduce((total, item) => total + Math.abs(parseFloat(item.valor) || 0), 0);
   const lucroLiquido = receitaBruta - despesasTotal;
   
@@ -287,38 +293,34 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
       return dataItem && dataEstaNoPeriodo(dataItem, dataInicio, dataFim);
     });
     
-    // Separar receitas e despesas
+    // Separar receitas e despesas usando o campo 'tipo' do banco de dados
     const receitas = dadosFiltrados.filter(item => {
       const valor = parseFloat(item.valor);
-      return valor > 0 && !isNaN(valor);
+      return (item.tipo === 'receita' || item.tipo === 'investimento') && !isNaN(valor) && valor !== 0;
     });
     
     const despesas = dadosFiltrados.filter(item => {
       const valor = parseFloat(item.valor);
-      return valor < 0 && !isNaN(valor);
+      return item.tipo === 'despesa' && !isNaN(valor) && valor !== 0;
     });
     
-    // Calcular totais
-    const receitaTotal = receitas.reduce((total, item) => total + (parseFloat(item.valor) || 0), 0);
+    // Calcular totais usando valores absolutos (garantir que sejam sempre positivos)
+    const receitaTotal = receitas.reduce((total, item) => total + Math.abs(parseFloat(item.valor) || 0), 0);
     const despesaTotal = despesas.reduce((total, item) => total + Math.abs(parseFloat(item.valor) || 0), 0);
     const lucroTotal = receitaTotal - despesaTotal;
     const margemLucro = receitaTotal > 0 ? (lucroTotal / receitaTotal) * 100 : 0;
     
-    // DEBUG: Mostrar dados para verificação
-    console.log('🔍 === NOVO MÓDULO DE ANÁLISES ===');
-    console.log('🔍 Dados recebidos do Supabase:', data.length);
-    console.log('🔍 Período selecionado:', tipoFiltro);
-    console.log('🔍 Data início:', dataInicio.toISOString().split('T')[0]);
-    console.log('🔍 Data fim:', dataFim.toISOString().split('T')[0]);
-    console.log('🔍 Dados filtrados por período:', dadosFiltrados.length);
-    console.log('🔍 Receitas encontradas:', receitas.length);
-    console.log('🔍 Despesas encontradas:', despesas.length);
-    console.log('🔍 Receita total calculada:', receitaTotal);
-    console.log('🔍 Despesa total calculada:', despesaTotal);
-    console.log('🔍 Lucro total calculado:', lucroTotal);
-    console.log('🔍 Margem de lucro calculada:', margemLucro);
-    console.log('🔍 === DADOS COMPLETOS DO SUPABASE ===');
-    console.table(data);
+    // Log apenas em caso de valores suspeitos (para debug)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📊 Métricas calculadas:', {
+        receitas: receitas.length,
+        despesas: despesas.length,
+        receitaTotal: formatarMoeda(receitaTotal),
+        despesaTotal: formatarMoeda(despesaTotal),
+        lucroTotal: formatarMoeda(lucroTotal),
+        margemLucro: `${margemLucro.toFixed(2)}%`
+      });
+    }
     
     return {
       receitaTotal,
@@ -602,7 +604,7 @@ export default function AnalisesFinanceiras({ data, onDataChange }: AnalisesFina
                     Margem de Lucro
                   </p>
                   <p className={`text-2xl font-bold ${metricas.margemLucro >= 0 ? 'text-green-900' : 'text-red-900'}`}>
-                    {metricas.lucroTotal >= 0 ? metricas.margemLucro.toFixed(1) : '0.0'}%
+                    {metricas.margemLucro.toFixed(1)}%
                   </p>
                 </div>
               </div>

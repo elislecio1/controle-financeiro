@@ -1120,7 +1120,7 @@ function App() {
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
               <DollarSign className="h-8 w-8 text-blue-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">💰 NeoFIN</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Neofin</h1>
             </div>
             
             <div className="flex items-center space-x-4">
