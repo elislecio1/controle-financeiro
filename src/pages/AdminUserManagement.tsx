@@ -52,19 +52,67 @@ const AdminUserManagement: React.FC = () => {
       setLoading(true)
       setError(null)
 
-      // Buscar usuários via RPC (mais seguro)
-      const { data, error } = await supabase.rpc('get_admin_users')
+      // Tentar buscar via RPC primeiro (mais seguro)
+      let data: AdminUser[] | null = null
+      let error: any = null
 
-      if (error) {
-        console.error('Erro ao carregar usuários:', error)
-        setError('Erro ao carregar usuários')
-        return
+      try {
+        const result = await supabase.rpc('get_admin_users')
+        data = result.data
+        error = result.error
+      } catch (rpcError) {
+        console.warn('RPC get_admin_users não disponível, tentando método alternativo...', rpcError)
+        error = rpcError
       }
 
-      setUsers(data || [])
+      // Se RPC falhou, tentar buscar diretamente da tabela user_profiles
+      if (error || !data) {
+        console.log('Buscando usuários diretamente da tabela user_profiles...')
+        
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (profilesError) {
+          console.error('Erro ao carregar perfis:', profilesError)
+          setError(`Erro ao carregar usuários: ${profilesError.message}`)
+          return
+        }
+
+        // Buscar dados dos usuários do auth.users
+        const userIds = profilesData?.map(p => p.user_id) || []
+        const usersData: AdminUser[] = []
+
+        // Para cada perfil, buscar dados do auth.users
+        for (const profile of profilesData || []) {
+          try {
+            // Buscar email do auth.users via função admin (se disponível)
+            // Ou usar o email do perfil se disponível
+            usersData.push({
+              id: profile.user_id,
+              email: profile.email || 'email@não.disponível',
+              email_confirmed_at: null,
+              created_at: profile.created_at || new Date().toISOString(),
+              last_sign_in_at: null,
+              raw_user_meta_data: {
+                name: profile.full_name || profile.name || 'Sem nome',
+                full_name: profile.full_name || profile.name
+              },
+              role: profile.role || 'user'
+            })
+          } catch (err) {
+            console.warn('Erro ao processar perfil:', err)
+          }
+        }
+
+        setUsers(usersData)
+      } else {
+        setUsers(data || [])
+      }
     } catch (err) {
       console.error('Erro inesperado:', err)
-      setError('Erro inesperado ao carregar usuários')
+      setError(`Erro inesperado ao carregar usuários: ${err instanceof Error ? err.message : 'Erro desconhecido'}`)
     } finally {
       setLoading(false)
     }
@@ -151,14 +199,29 @@ const AdminUserManagement: React.FC = () => {
     try {
       setError(null)
 
-      const { error } = await supabase.rpc('update_user_role', {
-        user_id: userId,
-        new_role: newRole
-      })
+      // Tentar atualizar via RPC primeiro
+      let error: any = null
+      
+      try {
+        const result = await supabase.rpc('update_user_role', {
+          user_id: userId,
+          new_role: newRole
+        })
+        error = result.error
+      } catch (rpcError) {
+        console.warn('RPC update_user_role não disponível, tentando método alternativo...', rpcError)
+        // Fallback: atualizar diretamente na tabela user_profiles
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({ role: newRole, updated_at: new Date().toISOString() })
+          .eq('user_id', userId)
+        
+        error = updateError
+      }
 
       if (error) {
         console.error('Erro ao atualizar role:', error)
-        setError(error.message)
+        setError(error.message || 'Erro ao atualizar role')
         return
       }
 

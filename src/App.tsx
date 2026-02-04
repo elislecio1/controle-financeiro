@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
-import { TrendingUp, Users, DollarSign, Activity, Database, Settings, RefreshCw, Calendar, Filter, Search, Plus, Download, Upload, CheckCircle, XCircle, Trash2, Edit, Bell, User, Shield, Clock, Brain } from 'lucide-react'
+import { TrendingUp, Users, DollarSign, Activity, Database, Settings, RefreshCw, Calendar, Filter, Search, Plus, Download, Upload, CheckCircle, XCircle, Trash2, Edit, Bell, User, Shield, Clock, Brain, LogOut } from 'lucide-react'
 import { SheetData, Categoria, Subcategoria, CentroCusto, Meta, Orcamento, Investimento, ContaBancaria, CartaoCredito, Contato, Alerta } from './types'
 import { supabaseService } from './services/supabase'
 import TransactionForm from './components/TransactionForm'
@@ -34,7 +34,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
 function App() {
   const navigate = useNavigate()
-  const { user, profile, isAuthenticated } = useAuth()
+  const { user, profile, isAuthenticated, signOut } = useAuth()
   
   // Log temporário para verificar configuração do Supabase (apenas em dev)
   logger.debug('Verificando configuração do Supabase:', {
@@ -1199,81 +1199,111 @@ function App() {
                     )}
                   </button>
                   
-                                     {/* Menu dropdown para administradores */}
-                   {profile?.role === 'admin' && showUserMenu && (
-                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                       <button
-                         onClick={() => {
-                           setShowUserMenu(false)
-                           navigate('/admin/users')
-                         }}
-                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                       >
-                         <Users className="h-4 w-4 mr-2" />
-                         Gestão de Usuários
-                       </button>
-                       <button
-                         onClick={() => {
-                           setShowUserMenu(false)
-                           navigate('/admin/user-management')
-                         }}
-                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                       >
-                         <Shield className="h-4 w-4 mr-2" />
-                         Administração de Usuários
-                       </button>
-                       <button
-                         onClick={() => {
-                           setShowUserMenu(false)
-                           setShowSystemLogs(true)
-                         }}
-                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                       >
-                         <Activity className="h-4 w-4 mr-2" />
-                         Logs do Sistema
-                       </button>
-                       <button
-                         onClick={() => {
-                           setShowUserMenu(false)
-                           setShowUserProfile(true)
-                         }}
-                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                       >
-                         <User className="h-4 w-4 mr-2" />
-                         Meu Perfil
-                       </button>
-                       <button
-                         onClick={() => {
-                           setShowUserMenu(false)
-                           setShowNotificationSettings(true)
-                         }}
-                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                       >
-                         <Bell className="h-4 w-4 mr-2" />
-                         Notificações
-                       </button>
-                       <button
-                         onClick={() => {
-                           setShowUserMenu(false)
-                           setShowMonitoringDashboard(true)
-                         }}
-                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                       >
-                         <Activity className="h-4 w-4 mr-2" />
-                         Monitoramento
-                       </button>
-                       <button
-                         onClick={() => {
-                           setShowUserMenu(false)
-                           setShowAIFinancialDashboard(true)
-                         }}
-                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                       >
-                         <Brain className="h-4 w-4 mr-2" />
-                         IA Financeira
-                       </button>
-                     </div>
-                   )}
+                  {/* Menu dropdown - aparece para todos os usuários */}
+                  {showUserMenu && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                      {/* Opções para administradores */}
+                      {profile?.role === 'admin' && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setShowUserMenu(false)
+                              navigate('/admin/users')
+                            }}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                          >
+                            <Users className="h-4 w-4 mr-2" />
+                            Gestão de Usuários
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowUserMenu(false)
+                              navigate('/admin/user-management')
+                            }}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                          >
+                            <Shield className="h-4 w-4 mr-2" />
+                            Administração de Usuários
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowUserMenu(false)
+                              setShowSystemLogs(true)
+                            }}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                          >
+                            <Activity className="h-4 w-4 mr-2" />
+                            Logs do Sistema
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowUserMenu(false)
+                              setShowMonitoringDashboard(true)
+                            }}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                          >
+                            <Activity className="h-4 w-4 mr-2" />
+                            Monitoramento
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowUserMenu(false)
+                              setShowAIFinancialDashboard(true)
+                            }}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                          >
+                            <Brain className="h-4 w-4 mr-2" />
+                            IA Financeira
+                          </button>
+                          <div className="border-t border-gray-200 my-1"></div>
+                        </>
+                      )}
+                      
+                      {/* Opções para todos os usuários */}
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false)
+                          setShowUserProfile(true)
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        Meu Perfil
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false)
+                          setShowNotificationSettings(true)
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      >
+                        <Bell className="h-4 w-4 mr-2" />
+                        Notificações
+                      </button>
+                      
+                      {/* Separador antes do logout */}
+                      <div className="border-t border-gray-200 my-1"></div>
+                      
+                      {/* Botão de Logout */}
+                      <button
+                        onClick={async () => {
+                          setShowUserMenu(false)
+                          try {
+                            await signOut()
+                            navigate('/login')
+                          } catch (error) {
+                            console.error('Erro ao fazer logout:', error)
+                            // Forçar navegação mesmo se houver erro
+                            navigate('/login')
+                          }
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Sair
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
