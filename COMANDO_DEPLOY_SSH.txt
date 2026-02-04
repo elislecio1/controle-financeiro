@@ -1,0 +1,5 @@
+# 🚀 COMANDO COMPLETO PARA DEPLOY NO SERVIDOR AAPANEL
+# Copie e cole este comando completo no terminal SSH do servidor
+
+cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git pull origin main && npm install && npm run build && sudo chown -R www:www /www/wwwroot/sites/elislecio/cf.don.cim.br && sudo chmod -R 755 dist/ && echo "✅ Deploy concluído! Recarregue o Nginx pelo painel do aapanel." && ls -la dist/assets/
+

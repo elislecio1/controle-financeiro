@@ -21,7 +21,7 @@ import { useAuth } from './hooks/useAuth'
 import { formatarMoeda, formatarValorTabela, getClasseValor } from './utils/formatters'
 import AnalisesFinanceiras from './components/modules/TransactionsModule/AnalisesFinanceiras'
 import logger from './utils/logger'
-import { realtimeService, RealtimeNotification } from './services/realtimeService'
+import { realtimeService } from './services/realtimeService'
 import { backupService } from './services/backupService'
 import { notificationService } from './services/notificationService'
 import NotificationSettings from './components/NotificationSettings'
@@ -251,114 +251,153 @@ function App() {
 
   useEffect(() => {
     loadData()
-    
-    // Configurar listeners de tempo real
-    if (isAuthenticated && user) {
-      console.log('🔄 Configurando listeners de tempo real...')
-      
-      // Listener para mudanças nas transações
-      const unsubscribeTransactions = realtimeService.addListener('transaction_created', (data) => {
-        console.log('📊 Nova transação criada:', data)
-        setConnectionStatus({ success: true, message: data.message })
-        
-        // Enviar notificação
-        if (data.data) {
-          notificationService.sendTransactionNotification(user.id, data.data)
-        }
-        
-        loadData() // Recarregar dados
-      })
-
-      const unsubscribeUpdates = realtimeService.addListener('transaction_updated', (data) => {
-        console.log('📊 Transação atualizada:', data)
-        setConnectionStatus({ success: true, message: data.message })
-        loadData() // Recarregar dados
-      })
-
-      const unsubscribeDeletes = realtimeService.addListener('transaction_deleted', (data) => {
-        console.log('📊 Transação excluída:', data)
-        setConnectionStatus({ success: true, message: data.message })
-        loadData() // Recarregar dados
-      })
-
-      // Listener para notificações
-      const unsubscribeNotifications = realtimeService.addListener('new_notification', (notification) => {
-        console.log('🔔 Nova notificação:', notification)
-        setRealtimeNotifications(prev => [notification, ...prev])
-      })
-
-      // Listener para estatísticas
-      const unsubscribeStats = realtimeService.addListener('stats_updated', (stats) => {
-        console.log('📈 Estatísticas atualizadas:', stats)
-        setRealtimeStats(stats)
-      })
-
-      // Configurar backup automático
-      backupService.scheduleAutomaticBackup()
-
-      // Cleanup
-      return () => {
-        unsubscribeTransactions()
-        unsubscribeUpdates()
-        unsubscribeDeletes()
-        unsubscribeNotifications()
-        unsubscribeStats()
-      }
-    }
   }, [isAuthenticated, user])
 
-  // Configurar listeners de tempo real para sincronização automática
+  // Configurar listeners de tempo real para atualizações automáticas
   useEffect(() => {
     if (!isAuthenticated || !user) {
       return
     }
 
-    let unsubscribeFunctions: (() => void)[] = []
+    logger.debug('🔄 Configurando subscriptions Realtime...')
 
-    const setupRealtime = async () => {
-      try {
-        logger.debug('Configurando listeners de tempo real...')
-        
-        // Inicializar serviço de tempo real
-        await realtimeService.initialize()
-
-        // Listener para nova transação criada
-        const unsubscribeCreated = realtimeService.addListener('transaction_created', (notification: RealtimeNotification) => {
-          logger.success('Nova transação criada - recarregando dados...')
-          setConnectionStatus({ success: true, message: notification.message || 'Nova transação criada!' })
-          loadData() // Recarregar dados automaticamente
+    // Subscription para transações
+    const unsubscribeTransactions = realtimeService.subscribeToTransactions(
+      // onInsert: Nova transação criada
+      (newTransaction) => {
+        logger.success('🆕 Nova transação recebida em tempo real!')
+        setData((prevData) => {
+          // Verificar se já existe (evitar duplicatas)
+          const exists = prevData.some(item => item.id === newTransaction.id)
+          if (exists) {
+            // Se existe, atualizar
+            return prevData.map(item => 
+              item.id === newTransaction.id ? newTransaction : item
+            )
+          }
+          // Se não existe, adicionar
+          return [...prevData, newTransaction]
         })
-
-        // Listener para transação atualizada
-        const unsubscribeUpdated = realtimeService.addListener('transaction_updated', (notification: RealtimeNotification) => {
-          logger.success('Transação atualizada - recarregando dados...')
-          setConnectionStatus({ success: true, message: notification.message || 'Transação atualizada!' })
-          loadData() // Recarregar dados automaticamente
+        setConnectionStatus({ 
+          success: true, 
+          message: `Nova transação: ${newTransaction.descricao}` 
         })
-
-        // Listener para transação excluída
-        const unsubscribeDeleted = realtimeService.addListener('transaction_deleted', (notification: RealtimeNotification) => {
-          logger.success('Transação excluída - recarregando dados...')
-          setConnectionStatus({ success: true, message: notification.message || 'Transação excluída!' })
-          loadData() // Recarregar dados automaticamente
+        // Atualizar filteredData também
+        setTimeout(() => {
+          loadData() // Recarregar para garantir sincronização
+        }, 500)
+      },
+      // onUpdate: Transação atualizada
+      (updatedTransaction) => {
+        logger.success('🔄 Transação atualizada em tempo real!')
+        setData((prevData) => 
+          prevData.map(item => 
+            item.id === updatedTransaction.id ? updatedTransaction : item
+          )
+        )
+        setConnectionStatus({ 
+          success: true, 
+          message: `Transação atualizada: ${updatedTransaction.descricao}` 
         })
-
-        unsubscribeFunctions = [unsubscribeCreated, unsubscribeUpdated, unsubscribeDeleted]
-        
-        logger.success('Listeners de tempo real configurados com sucesso')
-      } catch (error) {
-        logger.error('Erro ao configurar tempo real:', error)
+        // Atualizar filteredData também
+        setTimeout(() => {
+          loadData() // Recarregar para garantir sincronização
+        }, 500)
+      },
+      // onDelete: Transação deletada
+      (deletedId) => {
+        logger.success('🗑️ Transação excluída em tempo real!')
+        setData((prevData) => prevData.filter(item => item.id !== deletedId))
+        setConnectionStatus({ 
+          success: true, 
+          message: 'Transação excluída' 
+        })
+        // Atualizar filteredData também
+        setTimeout(() => {
+          loadData() // Recarregar para garantir sincronização
+        }, 500)
       }
+    )
+
+    // Subscription para categorias
+    const unsubscribeCategorias = realtimeService.subscribeToTable(
+      'categorias',
+      (newCategoria) => {
+        logger.success('🆕 Nova categoria criada!')
+        setCategorias((prev) => {
+          const exists = prev.some(c => c.id === String(newCategoria.id))
+          if (exists) {
+            return prev.map(c => 
+              c.id === String(newCategoria.id) 
+                ? { ...c, ...newCategoria } 
+                : c
+            )
+          }
+          return [...prev, newCategoria as any]
+        })
+        loadData() // Recarregar para sincronizar
+      },
+      (updatedCategoria) => {
+        logger.success('🔄 Categoria atualizada!')
+        setCategorias((prev) => 
+          prev.map(c => 
+            c.id === String(updatedCategoria.id) 
+              ? { ...c, ...updatedCategoria } 
+              : c
+          )
+        )
+      },
+      (deletedId) => {
+        logger.success('🗑️ Categoria excluída!')
+        setCategorias((prev) => prev.filter(c => c.id !== deletedId))
+      }
+    )
+
+    // Subscription para contas bancárias
+    const unsubscribeContas = realtimeService.subscribeToTable(
+      'contas_bancarias',
+      (newConta) => {
+        logger.success('🆕 Nova conta bancária criada!')
+        setContas((prev) => {
+          const exists = prev.some(c => c.id === String(newConta.id))
+          if (exists) {
+            return prev.map(c => 
+              c.id === String(newConta.id) ? { ...c, ...newConta } : c
+            )
+          }
+          return [...prev, newConta as any]
+        })
+      },
+      (updatedConta) => {
+        logger.success('🔄 Conta bancária atualizada!')
+        setContas((prev) => 
+          prev.map(c => 
+            c.id === String(updatedConta.id) ? { ...c, ...updatedConta } : c
+          )
+        )
+      },
+      (deletedId) => {
+        logger.success('🗑️ Conta bancária excluída!')
+        setContas((prev) => prev.filter(c => c.id !== deletedId))
+      }
+    )
+
+    // Configurar backup automático
+    try {
+      backupService.scheduleAutomaticBackup()
+    } catch (error) {
+      logger.warn('Erro ao configurar backup automático:', error)
     }
 
-    setupRealtime()
+    logger.success('✅ Subscriptions Realtime configuradas com sucesso!')
 
-    // Cleanup: desconectar quando componente desmontar ou usuário sair
+    // Cleanup: desinscrever quando componente desmontar ou usuário sair
     return () => {
-      unsubscribeFunctions.forEach(unsubscribe => unsubscribe())
-      realtimeService.disconnect().catch((err: Error) => {
-        logger.error('Erro ao desconectar realtime:', err)
-      })
+      logger.debug('🔌 Desinscrevendo de subscriptions Realtime...')
+      unsubscribeTransactions()
+      unsubscribeCategorias()
+      unsubscribeContas()
+      realtimeService.unsubscribeAll()
     }
   }, [isAuthenticated, user])
 

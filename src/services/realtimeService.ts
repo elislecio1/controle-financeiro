@@ -1,245 +1,452 @@
-/**
- * Serviço de Tempo Real usando Supabase Realtime
- * 
- * Fornece sincronização automática de dados entre múltiplos usuários
- * sem necessidade de atualizar a página manualmente
- */
-
 import { supabase } from './supabase'
-import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
-import logger from '../utils/logger'
+import { RealtimeChannel } from '@supabase/supabase-js'
+import { SheetData } from '../types'
 
-export interface RealtimeNotification {
-  id: string
-  type: 'transaction_created' | 'transaction_updated' | 'transaction_deleted'
-  message: string
-  data?: any
-  timestamp: Date
+export interface RealtimeSubscription {
+  channel: RealtimeChannel
+  unsubscribe: () => void
 }
 
-type RealtimeListener = (data: any) => void
-type ListenerMap = Map<string, Set<RealtimeListener>>
-
+/**
+ * Serviço para gerenciar subscriptions Realtime do Supabase
+ * Permite atualizações em tempo real para todos os usuários da empresa
+ */
 class RealtimeService {
-  private channels: Map<string, RealtimeChannel> = new Map()
-  private listeners: ListenerMap = new Map()
-  private isInitialized = false
+  private subscriptions: Map<string, RealtimeSubscription> = new Map()
+  private callbacks: Map<string, Set<(data: any) => void>> = new Map()
 
   /**
-   * Inicializar serviço de tempo real
+   * Inscrever-se em mudanças na tabela transactions
+   * @param onInsert Callback quando uma transação é inserida
+   * @param onUpdate Callback quando uma transação é atualizada
+   * @param onDelete Callback quando uma transação é deletada
+   * @returns Função para cancelar a subscription
    */
-  async initialize(): Promise<void> {
-    if (this.isInitialized) {
-      logger.debug('RealtimeService já está inicializado')
-      return
-    }
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
+  subscribeToTransactions(
+    onInsert?: (newTransaction: SheetData) => void,
+    onUpdate?: (updatedTransaction: SheetData) => void,
+    onDelete?: (deletedId: string) => void
+  ): () => void {
+    const channelName = 'transactions-changes'
+    
+    // Se já existe subscription, reutilizar
+    if (this.subscriptions.has(channelName)) {
+      const existing = this.subscriptions.get(channelName)!
       
-      if (!session?.user) {
-        logger.warn('Usuário não autenticado. Realtime não será inicializado.')
-        return
-      }
-
-      logger.debug('Inicializando RealtimeService para usuário:', session.user.id)
-      
-      await this.subscribeToTransactions(session.user.id)
-      
-      this.isInitialized = true
-      logger.success('RealtimeService inicializado com sucesso')
-    } catch (error) {
-      logger.error('Erro ao inicializar RealtimeService:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Subscrever a mudanças na tabela transactions
-   */
-  private async subscribeToTransactions(userId: string): Promise<void> {
-    try {
-      // Remover canal existente se houver
-      const existingChannel = this.channels.get('transactions')
-      if (existingChannel) {
-        await supabase.removeChannel(existingChannel)
-      }
-
-      // Criar novo canal
-      const channel = supabase
-        .channel('transactions_changes', {
-          config: {
-            broadcast: { self: true },
-            presence: { key: userId }
-          }
-        })
-        .on(
-          'postgres_changes',
-          {
-            event: '*', // INSERT, UPDATE, DELETE
-            schema: 'public',
-            table: 'transactions',
-            filter: `user_id=eq.${userId}`
-          },
-          (payload: RealtimePostgresChangesPayload<any>) => {
-            logger.debug('Mudança detectada nas transações:', payload.eventType)
-            this.handleTransactionChange(payload)
-          }
-        )
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            logger.success('Inscrito em mudanças de transações')
-          } else if (status === 'CHANNEL_ERROR') {
-            logger.error('Erro ao se inscrever no canal de transações')
-          } else {
-            logger.debug('Status do canal:', status)
-          }
-        })
-
-      this.channels.set('transactions', channel)
-    } catch (error) {
-      logger.error('Erro ao subscrever transações:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Processar mudanças nas transações
-   */
-  private handleTransactionChange(payload: RealtimePostgresChangesPayload<any>): void {
-    try {
-      const { eventType, new: newRecord, old: oldRecord } = payload
-
-      let notification: RealtimeNotification
-      let listenerType: string
-
-      switch (eventType) {
-        case 'INSERT':
-          notification = {
-            id: newRecord.id,
-            type: 'transaction_created',
-            message: 'Nova transação criada',
-            data: newRecord,
-            timestamp: new Date()
-          }
-          listenerType = 'transaction_created'
-          logger.debug('Nova transação criada:', newRecord)
-          break
-
-        case 'UPDATE':
-          notification = {
-            id: newRecord.id,
-            type: 'transaction_updated',
-            message: 'Transação atualizada',
-            data: { new: newRecord, old: oldRecord },
-            timestamp: new Date()
-          }
-          listenerType = 'transaction_updated'
-          logger.debug('Transação atualizada:', { new: newRecord, old: oldRecord })
-          break
-
-        case 'DELETE':
-          notification = {
-            id: oldRecord.id,
-            type: 'transaction_deleted',
-            message: 'Transação excluída',
-            data: oldRecord,
-            timestamp: new Date()
-          }
-          listenerType = 'transaction_deleted'
-          logger.debug('Transação excluída:', oldRecord)
-          break
-
-        default:
-          logger.warn('Tipo de evento desconhecido:', eventType)
-          return
-      }
-
-      // Notificar todos os listeners
-      this.notifyListeners(listenerType, notification)
-    } catch (error) {
-      logger.error('Erro ao processar mudança de transação:', error)
-    }
-  }
-
-  /**
-   * Adicionar listener para eventos
-   */
-  addListener(eventType: string, callback: RealtimeListener): () => void {
-    if (!this.listeners.has(eventType)) {
-      this.listeners.set(eventType, new Set())
-    }
-
-    const listeners = this.listeners.get(eventType)!
-    listeners.add(callback)
-
-    logger.debug(`Listener adicionado para evento: ${eventType}`)
-
-    // Retornar função de unsubscribe
-    return () => {
-      listeners.delete(callback)
-      if (listeners.size === 0) {
-        this.listeners.delete(eventType)
-      }
-      logger.debug(`Listener removido para evento: ${eventType}`)
-    }
-  }
-
-  /**
-   * Notificar todos os listeners de um evento
-   */
-  private notifyListeners(eventType: string, data: any): void {
-    const listeners = this.listeners.get(eventType)
-    if (listeners) {
-      listeners.forEach(callback => {
-        try {
-          callback(data)
-        } catch (error) {
-          logger.error(`Erro ao executar listener para ${eventType}:`, error)
+      // Adicionar callbacks
+      if (onInsert) {
+        if (!this.callbacks.has(`${channelName}:insert`)) {
+          this.callbacks.set(`${channelName}:insert`, new Set())
         }
-      })
-    }
-  }
-
-  /**
-   * Desconectar todos os canais
-   */
-  async disconnect(): Promise<void> {
-    logger.debug('Desconectando RealtimeService...')
-    
-    for (const [name, channel] of this.channels.entries()) {
-      try {
-        await supabase.removeChannel(channel)
-        logger.debug(`Canal ${name} removido`)
-      } catch (error) {
-        logger.error(`Erro ao remover canal ${name}:`, error)
+        this.callbacks.get(`${channelName}:insert`)!.add(onInsert)
+      }
+      if (onUpdate) {
+        if (!this.callbacks.has(`${channelName}:update`)) {
+          this.callbacks.set(`${channelName}:update`, new Set())
+        }
+        this.callbacks.get(`${channelName}:update`)!.add(onUpdate)
+      }
+      if (onDelete) {
+        if (!this.callbacks.has(`${channelName}:delete`)) {
+          this.callbacks.set(`${channelName}:delete`, new Set())
+        }
+        this.callbacks.get(`${channelName}:delete`)!.add(onDelete)
+      }
+      
+      return () => {
+        // Remover callbacks específicos
+        if (onInsert) {
+          this.callbacks.get(`${channelName}:insert`)?.delete(onInsert)
+        }
+        if (onUpdate) {
+          this.callbacks.get(`${channelName}:update`)?.delete(onUpdate)
+        }
+        if (onDelete) {
+          this.callbacks.get(`${channelName}:delete`)?.delete(onDelete)
+        }
       }
     }
 
-    this.channels.clear()
-    this.listeners.clear()
-    this.isInitialized = false
+    // Criar nova subscription
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'transactions'
+        },
+        (payload) => {
+          console.log('🆕 Nova transação inserida:', payload.new)
+          const newTransaction = this.mapTransactionToSheetData(payload.new as any)
+          
+          // Executar todos os callbacks de insert
+          this.callbacks.get(`${channelName}:insert`)?.forEach(callback => {
+            try {
+              callback(newTransaction)
+            } catch (error) {
+              console.error('❌ Erro ao executar callback de insert:', error)
+            }
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'transactions'
+        },
+        (payload) => {
+          console.log('🔄 Transação atualizada:', payload.new)
+          const updatedTransaction = this.mapTransactionToSheetData(payload.new as any)
+          
+          // Executar todos os callbacks de update
+          this.callbacks.get(`${channelName}:update`)?.forEach(callback => {
+            try {
+              callback(updatedTransaction)
+            } catch (error) {
+              console.error('❌ Erro ao executar callback de update:', error)
+            }
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'transactions'
+        },
+        (payload) => {
+          console.log('🗑️ Transação deletada:', payload.old)
+          const deletedId = String((payload.old as any).id)
+          
+          // Executar todos os callbacks de delete
+          this.callbacks.get(`${channelName}:delete`)?.forEach(callback => {
+            try {
+              callback(deletedId)
+            } catch (error) {
+              console.error('❌ Erro ao executar callback de delete:', error)
+            }
+          })
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Status da subscription transactions:', status)
+      })
+
+    // Armazenar callbacks
+    if (onInsert) {
+      if (!this.callbacks.has(`${channelName}:insert`)) {
+        this.callbacks.set(`${channelName}:insert`, new Set())
+      }
+      this.callbacks.get(`${channelName}:insert`)!.add(onInsert)
+    }
+    if (onUpdate) {
+      if (!this.callbacks.has(`${channelName}:update`)) {
+        this.callbacks.set(`${channelName}:update`, new Set())
+      }
+      this.callbacks.get(`${channelName}:update`)!.add(onUpdate)
+    }
+    if (onDelete) {
+      if (!this.callbacks.has(`${channelName}:delete`)) {
+        this.callbacks.set(`${channelName}:delete`, new Set())
+      }
+      this.callbacks.get(`${channelName}:delete`)!.add(onDelete)
+    }
+
+    // Armazenar subscription
+    this.subscriptions.set(channelName, {
+      channel,
+      unsubscribe: () => {
+        supabase.removeChannel(channel)
+        this.subscriptions.delete(channelName)
+        this.callbacks.delete(`${channelName}:insert`)
+        this.callbacks.delete(`${channelName}:update`)
+        this.callbacks.delete(`${channelName}:delete`)
+      }
+    })
+
+    // Retornar função para cancelar apenas estes callbacks
+    return () => {
+      if (onInsert) {
+        this.callbacks.get(`${channelName}:insert`)?.delete(onInsert)
+      }
+      if (onUpdate) {
+        this.callbacks.get(`${channelName}:update`)?.delete(onUpdate)
+      }
+      if (onDelete) {
+        this.callbacks.get(`${channelName}:delete`)?.delete(onDelete)
+      }
+      
+      // Se não há mais callbacks, remover subscription
+      const hasCallbacks = 
+        (this.callbacks.get(`${channelName}:insert`)?.size ?? 0) > 0 ||
+        (this.callbacks.get(`${channelName}:update`)?.size ?? 0) > 0 ||
+        (this.callbacks.get(`${channelName}:delete`)?.size ?? 0) > 0
+      
+      if (!hasCallbacks) {
+        const sub = this.subscriptions.get(channelName)
+        if (sub) {
+          sub.unsubscribe()
+        }
+      }
+    }
+  }
+
+  /**
+   * Inscrever-se em mudanças em outras tabelas (categorias, contas, etc.)
+   */
+  subscribeToTable(
+    tableName: string,
+    onInsert?: (newRecord: any) => void,
+    onUpdate?: (updatedRecord: any) => void,
+    onDelete?: (deletedId: string) => void
+  ): () => void {
+    const channelName = `${tableName}-changes`
     
-    logger.success('RealtimeService desconectado')
+    // Se já existe subscription, reutilizar
+    if (this.subscriptions.has(channelName)) {
+      const existing = this.subscriptions.get(channelName)!
+      
+      // Adicionar callbacks
+      if (onInsert) {
+        if (!this.callbacks.has(`${channelName}:insert`)) {
+          this.callbacks.set(`${channelName}:insert`, new Set())
+        }
+        this.callbacks.get(`${channelName}:insert`)!.add(onInsert)
+      }
+      if (onUpdate) {
+        if (!this.callbacks.has(`${channelName}:update`)) {
+          this.callbacks.set(`${channelName}:update`, new Set())
+        }
+        this.callbacks.get(`${channelName}:update`)!.add(onUpdate)
+      }
+      if (onDelete) {
+        if (!this.callbacks.has(`${channelName}:delete`)) {
+          this.callbacks.set(`${channelName}:delete`, new Set())
+        }
+        this.callbacks.get(`${channelName}:delete`)!.add(onDelete)
+      }
+      
+      return () => {
+        if (onInsert) {
+          this.callbacks.get(`${channelName}:insert`)?.delete(onInsert)
+        }
+        if (onUpdate) {
+          this.callbacks.get(`${channelName}:update`)?.delete(onUpdate)
+        }
+        if (onDelete) {
+          this.callbacks.get(`${channelName}:delete`)?.delete(onDelete)
+        }
+      }
+    }
+
+    // Criar nova subscription
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: tableName
+        },
+        (payload) => {
+          console.log(`🆕 Novo registro inserido em ${tableName}:`, payload.new)
+          this.callbacks.get(`${channelName}:insert`)?.forEach(callback => {
+            try {
+              callback(payload.new)
+            } catch (error) {
+              console.error('❌ Erro ao executar callback:', error)
+            }
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: tableName
+        },
+        (payload) => {
+          console.log(`🔄 Registro atualizado em ${tableName}:`, payload.new)
+          this.callbacks.get(`${channelName}:update`)?.forEach(callback => {
+            try {
+              callback(payload.new)
+            } catch (error) {
+              console.error('❌ Erro ao executar callback:', error)
+            }
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: tableName
+        },
+        (payload) => {
+          console.log(`🗑️ Registro deletado em ${tableName}:`, payload.old)
+          const deletedId = String((payload.old as any).id)
+          this.callbacks.get(`${channelName}:delete`)?.forEach(callback => {
+            try {
+              callback(deletedId)
+            } catch (error) {
+              console.error('❌ Erro ao executar callback:', error)
+            }
+          })
+        }
+      )
+      .subscribe((status) => {
+        console.log(`📡 Status da subscription ${tableName}:`, status)
+      })
+
+    // Armazenar callbacks
+    if (onInsert) {
+      if (!this.callbacks.has(`${channelName}:insert`)) {
+        this.callbacks.set(`${channelName}:insert`, new Set())
+      }
+      this.callbacks.get(`${channelName}:insert`)!.add(onInsert)
+    }
+    if (onUpdate) {
+      if (!this.callbacks.has(`${channelName}:update`)) {
+        this.callbacks.set(`${channelName}:update`, new Set())
+      }
+      this.callbacks.get(`${channelName}:update`)!.add(onUpdate)
+    }
+    if (onDelete) {
+      if (!this.callbacks.has(`${channelName}:delete`)) {
+        this.callbacks.set(`${channelName}:delete`, new Set())
+      }
+      this.callbacks.get(`${channelName}:delete`)!.add(onDelete)
+    }
+
+    // Armazenar subscription
+    this.subscriptions.set(channelName, {
+      channel,
+      unsubscribe: () => {
+        supabase.removeChannel(channel)
+        this.subscriptions.delete(channelName)
+        this.callbacks.delete(`${channelName}:insert`)
+        this.callbacks.delete(`${channelName}:update`)
+        this.callbacks.delete(`${channelName}:delete`)
+      }
+    })
+
+    // Retornar função para cancelar
+    return () => {
+      if (onInsert) {
+        this.callbacks.get(`${channelName}:insert`)?.delete(onInsert)
+      }
+      if (onUpdate) {
+        this.callbacks.get(`${channelName}:update`)?.delete(onUpdate)
+      }
+      if (onDelete) {
+        this.callbacks.get(`${channelName}:delete`)?.delete(onDelete)
+      }
+      
+      // Se não há mais callbacks, remover subscription
+      const hasCallbacks = 
+        (this.callbacks.get(`${channelName}:insert`)?.size ?? 0) > 0 ||
+        (this.callbacks.get(`${channelName}:update`)?.size ?? 0) > 0 ||
+        (this.callbacks.get(`${channelName}:delete`)?.size ?? 0) > 0
+      
+      if (!hasCallbacks) {
+        const sub = this.subscriptions.get(channelName)
+        if (sub) {
+          sub.unsubscribe()
+        }
+      }
+    }
   }
 
   /**
-   * Reconectar (útil após logout/login)
+   * Converter dados do banco para formato SheetData
    */
-  async reconnect(): Promise<void> {
-    await this.disconnect()
-    await this.initialize()
+  private mapTransactionToSheetData(item: any): SheetData {
+    const formatDateForDisplay = (dateValue: any): string => {
+      if (!dateValue) return ''
+      if (typeof dateValue === 'string') {
+        // Se já está no formato DD/MM/AAAA, retornar como está
+        if (dateValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+          return dateValue
+        }
+        // Se está no formato ISO, converter
+        try {
+          const date = new Date(dateValue)
+          if (isNaN(date.getTime())) return ''
+          const day = String(date.getDate()).padStart(2, '0')
+          const month = String(date.getMonth() + 1).padStart(2, '0')
+          const year = date.getFullYear()
+          return `${day}/${month}/${year}`
+        } catch {
+          return ''
+        }
+      }
+      return ''
+    }
+
+    const parseValue = (value: any): number => {
+      if (typeof value === 'string') {
+        return parseFloat(value.replace(/[^\d,-]/g, '').replace(',', '.')) || 0
+      }
+      return parseFloat(value) || 0
+    }
+
+    return {
+      id: String(item.id),
+      data: formatDateForDisplay(item.data),
+      valor: parseValue(item.valor),
+      descricao: String(item.descricao),
+      conta: String(item.conta || 'Conta Corrente'),
+      contaTransferencia: item.conta_transferencia ? String(item.conta_transferencia) : undefined,
+      cartao: item.cartao ? String(item.cartao) : undefined,
+      categoria: String(item.categoria || 'Outros'),
+      subcategoria: item.subcategoria ? String(item.subcategoria) : undefined,
+      contato: item.contato ? String(item.contato) : undefined,
+      centro: item.centro ? String(item.centro) : undefined,
+      projeto: item.projeto ? String(item.projeto) : undefined,
+      forma: String(item.forma || 'Dinheiro'),
+      numeroDocumento: item.numero_documento ? String(item.numero_documento) : undefined,
+      observacoes: item.observacoes ? String(item.observacoes) : undefined,
+      dataCompetencia: formatDateForDisplay(item.data_competencia),
+      tags: item.tags ? (typeof item.tags === 'string' ? JSON.parse(item.tags) : item.tags) : [],
+      status: item.status ? String(item.status) as 'pago' | 'pendente' | 'vencido' : 'pendente',
+      dataPagamento: formatDateForDisplay(item.data_pagamento) || '',
+      vencimento: formatDateForDisplay(item.vencimento),
+      empresa: item.empresa ? String(item.empresa) : undefined,
+      tipo: String(item.tipo || 'despesa') as 'receita' | 'despesa' | 'transferencia' | 'investimento',
+      parcela: item.parcela ? String(item.parcela) : '1',
+      situacao: item.situacao ? String(item.situacao) : ''
+    }
   }
 
   /**
-   * Verificar se está conectado
+   * Desinscrever-se de todas as subscriptions
    */
-  isConnected(): boolean {
-    return this.isInitialized && this.channels.size > 0
+  unsubscribeAll(): void {
+    console.log('🔌 Desinscrevendo de todas as subscriptions...')
+    this.subscriptions.forEach((sub) => {
+      sub.unsubscribe()
+    })
+    this.subscriptions.clear()
+    this.callbacks.clear()
+  }
+
+  /**
+   * Verificar status das subscriptions
+   */
+  getSubscriptionsStatus(): { channelName: string; status: string }[] {
+    return Array.from(this.subscriptions.entries()).map(([name, sub]) => ({
+      channelName: name,
+      status: sub.channel.state
+    }))
   }
 }
 
-// Exportar instância singleton
 export const realtimeService = new RealtimeService()
-export default realtimeService
-

@@ -7,7 +7,7 @@ Execute no terminal SSH do servidor:
 
 ```bash
 cd /www/wwwroot/sites/elislecio/cf.don.cim.br
-wget -O deploy-producao-aapanel.sh https://raw.githubusercontent.com/seu-usuario/controle-financeiro/main/deploy-producao-aapanel.sh
+wget -O deploy-producao-aapanel.sh https://raw.githubusercontent.com/elislecio1/controle-financeiro/main/deploy-producao-aapanel.sh
 ```
 
 **OU** se o arquivo já estiver no repositório:

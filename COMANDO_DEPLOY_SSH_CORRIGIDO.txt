@@ -1,0 +1,27 @@
+# 🚀 COMANDO CORRIGIDO PARA DEPLOY NO SERVIDOR AAPANEL
+# Execute estes comandos um por vez no terminal SSH
+
+# 1. Adicionar o diretório como seguro no Git
+git config --global --add safe.directory /www/wwwroot/sites/elislecio/cf.don.cim.br
+
+# 2. Navegar para o diretório (sem sudo)
+cd /www/wwwroot/sites/elislecio/cf.don.cim.br
+
+# 3. Atualizar repositório
+git pull origin main
+
+# 4. Instalar dependências
+npm install
+
+# 5. Fazer build
+npm run build
+
+# 6. Ajustar permissões (com sudo)
+sudo chown -R www:www /www/wwwroot/sites/elislecio/cf.don.cim.br
+sudo chmod -R 755 dist/
+
+# 7. Verificar arquivos gerados
+ls -la dist/assets/
+
+echo "✅ Deploy concluído! Recarregue o Nginx pelo painel do aapanel."
+

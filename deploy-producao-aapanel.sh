@@ -266,10 +266,10 @@ sudo chmod -R 755 dist/ 2>&1 | tee -a "$LOG_FILE"
 
 print_success "Permissões ajustadas!"
 
-# 13. Recarregar Nginx
+# 13. Verificar configuração do Nginx e instruir recarregamento
 echo ""
 print_info "═══════════════════════════════════════════════════════════════"
-print_info "RECARREGANDO NGINX"
+print_info "VERIFICANDO CONFIGURAÇÃO DO NGINX"
 print_info "═══════════════════════════════════════════════════════════════"
 echo ""
 
@@ -277,18 +277,14 @@ print_info "Testando configuração do Nginx..."
 sudo nginx -t 2>&1 | tee -a "$LOG_FILE"
 
 if [ $? -eq 0 ]; then
-    print_info "Recarregando Nginx..."
-    sudo systemctl reload nginx 2>&1 | tee -a "$LOG_FILE"
-    
-    if [ $? -eq 0 ]; then
-        print_success "Nginx recarregado com sucesso!"
-    else
-        print_warning "Erro ao recarregar Nginx, mas o build está pronto."
-        print_info "Recarregue manualmente: sudo systemctl reload nginx"
-    fi
+    print_success "Configuração do Nginx está correta!"
+    print_info "⚠️  IMPORTANTE: O Nginx é gerenciado pelo aapanel."
+    print_info "   Recarregue o Nginx pelo painel do aapanel:"
+    print_info "   Site → cf.don.cim.br → Nginx → Botão 'Reload'"
+    print_info "   OU use: /etc/init.d/nginx reload"
 else
     print_warning "Configuração do Nginx tem erros!"
-    print_info "Verifique a configuração antes de recarregar."
+    print_info "Verifique a configuração no painel do aapanel antes de recarregar."
 fi
 
 # 14. Limpar backups antigos (manter apenas os 3 mais recentes)
