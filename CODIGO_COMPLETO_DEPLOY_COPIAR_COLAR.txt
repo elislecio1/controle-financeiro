@@ -277,14 +277,22 @@ print_info "Testando configuração do Nginx..."
 sudo nginx -t 2>&1 | tee -a "$LOG_FILE"
 
 if [ $? -eq 0 ]; then
-    print_info "Recarregando Nginx..."
-    sudo systemctl reload nginx 2>&1 | tee -a "$LOG_FILE"
+    print_info "Recarregando Nginx (aapanel)..."
+    # Tentar método do aapanel primeiro
+    /etc/init.d/nginx reload 2>&1 | tee -a "$LOG_FILE"
     
     if [ $? -eq 0 ]; then
         print_success "Nginx recarregado com sucesso!"
     else
-        print_warning "Erro ao recarregar Nginx, mas o build está pronto."
-        print_info "Recarregue manualmente: sudo systemctl reload nginx"
+        # Fallback: tentar systemctl
+        sudo systemctl reload nginx 2>&1 | tee -a "$LOG_FILE"
+        if [ $? -eq 0 ]; then
+            print_success "Nginx recarregado com sucesso (via systemctl)!"
+        else
+            print_warning "Erro ao recarregar Nginx, mas o build está pronto."
+            print_info "Recarregue manualmente pelo painel do aapanel ou:"
+            print_info "  sudo /etc/init.d/nginx reload"
+        fi
     fi
 else
     print_warning "Configuração do Nginx tem erros!"

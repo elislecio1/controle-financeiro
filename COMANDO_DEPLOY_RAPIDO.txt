@@ -1,0 +1,14 @@
+#!/bin/bash
+# 🚀 Deploy Rápido - Copiar e colar no terminal SSH do servidor
+
+cd /www/wwwroot/sites/elislecio/cf.don.cim.br && \
+git config --global --add safe.directory /www/wwwroot/sites/elislecio/cf.don.cim.br && \
+git pull origin main && \
+npm install && \
+npm run build && \
+sudo chown -R www:www /www/wwwroot/sites/elislecio/cf.don.cim.br && \
+sudo chmod -R 755 /www/wwwroot/sites/elislecio/cf.don.cim.br && \
+sudo chmod -R 755 dist/ && \
+sudo nginx -t && \
+/etc/init.d/nginx reload && \
+echo "✅ Deploy concluído! Acesse: https://cf.don.cim.br"
