@@ -1,0 +1,19 @@
+# ============================================================
+# 🚀 CÓDIGO DE DEPLOY COMPLETO - COPIAR E COLAR
+# ============================================================
+# 
+# Execute este comando no terminal SSH do servidor aapanel
+# 
+# ============================================================
+
+cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git config --global --add safe.directory /www/wwwroot/sites/elislecio/cf.don.cim.br && git pull origin main && npm install && npm run build && sudo chown -R www:www /www/wwwroot/sites/elislecio/cf.don.cim.br && sudo chmod -R 755 /www/wwwroot/sites/elislecio/cf.don.cim.br && sudo chmod -R 755 dist/ && sudo nginx -t && /etc/init.d/nginx reload && echo "✅ Deploy concluído! Acesse: https://cf.don.cim.br"
+
+# ============================================================
+# 📋 OU USE O SCRIPT COMPLETO (recomendado):
+# ============================================================
+# 
+# 1. Copie o conteúdo do arquivo: CODIGO_COMPLETO_DEPLOY_COPIAR_COLAR.txt
+# 2. Cole no terminal SSH do servidor
+# 3. Ou salve como arquivo .sh e execute: bash deploy.sh
+# 
+# ============================================================
