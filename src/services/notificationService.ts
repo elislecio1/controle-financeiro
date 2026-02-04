@@ -587,7 +587,10 @@ class NotificationService {
         .limit(limit)
 
       if (error) {
-        console.error('❌ Erro ao buscar histórico:', error)
+        // Ignorar erro se a tabela não existir (42P01)
+        if (error.code !== '42P01') {
+          console.error('❌ Erro ao buscar histórico:', error)
+        }
         return []
       }
 

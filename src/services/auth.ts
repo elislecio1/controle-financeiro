@@ -392,6 +392,26 @@ class AuthService {
     try {
       this.updateAuthState({ loading: true })
 
+      // Limpar serviços e subscriptions antes de fazer logout
+      try {
+        // Limpar Realtime subscriptions
+        const { realtimeService } = await import('./realtimeService')
+        realtimeService.unsubscribeAll()
+        
+        // Parar monitoramento
+        const { monitoringService } = await import('./monitoringService')
+        monitoringService.stopMonitoring()
+        
+        // Parar análise de IA
+        const { aiFinancialService } = await import('./aiFinancialService')
+        aiFinancialService.stopAnalysis()
+        
+        console.log('✅ Serviços limpos antes do logout')
+      } catch (cleanupError) {
+        console.warn('⚠️ Erro ao limpar serviços no logout:', cleanupError)
+        // Continuar com logout mesmo se cleanup falhar
+      }
+
       const { error } = await supabase.auth.signOut()
 
       if (error) {
@@ -399,6 +419,15 @@ class AuthService {
         this.updateAuthState({ loading: false, error: authError.message })
         return { success: false, error: authError.message }
       }
+
+      // Limpar estado de autenticação
+      this.updateAuthState({
+        user: null,
+        profile: null,
+        isAuthenticated: false,
+        loading: false,
+        error: null
+      })
 
       return { success: true }
     } catch (error) {

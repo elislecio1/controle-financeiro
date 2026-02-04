@@ -356,7 +356,10 @@ class MonitoringService {
         .gte('sent_at', today)
 
       if (error) {
-        console.error('❌ Erro ao buscar notificações:', error)
+        // Ignorar erro se a tabela não existir (42P01)
+        if (error.code !== '42P01') {
+          console.error('❌ Erro ao buscar notificações:', error)
+        }
         return {
           sent_today: 0,
           failed_today: 0,
@@ -399,7 +402,10 @@ class MonitoringService {
         .in('level', ['error', 'critical'])
 
       if (error) {
-        console.error('❌ Erro ao buscar logs:', error)
+        // Ignorar erro se a tabela não existir (42P01)
+        if (error.code !== '42P01') {
+          console.error('❌ Erro ao buscar logs:', error)
+        }
         return {
           total_errors: 0,
           critical_errors: 0,

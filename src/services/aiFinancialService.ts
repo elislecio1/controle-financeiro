@@ -87,6 +87,7 @@ class AIFinancialService {
   private anomalies: AnomalyDetection[] = []
   private recommendations: SmartRecommendation[] = []
   private isAnalyzing = false
+  private analysisInterval: NodeJS.Timeout | null = null
 
   constructor() {
     this.startPeriodicAnalysis()
@@ -94,8 +95,13 @@ class AIFinancialService {
 
   // Iniciar análise periódica
   private startPeriodicAnalysis() {
+    // Limpar intervalo anterior se existir
+    if (this.analysisInterval) {
+      clearInterval(this.analysisInterval)
+    }
+    
     // Analisar dados a cada 6 horas
-    setInterval(() => {
+    this.analysisInterval = setInterval(() => {
       if (!this.isAnalyzing) {
         this.performComprehensiveAnalysis()
       }
@@ -103,6 +109,16 @@ class AIFinancialService {
 
     // Análise inicial
     this.performComprehensiveAnalysis()
+  }
+
+  // Parar análise periódica
+  stopAnalysis() {
+    if (this.analysisInterval) {
+      clearInterval(this.analysisInterval)
+      this.analysisInterval = null
+    }
+    this.isAnalyzing = false
+    console.log('⏹️ Análise de IA financeira parada')
   }
 
   // Realizar análise abrangente
