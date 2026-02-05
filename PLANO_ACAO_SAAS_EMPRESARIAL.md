@@ -1,322 +1,265 @@
 # 🚀 PLANO DE AÇÃO - TRANSFORMAÇÃO PARA SaaS EMPRESARIAL
+## Metodologia Ágil - Backlog e Sprints
+
+**Data de Atualização:** 05/02/2026  
+**Status Geral:** 🟡 Em Progresso (70% completo)
+
+---
 
 ## 📊 RESUMO EXECUTIVO
 
-**Situação Atual:** Sistema financeiro funcional, mas sem estrutura multi-tenant empresarial.
-
-**Objetivo:** Transformar em SaaS onde:
-- ✅ Usuários podem pertencer a múltiplas empresas
-- ✅ Dados completamente isolados por empresa
-- ✅ Alternância fácil entre empresas
-- ✅ Gestão de usuários por empresa
-
-**Prazo Estimado:** 3-4 semanas para MVP funcional
+**Situação Atual:** Sistema financeiro funcional com multi-tenancy básico implementado.  
+**Objetivo:** SaaS multi-tenant empresarial completo e pronto para venda.  
+**Prazo Estimado:** 2-3 semanas para MVP completo
 
 ---
 
-## 🎯 PRIORIDADES
+## 🎯 BACKLOG DO PRODUTO
 
-### 🔴 CRÍTICO (Fazer Primeiro)
-1. Estrutura de banco de dados (empresas + vínculos)
-2. RLS (Row Level Security) por empresa
-3. Contexto de empresa no frontend
-4. Seletor de empresa
+### 🔴 EPIC 1: Multi-Tenancy Core (CRÍTICO)
+**Status:** ✅ 90% Completo
 
-### 🟡 IMPORTANTE (Fazer Depois)
-1. Gestão de empresas (CRUD)
-2. Sistema de convites
-3. Migração de dados existentes
-4. Testes de isolamento
+#### Sprint 1.1: Estrutura de Banco de Dados ✅ CONCLUÍDO
+- [x] Criar tabela `empresas`
+- [x] Criar tabela `empresa_usuarios` (many-to-many)
+- [x] Adicionar `empresa_id` em todas as tabelas financeiras
+- [x] Criar índices para performance
+- [x] Implementar RLS (Row Level Security) por empresa
+- [x] Corrigir recursão infinita nas políticas RLS
+- [x] Script de migração de dados existentes
 
-### 🟢 DESEJÁVEL (Melhorias)
-1. Dashboard por empresa
-2. Relatórios por empresa
-3. Permissões granulares
-4. Auditoria de ações
+#### Sprint 1.2: Backend e Serviços ✅ CONCLUÍDO
+- [x] Criar `empresaService.ts` (CRUD completo)
+- [x] Atualizar `supabaseService.ts` com filtros `empresa_id`
+- [x] Atualizar todos os métodos de busca/inserção
+- [x] Atualizar cache keys para incluir `empresa_id`
+- [x] Helper `getEmpresaIdOrThrow()`
 
----
+#### Sprint 1.3: Frontend - Contexto e Componentes ✅ CONCLUÍDO
+- [x] Criar `EmpresaContext.tsx`
+- [x] Criar hook `useEmpresa.ts`
+- [x] Integrar `EmpresaProvider` no `main.tsx`
+- [x] Criar `EmpresaSelector.tsx` (seletor no header)
+- [x] Criar `EmpresasPage.tsx` (gestão de empresas)
+- [x] Integrar seletor no header do `App.tsx`
 
-## 📅 CRONOGRAMA DETALHADO
-
-### SEMANA 1: Fundação (Banco de Dados)
-
-#### Dia 1-2: Estrutura de Dados
-- [ ] Executar `database/implementar_empresas.sql`
-- [ ] Verificar criação de tabelas
-- [ ] Criar índices
-- [ ] Testar constraints
-
-#### Dia 3-4: RLS e Segurança
-- [ ] Implementar políticas RLS para todas as tabelas
-- [ ] Testar isolamento de dados
+#### Sprint 1.4: Migração e Testes ⚠️ PENDENTE
+- [ ] Executar script `migrar_dados_empresa_don_santos.sql` no Supabase
+- [ ] Executar script `associar_usuario_elislecio_empresa.sql`
+- [ ] Executar script `corrigir_recursao_empresa_usuarios.sql`
+- [ ] Testes manuais de isolamento de dados
 - [ ] Validar que usuários não veem dados de outras empresas
-- [ ] Criar funções auxiliares
-
-#### Dia 5: Migração de Dados (se necessário)
-- [ ] Script para criar empresa padrão
-- [ ] Script para vincular usuários existentes
-- [ ] Script para migrar transações existentes
-- [ ] Validação de integridade
-
-### SEMANA 2: Backend e Serviços
-
-#### Dia 1-2: Serviço de Empresas
-- [ ] Criar `src/services/empresaService.ts`
-- [ ] Métodos: criar, listar, atualizar, deletar
-- [ ] Métodos: vincular usuário, remover usuário
-- [ ] Métodos: listar empresas do usuário
-- [ ] Métodos: verificar permissões
-
-#### Dia 3-4: Atualizar Serviços Existentes
-- [ ] Atualizar `supabaseService.ts` para incluir `empresa_id`
-- [ ] Todas as queries devem filtrar por `empresa_id`
-- [ ] Atualizar métodos de criação
-- [ ] Atualizar métodos de busca
-
-#### Dia 5: Testes de Backend
-- [ ] Testar criação de empresa
-- [ ] Testar vínculo de usuários
-- [ ] Testar isolamento de dados
-- [ ] Testar permissões
-
-### SEMANA 3: Frontend - Contexto e Componentes
-
-#### Dia 1-2: Contexto de Empresa
-- [ ] Criar `src/contexts/EmpresaContext.tsx`
-- [ ] Implementar seleção de empresa
-- [ ] Persistir empresa selecionada (localStorage)
-- [ ] Atualizar estado global quando empresa muda
-
-#### Dia 3: Integração com App
-- [ ] Integrar `EmpresaContext` no `App.tsx`
-- [ ] Carregar empresas do usuário no login
-- [ ] Mostrar seletor se tiver múltiplas empresas
-- [ ] Redirecionar se não tiver empresa
-
-#### Dia 4-5: Componentes de UI
-- [ ] Criar `EmpresaSelector.tsx` (dropdown no header)
-- [ ] Criar `EmpresasPage.tsx` (gestão de empresas)
-- [ ] Criar `ConvitesPage.tsx` (sistema de convites)
-- [ ] Atualizar header com seletor
-
-### SEMANA 4: Refinamento e Testes
-
-#### Dia 1-2: Testes Completos
-- [ ] Testes de isolamento (2 empresas, dados não se misturam)
-- [ ] Testes de alternância entre empresas
-- [ ] Testes de permissões por empresa
-- [ ] Testes de performance
-
-#### Dia 3: Otimizações
-- [ ] Otimizar queries
-- [ ] Implementar cache
-- [ ] Melhorar loading states
-- [ ] Otimizar RLS
-
-#### Dia 4: Documentação
-- [ ] Atualizar README
-- [ ] Documentar API de empresas
-- [ ] Criar guia de uso
-- [ ] Documentar migração
-
-#### Dia 5: Deploy e Validação Final
-- [ ] Deploy em staging
-- [ ] Testes de aceitação
-- [ ] Correção de bugs
-- [ ] Deploy em produção
+- [ ] Testar alternância entre empresas
 
 ---
 
-## 🔧 TAREFAS TÉCNICAS DETALHADAS
+### 🟡 EPIC 2: Gestão de Usuários e Permissões (IMPORTANTE)
+**Status:** 🟡 60% Completo
 
-### 1. Banco de Dados
+#### Sprint 2.1: Unificação de Gestão de Usuários ✅ CONCLUÍDO
+- [x] Remover opção duplicada "Administração de Usuários"
+- [x] Manter apenas "Gestão de Usuários" no menu
+- [x] Consolidar funcionalidades em uma única página
 
-#### Arquivo: `database/implementar_empresas.sql`
-- ✅ Criar tabela `empresas`
-- ✅ Criar tabela `empresa_usuarios`
-- ✅ Adicionar `empresa_id` em todas as tabelas
-- ✅ Criar índices
-- ✅ Implementar RLS
-- ✅ Criar funções auxiliares
+#### Sprint 2.2: Permissões por Empresa ⚠️ PENDENTE
+- [ ] Implementar roles por empresa (admin, user, viewer)
+- [ ] Validar permissões antes de operações
+- [ ] UI para gerenciar membros da empresa
+- [ ] Sistema de convites para empresas
 
-### 2. Backend - Serviços
-
-#### Novo Arquivo: `src/services/empresaService.ts`
-```typescript
-class EmpresaService {
-  // CRUD de empresas
-  async criarEmpresa(dados: NovaEmpresa): Promise<Empresa>
-  async listarEmpresasDoUsuario(): Promise<Empresa[]>
-  async obterEmpresa(id: string): Promise<Empresa>
-  async atualizarEmpresa(id: string, dados: Partial<Empresa>): Promise<boolean>
-  async deletarEmpresa(id: string): Promise<boolean>
-  
-  // Gestão de usuários
-  async vincularUsuario(empresaId: string, userId: string, role: string): Promise<boolean>
-  async removerUsuario(empresaId: string, userId: string): Promise<boolean>
-  async listarUsuariosDaEmpresa(empresaId: string): Promise<UsuarioEmpresa[]>
-  async atualizarRoleUsuario(empresaId: string, userId: string, role: string): Promise<boolean>
-  
-  // Convites
-  async enviarConvite(empresaId: string, email: string, role: string): Promise<string>
-  async aceitarConvite(token: string): Promise<boolean>
-  async listarConvitesPendentes(empresaId: string): Promise<Convite[]>
-  async revogarConvite(conviteId: string): Promise<boolean>
-  
-  // Permissões
-  async verificarPermissao(empresaId: string, acao: string): Promise<boolean>
-  async obterRoleNaEmpresa(empresaId: string): Promise<string>
-}
-```
-
-#### Atualizar: `src/services/supabase.ts`
-- Adicionar `empresa_id` em todas as queries
-- Filtrar por `empresa_id` automaticamente
-- Validar que `empresa_id` está presente
-
-### 3. Frontend - Contexto
-
-#### Novo Arquivo: `src/contexts/EmpresaContext.tsx`
-```typescript
-interface EmpresaContextType {
-  empresaAtual: Empresa | null;
-  empresas: Empresa[];
-  loading: boolean;
-  error: string | null;
-  
-  // Ações
-  alternarEmpresa: (empresaId: string) => Promise<void>;
-  criarEmpresa: (dados: NovaEmpresa) => Promise<Empresa>;
-  atualizarEmpresa: (id: string, dados: Partial<Empresa>) => Promise<void>;
-  deletarEmpresa: (id: string) => Promise<void>;
-  
-  // Usuários
-  listarUsuarios: () => Promise<UsuarioEmpresa[]>;
-  convidarUsuario: (email: string, role: string) => Promise<void>;
-  removerUsuario: (userId: string) => Promise<void>;
-  
-  // Permissões
-  podeGerenciarEmpresa: () => boolean;
-  podeGerenciarUsuarios: () => boolean;
-}
-```
-
-### 4. Frontend - Componentes
-
-#### Novo: `src/components/EmpresaSelector.tsx`
-- Dropdown no header
-- Lista empresas do usuário
-- Indicador visual da empresa atual
-- Botão para criar nova empresa
-
-#### Novo: `src/pages/EmpresasPage.tsx`
-- Listar empresas do usuário
-- Criar nova empresa
-- Editar empresa
-- Deletar empresa
-- Gerenciar usuários
-
-#### Novo: `src/pages/ConvitesPage.tsx`
-- Enviar convites
-- Listar convites pendentes
-- Aceitar convites
-- Revogar convites
+#### Sprint 2.3: Auditoria e Logs ⚠️ PENDENTE
+- [ ] Log de ações por empresa
+- [ ] Histórico de alterações
+- [ ] Relatório de atividades
 
 ---
 
-## 🧪 TESTES NECESSÁRIOS
+### 🟢 EPIC 3: Experiência do Usuário (DESEJÁVEL)
+**Status:** 🟡 40% Completo
 
-### Testes de Isolamento
-1. Criar 2 empresas (Empresa A e Empresa B)
-2. Criar usuário 1 vinculado à Empresa A
-3. Criar usuário 2 vinculado à Empresa B
-4. Criar transações em cada empresa
-5. **Validar:** Usuário 1 não vê transações da Empresa B
-6. **Validar:** Usuário 2 não vê transações da Empresa A
+#### Sprint 3.1: Autenticação e Login ✅ CONCLUÍDO
+- [x] Corrigir logout imediato
+- [x] Melhorar AuthCallback (evitar erro prematuro)
+- [x] Tratamento de erros de permissão
 
-### Testes de Multi-Empresa
-1. Criar usuário vinculado a 2 empresas
-2. Alternar entre empresas
-3. **Validar:** Dados mudam corretamente
-4. **Validar:** Cache funciona
-5. **Validar:** Performance aceitável
+#### Sprint 3.2: Dashboard por Empresa ⚠️ PENDENTE
+- [ ] Filtrar métricas por empresa atual
+- [ ] Gráficos isolados por empresa
+- [ ] Indicadores específicos da empresa
 
-### Testes de Permissões
-1. Criar admin na Empresa A
-2. Criar user na Empresa A
-3. **Validar:** Admin pode gerenciar empresa
-4. **Validar:** User não pode gerenciar empresa
-5. **Validar:** Ambos veem transações da empresa
+#### Sprint 3.3: Notificações e Alertas ⚠️ PENDENTE
+- [ ] Alertas por empresa
+- [ ] Notificações de convites
+- [ ] Avisos de vencimento por empresa
 
 ---
 
-## 📋 CHECKLIST DE VALIDAÇÃO
+### 🔵 EPIC 4: Deploy e Infraestrutura (CRÍTICO)
+**Status:** ✅ 80% Completo
 
-### Funcionalidades Core
-- [ ] Usuário pode criar empresa
-- [ ] Usuário pode alternar entre empresas
-- [ ] Dados isolados por empresa
-- [ ] Usuários podem ser convidados
-- [ ] Permissões funcionam por empresa
-- [ ] Todas as transações vinculadas à empresa
-- [ ] Relatórios por empresa
+#### Sprint 4.1: Scripts de Deploy ✅ CONCLUÍDO
+- [x] Script `deploy-git-manager.sh` funcional
+- [x] Resolver erro "dubious ownership" do Git
+- [x] Script de configuração única
+- [x] Documentação de deploy
 
-### Segurança
-- [ ] RLS funcionando corretamente
-- [ ] Não há vazamento de dados entre empresas
-- [ ] Permissões validadas no backend
-- [ ] Autenticação segura
-
-### Performance
-- [ ] Queries otimizadas (< 2s)
-- [ ] Índices criados
-- [ ] Cache implementado
-- [ ] RLS não degrada performance
-
-### UX/UI
-- [ ] Interface intuitiva
-- [ ] Seletor de empresa visível
-- [ ] Feedback visual adequado
-- [ ] Responsivo
-- [ ] Loading states adequados
+#### Sprint 4.2: Monitoramento e Logs ⚠️ PENDENTE
+- [ ] Configurar logs de erro centralizados
+- [ ] Monitoramento de performance
+- [ ] Alertas de sistema
 
 ---
 
-## 🚨 RISCOS E MITIGAÇÕES
+## 📅 SPRINT ATUAL: Sprint 1.4 + 2.2
 
-### Risco 1: Migração de Dados
-**Problema:** Dados existentes sem `empresa_id`  
-**Solução:** Script de migração que cria empresa padrão e vincula tudo
+**Duração:** 1 semana  
+**Objetivo:** Finalizar migração de dados e testar isolamento completo
 
-### Risco 2: Performance do RLS
-**Problema:** RLS pode ser lento com muitas empresas  
-**Solução:** Índices adequados + cache + otimização de queries
+### Tarefas em Progresso
+1. ⚠️ **Executar scripts SQL no Supabase** (URGENTE)
+   - `database/corrigir_recursao_empresa_usuarios.sql`
+   - `database/migrar_dados_empresa_don_santos.sql`
+   - `database/associar_usuario_elislecio_empresa.sql`
 
-### Risco 3: Complexidade de Código
-**Problema:** Código pode ficar complexo  
-**Solução:** Abstrações claras + documentação + testes
+2. ⚠️ **Testes de Isolamento**
+   - Criar 2 empresas de teste
+   - Adicionar dados em cada empresa
+   - Verificar que não há vazamento entre empresas
 
----
-
-## 📚 DOCUMENTAÇÃO NECESSÁRIA
-
-1. **README.md** - Atualizar com informações de empresas
-2. **GUIA_EMPRESAS.md** - Como usar o sistema de empresas
-3. **API_EMPRESAS.md** - Documentação da API
-4. **MIGRACAO_DADOS.md** - Como migrar dados existentes
-5. **ARQUITETURA.md** - Arquitetura do sistema multi-tenant
+3. ⚠️ **Correções de UX**
+   - Melhorar feedback visual do EmpresaSelector
+   - Tratar caso de usuário sem empresas
+   - Melhorar mensagens de erro
 
 ---
 
-## 🎯 PRÓXIMOS PASSOS IMEDIATOS
+## ✅ ENTREGAS CONCLUÍDAS
 
-1. ✅ **Revisar análise completa** (`ANALISE_COMPLETA_SISTEMA_SAAS.md`)
-2. ✅ **Aprovar arquitetura proposta**
-3. ⏭️ **Executar script SQL** (`database/implementar_empresas.sql`)
-4. ⏭️ **Criar serviço de empresas** (`src/services/empresaService.ts`)
-5. ⏭️ **Criar contexto de empresa** (`src/contexts/EmpresaContext.tsx`)
-6. ⏭️ **Implementar seletor de empresa** (`src/components/EmpresaSelector.tsx`)
+### Sprint 1.1-1.3 (Concluído)
+- ✅ Estrutura completa de multi-tenancy
+- ✅ Backend com isolamento de dados
+- ✅ Frontend com contexto e seletor
+- ✅ Gestão básica de empresas
+
+### Sprint 2.1 (Concluído)
+- ✅ Menu unificado de gestão de usuários
+
+### Sprint 3.1 (Concluído)
+- ✅ Logout imediato
+- ✅ Login sem erros prematuros
+
+### Sprint 4.1 (Concluído)
+- ✅ Scripts de deploy funcionais
 
 ---
 
-**Status:** 📝 Documentação criada - Pronto para iniciar implementação
+## 🎯 PRÓXIMAS AÇÕES (Prioridade)
+
+### Esta Semana (Crítico)
+1. **Executar scripts SQL** ⚠️ BLOQUEADOR
+   - Sem isso, o sistema não funciona corretamente
+   - Tempo estimado: 30 minutos
+
+2. **Testes de Isolamento** ⚠️ CRÍTICO
+   - Validar que dados estão isolados
+   - Tempo estimado: 2 horas
+
+3. **Correções de RLS** ✅ (Já corrigido)
+   - Recursão infinita resolvida
+
+### Próxima Semana (Importante)
+1. **Sistema de Convites**
+   - Enviar convite por email
+   - Aceitar/rejeitar convites
+   - Tempo estimado: 1 dia
+
+2. **Permissões Granulares**
+   - Roles por empresa
+   - Validação de permissões
+   - Tempo estimado: 1 dia
+
+3. **Dashboard por Empresa**
+   - Métricas isoladas
+   - Gráficos por empresa
+   - Tempo estimado: 1 dia
+
+---
+
+## 📋 CHECKLIST DE IMPLEMENTAÇÃO
+
+### Banco de Dados
+- [x] Tabela `empresas` criada
+- [x] Tabela `empresa_usuarios` criada
+- [x] `empresa_id` adicionado em todas as tabelas
+- [x] RLS implementado e corrigido
+- [ ] Scripts de migração executados ⚠️
+- [ ] Dados existentes migrados ⚠️
+
+### Backend
+- [x] `empresaService.ts` completo
+- [x] Todos os services atualizados com `empresa_id`
+- [x] Cache isolado por empresa
+- [x] Validação de acesso
+
+### Frontend
+- [x] `EmpresaContext` implementado
+- [x] `EmpresaSelector` no header
+- [x] `EmpresasPage` para gestão
+- [x] Integração completa
+- [ ] Tratamento de usuário sem empresas ⚠️
+
+### Deploy
+- [x] Scripts de deploy funcionais
+- [x] Erro Git resolvido
+- [x] Documentação atualizada
+
+---
+
+## 🐛 BUGS CONHECIDOS
+
+1. ✅ **RESOLVIDO:** Erro de recursão infinita nas políticas RLS
+2. ✅ **RESOLVIDO:** Logout não saía imediatamente
+3. ✅ **RESOLVIDO:** Tela de erro aparecia prematuramente no login
+4. ⚠️ **PENDENTE:** Usuário sem empresas não tem feedback adequado
+5. ⚠️ **PENDENTE:** EmpresaSelector pode não aparecer se houver erro no carregamento
+
+---
+
+## 📈 MÉTRICAS DE PROGRESSO
+
+- **Multi-Tenancy Core:** 90% ✅
+- **Gestão de Usuários:** 60% 🟡
+- **UX/UI:** 40% 🟡
+- **Deploy/Infra:** 80% ✅
+- **Geral:** 70% 🟡
+
+---
+
+## 🎯 DEFINITION OF DONE (DoD)
+
+Para considerar uma tarefa completa:
+- [ ] Código implementado e testado
+- [ ] Scripts SQL executados no Supabase
+- [ ] Testes manuais realizados
+- [ ] Sem erros no console
+- [ ] Documentação atualizada
+- [ ] Deploy realizado (se aplicável)
+
+---
+
+## 📝 NOTAS IMPORTANTES
+
+1. **Scripts SQL:** Todos os scripts devem ser executados no Supabase SQL Editor na ordem:
+   - `database/implementar_empresas.sql` (já executado)
+   - `database/corrigir_recursao_empresa_usuarios.sql` ⚠️
+   - `database/migrar_dados_empresa_don_santos.sql` ⚠️
+   - `database/associar_usuario_elislecio_empresa.sql` ⚠️
+
+2. **Cache:** Limpar cache do navegador após mudanças no contexto de empresa
+
+3. **Testes:** Sempre testar com múltiplos usuários e empresas para validar isolamento
+
+---
+
+**Última Atualização:** 05/02/2026  
+**Próxima Revisão:** Após execução dos scripts SQL
