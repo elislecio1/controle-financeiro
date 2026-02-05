@@ -29,6 +29,7 @@ import { monitoringService } from './services/monitoringService'
 import MonitoringDashboard from './components/MonitoringDashboard'
 import { aiFinancialService } from './services/aiFinancialService'
 import AIFinancialDashboard from './components/AIFinancialDashboard'
+import { EmpresaSelector } from './components/EmpresaSelector'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
@@ -1124,6 +1125,9 @@ function App() {
             </div>
             
             <div className="flex items-center space-x-4">
+              {/* Seletor de Empresa */}
+              <EmpresaSelector />
+              
               <button
                 onClick={handleTestConnection}
                 className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
@@ -1214,16 +1218,6 @@ function App() {
                           >
                             <Users className="h-4 w-4 mr-2" />
                             Gestão de Usuários
-                          </button>
-                          <button
-                            onClick={() => {
-                              setShowUserMenu(false)
-                              navigate('/admin/user-management')
-                            }}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                          >
-                            <Shield className="h-4 w-4 mr-2" />
-                            Administração de Usuários
                           </button>
                           <button
                             onClick={() => {
