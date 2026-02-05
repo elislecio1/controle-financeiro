@@ -55,14 +55,18 @@ class AuthService {
 
       // Escutar mudanças de autenticação
       supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log('Auth state changed:', event)
+        console.log('Auth state changed:', event, session ? 'com sessão' : 'sem sessão')
         
         if (event === 'SIGNED_IN' && session?.user) {
           await this.handleUserSession(session.user)
-        } else if (event === 'SIGNED_OUT') {
+        } else if (event === 'SIGNED_OUT' || !session) {
+          // Garantir que o signOut seja processado mesmo se o evento não for SIGNED_OUT
           this.handleSignOut()
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          await this.handleUserSession(session.user)
+          // Só atualizar se ainda estiver autenticado
+          if (this.authState.isAuthenticated) {
+            await this.handleUserSession(session.user)
+          }
         }
       })
     } catch (error) {
@@ -155,6 +159,9 @@ class AuthService {
 
   // Gerenciar logout
   private handleSignOut() {
+    console.log('🧹 Limpando estado de autenticação...')
+    
+    // Limpar estado
     this.updateAuthState({
       user: null,
       profile: null,
@@ -162,6 +169,27 @@ class AuthService {
       error: null,
       isAuthenticated: false
     })
+    
+    // Limpar storage
+    try {
+      // Limpar dados específicos do app
+      localStorage.removeItem('supabase.auth.token')
+      sessionStorage.clear()
+      
+      // Limpar todos os dados do Supabase do localStorage
+      const keysToRemove: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+      
+      console.log('✅ Storage limpo')
+    } catch (error) {
+      console.warn('⚠️ Erro ao limpar storage no handleSignOut:', error)
+    }
   }
 
   // Mapear usuário do Supabase para nosso tipo
@@ -449,6 +477,26 @@ class AuthService {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       console.log('🔐 Fazendo signOut do Supabase...')
+      
+      // Limpar localStorage e sessionStorage antes do signOut
+      try {
+        // Limpar dados específicos do app
+        localStorage.removeItem('supabase.auth.token')
+        sessionStorage.clear()
+        
+        // Limpar dados do Supabase
+        const keysToRemove: string[] = []
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+            keysToRemove.push(key)
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key))
+      } catch (storageError) {
+        console.warn('⚠️ Erro ao limpar storage:', storageError)
+      }
+      
       const { error } = await supabase.auth.signOut()
 
       if (error) {
@@ -462,6 +510,11 @@ class AuthService {
           loading: false,
           error: authError.message
         })
+        // Limpar storage mesmo com erro
+        try {
+          localStorage.clear()
+          sessionStorage.clear()
+        } catch {}
         return { success: false, error: authError.message }
       }
 
@@ -475,6 +528,14 @@ class AuthService {
         loading: false,
         error: null
       })
+
+      // Limpar storage novamente após signOut
+      try {
+        localStorage.clear()
+        sessionStorage.clear()
+      } catch (storageError) {
+        console.warn('⚠️ Erro ao limpar storage após signOut:', storageError)
+      }
 
       console.log('✅ Estado de autenticação limpo')
       return { success: true }

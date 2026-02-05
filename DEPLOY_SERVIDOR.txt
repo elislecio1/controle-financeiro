@@ -1,0 +1,5 @@
+# Comando simples (pode falhar se houver conflitos):
+cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git pull origin main && npm install && npm run build
+
+# Comando forçado (descarta mudanças locais):
+cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git fetch origin main && git reset --hard origin/main && npm install && npm run build

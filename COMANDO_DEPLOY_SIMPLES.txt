@@ -1,0 +1,29 @@
+==========================================
+COMANDO DEPLOY SIMPLES - CONTROLE FINANCEIRO
+==========================================
+
+Para Servidor Linux (SSH):
+--------------------------
+bash deploy-simples.sh
+
+OU execute diretamente no terminal:
+cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git pull origin main && npm install && npm run build
+
+
+Para Windows (PowerShell - Desenvolvimento Local):
+--------------------------------------------------
+.\deploy-simples.ps1
+
+OU execute diretamente no terminal:
+cd D:\Projetos_aplicacoes\Controle_financeiro && git pull origin main && npm install && npm run build
+
+
+Comando único para SERVIDOR:
+----------------------------
+cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git pull origin main && npm install && npm run build
+
+Comando único para DESENVOLVIMENTO LOCAL:
+------------------------------------------
+cd D:\Projetos_aplicacoes\Controle_financeiro && git pull origin main && npm install && npm run build
+
+==========================================

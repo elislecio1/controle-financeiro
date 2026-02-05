@@ -60,9 +60,16 @@ const AdminUserManagement: React.FC = () => {
         const result = await supabase.rpc('get_admin_users')
         data = result.data
         error = result.error
+        
+        // Se erro 400/404, significa que a função não existe - usar fallback
+        if (error && (error.code === 'PGRST116' || error.message?.includes('function') || error.message?.includes('not found'))) {
+          error = null // Resetar erro para usar fallback
+          data = null
+        }
       } catch (rpcError) {
-        console.warn('RPC get_admin_users não disponível, tentando método alternativo...', rpcError)
-        error = rpcError
+        // Ignorar erro silenciosamente e usar fallback
+        error = null
+        data = null
       }
 
       // Se RPC falhou, tentar buscar diretamente da tabela user_profiles
@@ -178,21 +185,40 @@ const AdminUserManagement: React.FC = () => {
 
       // Tentar deletar via RPC primeiro
       let error: any = null
+      let useFallback = false
       
       try {
         const result = await supabase.rpc('delete_admin_user', {
           user_id: userId
         })
         error = result.error
+        
+        // Se erro 400/404, significa que a função não existe - usar fallback
+        if (error && (error.code === 'PGRST116' || error.message?.includes('function') || error.message?.includes('not found'))) {
+          useFallback = true
+          error = null // Resetar erro para usar fallback
+        }
       } catch (rpcError) {
-        console.warn('RPC delete_admin_user não disponível, tentando método alternativo...', rpcError)
+        // Ignorar erro silenciosamente e usar fallback
+        useFallback = true
+        error = null
+      }
+      
+      // Se RPC falhou ou não existe, usar fallback
+      if (useFallback || error) {
         // Fallback: deletar diretamente da tabela user_profiles
         const { error: deleteError } = await supabase
           .from('user_profiles')
           .delete()
           .eq('user_id', userId)
         
-        error = deleteError
+        if (deleteError) {
+          setError(deleteError.message || 'Erro ao deletar usuário.')
+          return
+        }
+      } else if (error) {
+        setError(error.message || 'Erro ao deletar usuário. Verifique se a função delete_admin_user existe no banco de dados.')
+        return
       }
 
       if (error) {

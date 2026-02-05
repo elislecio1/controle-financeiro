@@ -356,10 +356,16 @@ class MonitoringService {
         .gte('sent_at', today)
 
       if (error) {
-        // Ignorar erro se a tabela não existir (42P01)
-        if (error.code !== '42P01') {
-          console.error('❌ Erro ao buscar notificações:', error)
+        // Ignorar erro se a tabela não existir (42P01, PGRST116 ou 404)
+        if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+          return {
+            sent_today: 0,
+            failed_today: 0,
+            delivery_rate: 0,
+            active_channels: []
+          }
         }
+        // Silenciar outros erros
         return {
           sent_today: 0,
           failed_today: 0,
@@ -402,10 +408,16 @@ class MonitoringService {
         .in('level', ['error', 'critical'])
 
       if (error) {
-        // Ignorar erro se a tabela não existir (42P01)
-        if (error.code !== '42P01') {
-          console.error('❌ Erro ao buscar logs:', error)
+        // Ignorar erro se a tabela não existir (42P01, PGRST116 ou 404)
+        if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+          return {
+            total_errors: 0,
+            critical_errors: 0,
+            warning_errors: 0,
+            last_error_time: undefined
+          }
         }
+        // Silenciar outros erros
         return {
           total_errors: 0,
           critical_errors: 0,

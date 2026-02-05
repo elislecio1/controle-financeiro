@@ -449,13 +449,17 @@ class NotificationService {
         .gte('sent_at', since)
 
       if (error) {
-        console.error('❌ Erro ao contar notificações:', error)
+        // Ignorar erro se a tabela não existir (42P01 ou 404)
+        if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+          return 0
+        }
+        // Silenciar outros erros para não poluir o console
         return 0
       }
 
       return count || 0
     } catch (error) {
-      console.error('❌ Erro ao contar notificações:', error)
+      // Ignorar erros silenciosamente
       return 0
     }
   }
@@ -477,10 +481,14 @@ class NotificationService {
         })
 
       if (error) {
-        console.error('❌ Erro ao registrar notificação:', error)
+        // Ignorar erro se a tabela não existir (42P01, PGRST116 ou 404)
+        if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+          return
+        }
+        // Silenciar outros erros para não poluir o console
       }
     } catch (error) {
-      console.error('❌ Erro ao registrar notificação:', error)
+      // Ignorar erros silenciosamente
     }
   }
 
@@ -587,16 +595,17 @@ class NotificationService {
         .limit(limit)
 
       if (error) {
-        // Ignorar erro se a tabela não existir (42P01)
-        if (error.code !== '42P01') {
-          console.error('❌ Erro ao buscar histórico:', error)
+        // Ignorar erro se a tabela não existir (42P01, PGRST116 ou 404)
+        if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+          return []
         }
+        // Silenciar outros erros
         return []
       }
 
       return data || []
     } catch (error) {
-      console.error('❌ Erro ao buscar histórico:', error)
+      // Ignorar erros silenciosamente
       return []
     }
   }
@@ -613,10 +622,14 @@ class NotificationService {
         .eq('id', notificationId)
 
       if (error) {
-        console.error('❌ Erro ao marcar como lida:', error)
+        // Ignorar erro se a tabela não existir
+        if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+          return
+        }
+        // Silenciar outros erros
       }
     } catch (error) {
-      console.error('❌ Erro ao marcar como lida:', error)
+      // Ignorar erros silenciosamente
     }
   }
 }

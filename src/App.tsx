@@ -1287,6 +1287,9 @@ function App() {
                       {/* Botão de Logout */}
                       <button
                         onClick={async (e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          
                           setShowUserMenu(false)
                           
                           // Desabilitar o botão para evitar cliques múltiplos
@@ -1316,16 +1319,36 @@ function App() {
                             const result = await Promise.race([logoutPromise, timeoutPromise])
                             console.log('✅ Logout concluído:', result)
                             
+                            // Limpar storage manualmente
+                            try {
+                              localStorage.clear()
+                              sessionStorage.clear()
+                            } catch (storageError) {
+                              console.warn('⚠️ Erro ao limpar storage:', storageError)
+                            }
+                            
                             // Aguardar um pouco para garantir que tudo foi limpo
-                            await new Promise(resolve => setTimeout(resolve, 200))
+                            await new Promise(resolve => setTimeout(resolve, 300))
                             
                             // Forçar reload completo da página para garantir limpeza total
-                            // Usar replace para não adicionar ao histórico
-                            window.location.replace('/')
+                            // Usar replace para não adicionar ao histórico e garantir que não volte
+                            window.location.href = '/'
+                            // Fallback: se href não funcionar, usar replace
+                            setTimeout(() => {
+                              window.location.replace('/')
+                            }, 100)
                           } catch (error) {
                             console.error('❌ Erro ao fazer logout:', error)
+                            // Limpar storage mesmo com erro
+                            try {
+                              localStorage.clear()
+                              sessionStorage.clear()
+                            } catch {}
                             // Forçar navegação mesmo se houver erro
-                            window.location.replace('/')
+                            window.location.href = '/'
+                            setTimeout(() => {
+                              window.location.replace('/')
+                            }, 100)
                           }
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"

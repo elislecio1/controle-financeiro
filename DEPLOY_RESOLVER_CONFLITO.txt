@@ -1,0 +1,2 @@
+# Comando para resolver conflito e fazer deploy:
+cd /www/wwwroot/sites/elislecio/cf.don.cim.br && git fetch origin main && git reset --hard origin/main && npm install && npm run build
