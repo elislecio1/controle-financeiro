@@ -43,13 +43,14 @@
 - [x] Criar `EmpresasPage.tsx` (gestão de empresas)
 - [x] Integrar seletor no header do `App.tsx`
 
-#### Sprint 1.4: Migração e Testes ⚠️ PENDENTE
-- [ ] Executar script `migrar_dados_empresa_don_santos.sql` no Supabase
-- [ ] Executar script `associar_usuario_elislecio_empresa.sql`
-- [ ] Executar script `corrigir_recursao_empresa_usuarios.sql`
-- [ ] Testes manuais de isolamento de dados
-- [ ] Validar que usuários não veem dados de outras empresas
-- [ ] Testar alternância entre empresas
+#### Sprint 1.4: Migração e Testes ✅ CONCLUÍDO
+- [x] Executar script `corrigir_recursao_empresa_usuarios.sql` no Supabase ✅
+- [x] Executar script `migrar_dados_empresa_don_santos.sql` no Supabase ✅
+- [x] Executar script `associar_usuario_elislecio_empresa.sql` no Supabase ✅
+- [x] Validar que usuário elislecio@gmail.com está associado à Don Santos ✅
+- [ ] Testes manuais de isolamento de dados ⚠️ EM PROGRESSO
+- [ ] Validar que usuários não veem dados de outras empresas ⚠️
+- [ ] Testar alternância entre empresas ⚠️
 
 ---
 
@@ -156,13 +157,19 @@
 ## 🎯 PRÓXIMAS AÇÕES (Prioridade)
 
 ### Esta Semana (Crítico)
-1. **Executar scripts SQL** ⚠️ BLOQUEADOR
-   - Sem isso, o sistema não funciona corretamente
-   - Tempo estimado: 30 minutos
+1. ✅ **Executar scripts SQL** - CONCLUÍDO
+   - ✅ Script de correção de recursão executado
+   - ✅ Script de migração de dados executado
+   - ✅ Script de associação de usuário executado
+   - ✅ 6 usuários associados à Don Santos (todos admin)
+   - ✅ Usuário elislecio@gmail.com associado e ativo
 
-2. **Testes de Isolamento** ⚠️ CRÍTICO
+2. **Testes de Isolamento** ⚠️ PRÓXIMO PASSO
    - Validar que dados estão isolados
-   - Tempo estimado: 2 horas
+   - Criar 2 empresas de teste
+   - Adicionar dados em cada empresa
+   - Verificar que não há vazamento
+   - Tempo estimado: 1-2 horas
 
 3. **Correções de RLS** ✅ (Já corrigido)
    - Recursão infinita resolvida
@@ -191,9 +198,10 @@
 - [x] Tabela `empresas` criada
 - [x] Tabela `empresa_usuarios` criada
 - [x] `empresa_id` adicionado em todas as tabelas
-- [x] RLS implementado e corrigido
-- [ ] Scripts de migração executados ⚠️
-- [ ] Dados existentes migrados ⚠️
+- [x] RLS implementado e corrigido (sem recursão)
+- [x] Scripts de migração executados ✅
+- [x] Dados existentes migrados ✅
+- [x] Usuário elislecio@gmail.com associado à Don Santos ✅
 
 ### Backend
 - [x] `empresaService.ts` completo
@@ -227,11 +235,11 @@
 
 ## 📈 MÉTRICAS DE PROGRESSO
 
-- **Multi-Tenancy Core:** 90% ✅
+- **Multi-Tenancy Core:** 95% ✅ (Scripts SQL executados!)
 - **Gestão de Usuários:** 60% 🟡
-- **UX/UI:** 40% 🟡
+- **UX/UI:** 50% 🟡 (EmpresaSelector melhorado)
 - **Deploy/Infra:** 80% ✅
-- **Geral:** 70% 🟡
+- **Geral:** 75% 🟡 (Progresso significativo!)
 
 ---
 
