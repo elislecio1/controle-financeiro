@@ -4,25 +4,11 @@ import { Building2, ChevronDown, Check } from 'lucide-react'
 import { useEmpresa } from '../hooks/useEmpresa'
 
 export const EmpresaSelector: React.FC = () => {
-  // Hook deve ser chamado sempre (não pode ser condicional)
-  let empresas: any[] = []
-  let empresaAtual: any = null
-  let loading = true
-  let error: string | null = null
-  let setEmpresaAtual: any = null
-
-  try {
-    const context = useEmpresa()
-    empresas = context.empresas || []
-    empresaAtual = context.empresaAtual
-    loading = context.loading
-    error = context.error
-    setEmpresaAtual = context.setEmpresaAtual
-  } catch (err: any) {
-    console.error('❌ Erro ao usar useEmpresa no EmpresaSelector:', err)
-    error = err.message || 'Erro ao carregar contexto de empresas'
-    loading = false
-  }
+  console.log('🔍 EmpresaSelector: Componente renderizado')
+  
+  // Hook deve ser chamado sempre (não pode ser condicional ou dentro de try-catch)
+  const context = useEmpresa()
+  const { empresas, empresaAtual, loading, error, setEmpresaAtual } = context
 
   const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
