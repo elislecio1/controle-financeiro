@@ -1,12 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Building2, ChevronDown, Check } from 'lucide-react'
 import { useEmpresa } from '../hooks/useEmpresa'
 
 export const EmpresaSelector: React.FC = () => {
-  const { empresas, empresaAtual, loading, setEmpresaAtual } = useEmpresa()
+  const { empresas, empresaAtual, loading, error, setEmpresaAtual } = useEmpresa()
   const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Debug: Log para verificar estado
+  useEffect(() => {
+    console.log('🔍 EmpresaSelector - Estado:', {
+      loading,
+      empresasCount: empresas.length,
+      empresaAtual: empresaAtual?.nome,
+      error
+    })
+  }, [loading, empresas, empresaAtual, error])
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
