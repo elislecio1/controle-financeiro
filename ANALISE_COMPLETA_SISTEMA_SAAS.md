@@ -1,6 +1,8 @@
 # 📊 ANÁLISE COMPLETA DO SISTEMA - TRANSFORMAÇÃO PARA SaaS
 
 **Data:** 05/02/2026  
+**Última Atualização:** 05/02/2026  
+**Status:** 🟡 Em Progresso (70% completo)  
 **Objetivo:** Análise profunda do sistema atual e plano de transformação para SaaS multi-tenant empresarial
 
 ---
@@ -34,12 +36,18 @@
 - **TenantContext** (`src/contexts/TenantContext.tsx`): Contexto React criado
 - **Tipos SaaS** (`src/types/saas.ts`): Tipos TypeScript definidos
 
-#### ❌ PROBLEMAS IDENTIFICADOS:
-1. **TenantService baseado em subdomínio** - Não funciona para o caso de uso atual
-2. **Não há vínculo entre usuários e empresas** - Falta tabela de relacionamento
-3. **Transações não têm `tenant_id`** - Dados não estão isolados
-4. **Frontend não usa TenantContext** - Não está integrado
-5. **Não há seletor de empresa** - Usuário não pode alternar entre empresas
+#### ✅ PROBLEMAS RESOLVIDOS:
+1. ✅ **TenantService substituído por EmpresaService** - Baseado em seleção manual
+2. ✅ **Vínculo entre usuários e empresas** - Tabela `empresa_usuarios` criada
+3. ✅ **Transações têm `empresa_id`** - Dados isolados por empresa
+4. ✅ **Frontend usa EmpresaContext** - Integrado e funcional
+5. ✅ **Seletor de empresa** - EmpresaSelector no header
+
+#### ⚠️ MELHORIAS PENDENTES:
+1. ⚠️ **Sistema de convites** - Enviar/aceitar convites por email
+2. ⚠️ **Permissões granulares** - Roles por empresa (admin/user/viewer)
+3. ⚠️ **Dashboard por empresa** - Métricas isoladas
+4. ⚠️ **Auditoria** - Log de ações por empresa
 
 ### 1.3 Funcionalidades Atuais
 
@@ -60,15 +68,18 @@
 - ⚠️ Multi-usuário (existe, mas sem isolamento por empresa)
 - ⚠️ Relatórios avançados (estrutura existe, mas limitada)
 
-#### ❌ FUNCIONALIDADES FALTANDO:
-- ❌ Criação/gestão de empresas
-- ❌ Vinculação de usuários a empresas
-- ❌ Alternância entre empresas
-- ❌ Isolamento de dados por empresa
-- ❌ Convites para empresas
-- ❌ Permissões por empresa
-- ❌ Dashboard por empresa
-- ❌ Relatórios por empresa
+#### ✅ FUNCIONALIDADES IMPLEMENTADAS:
+- ✅ Criação/gestão de empresas (EmpresasPage)
+- ✅ Vinculação de usuários a empresas (empresa_usuarios)
+- ✅ Alternância entre empresas (EmpresaSelector)
+- ✅ Isolamento de dados por empresa (filtros automáticos)
+- ✅ Contexto global de empresa (EmpresaContext)
+
+#### ⚠️ FUNCIONALIDADES PENDENTES:
+- ⚠️ Convites para empresas (planejado Sprint 3)
+- ⚠️ Permissões granulares por empresa (planejado Sprint 3)
+- ⚠️ Dashboard por empresa (planejado Sprint 4)
+- ⚠️ Relatórios por empresa (planejado Sprint 4)
 
 ---
 
