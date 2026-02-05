@@ -594,7 +594,13 @@ class MonitoringService {
   private async getAPIResponseTime(): Promise<number> {
     const start = performance.now()
     try {
-      await supabase.from('transactions').select('id').limit(1)
+      // Obter empresa_id para teste de conexão
+      const empresaId = getEmpresaIdFromStorage()
+      if (empresaId) {
+        await supabase.from('transactions').select('id').eq('empresa_id', empresaId).limit(1)
+      } else {
+        await supabase.from('transactions').select('id').limit(1)
+      }
       return Math.round(performance.now() - start)
     } catch {
       return 5000 // Timeout simulado
