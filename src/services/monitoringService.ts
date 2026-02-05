@@ -372,16 +372,17 @@ class MonitoringService {
         .gte('sent_at', today)
 
       if (error) {
-        // Ignorar erro se a tabela não existir (42P01, PGRST116 ou 404)
-        if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('does not exist')) {
-          return {
-            sent_today: 0,
-            failed_today: 0,
-            delivery_rate: 0,
-            active_channels: []
-          }
-        }
-        // Silenciar outros erros
+        // Ignorar erro se a tabela não existir (42P01, PGRST116, 404 ou qualquer erro relacionado)
+        const isTableNotFound = 
+          error.code === '42P01' || 
+          error.code === 'PGRST116' || 
+          error.message?.includes('does not exist') ||
+          error.message?.includes('relation') ||
+          error.message?.includes('not found') ||
+          (error as any).status === 404 ||
+          (error as any).statusCode === 404
+        
+        // Retornar valores padrão silenciosamente
         return {
           sent_today: 0,
           failed_today: 0,
@@ -424,16 +425,17 @@ class MonitoringService {
         .in('level', ['error', 'critical'])
 
       if (error) {
-        // Ignorar erro se a tabela não existir (42P01, PGRST116 ou 404)
-        if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('does not exist')) {
-          return {
-            total_errors: 0,
-            critical_errors: 0,
-            warning_errors: 0,
-            last_error_time: undefined
-          }
-        }
-        // Silenciar outros erros
+        // Ignorar erro se a tabela não existir (42P01, PGRST116, 404 ou qualquer erro relacionado)
+        const isTableNotFound = 
+          error.code === '42P01' || 
+          error.code === 'PGRST116' || 
+          error.message?.includes('does not exist') ||
+          error.message?.includes('relation') ||
+          error.message?.includes('not found') ||
+          (error as any).status === 404 ||
+          (error as any).statusCode === 404
+        
+        // Retornar valores padrão silenciosamente
         return {
           total_errors: 0,
           critical_errors: 0,
@@ -453,8 +455,17 @@ class MonitoringService {
         warning_errors: warningErrors,
         last_error_time: lastErrorTime
       }
-    } catch (error) {
-      console.error('❌ Erro ao coletar métricas de erros:', error)
+    } catch (error: any) {
+      // Capturar erros HTTP 404 também
+      if (error?.status === 404 || error?.statusCode === 404 || error?.message?.includes('404')) {
+        return {
+          total_errors: 0,
+          critical_errors: 0,
+          warning_errors: 0,
+          last_error_time: undefined
+        }
+      }
+      // Silenciar outros erros também
       return {
         total_errors: 0,
         critical_errors: 0,

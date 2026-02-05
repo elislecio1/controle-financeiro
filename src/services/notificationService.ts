@@ -595,17 +595,31 @@ class NotificationService {
         .limit(limit)
 
       if (error) {
-        // Ignorar erro se a tabela não existir (42P01, PGRST116 ou 404)
-        if (error.code === '42P01' || error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+        // Ignorar erro se a tabela não existir (42P01, PGRST116, 404 ou qualquer erro relacionado)
+        const isTableNotFound = 
+          error.code === '42P01' || 
+          error.code === 'PGRST116' || 
+          error.message?.includes('does not exist') ||
+          error.message?.includes('relation') ||
+          error.message?.includes('not found') ||
+          (error as any).status === 404 ||
+          (error as any).statusCode === 404
+        
+        if (isTableNotFound) {
+          // Tabela não existe, retornar array vazio silenciosamente
           return []
         }
-        // Silenciar outros erros
+        // Silenciar outros erros também
         return []
       }
 
       return data || []
-    } catch (error) {
-      // Ignorar erros silenciosamente
+    } catch (error: any) {
+      // Capturar erros HTTP 404 também
+      if (error?.status === 404 || error?.statusCode === 404 || error?.message?.includes('404')) {
+        return []
+      }
+      // Ignorar todos os outros erros silenciosamente
       return []
     }
   }
