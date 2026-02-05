@@ -502,4 +502,57 @@ export interface AuthError {
   code?: string
 }
 
+// =====================================================
+// SISTEMA DE EMPRESAS (MULTI-TENANT)
+// =====================================================
+
+export type RoleEmpresa = 'admin' | 'user' | 'viewer'
+
+export interface Empresa {
+  id: string
+  nome: string
+  cnpj?: string
+  razao_social?: string
+  email?: string
+  telefone?: string
+  endereco?: {
+    rua?: string
+    numero?: string
+    complemento?: string
+    bairro?: string
+    cidade?: string
+    estado?: string
+    cep?: string
+    pais?: string
+  }
+  configuracoes?: Record<string, any>
+  ativo: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface EmpresaUsuario {
+  id: string
+  empresa_id: string
+  user_id: string
+  role: RoleEmpresa
+  ativo: boolean
+  convite_token?: string
+  convite_expira_em?: string
+  aceito_em?: string
+  created_at: string
+  updated_at: string
+  // Relacionamentos (quando carregados com join)
+  empresa?: Empresa
+  user?: User
+}
+
+export interface EmpresaState {
+  empresas: Empresa[]
+  empresaAtual: Empresa | null
+  loading: boolean
+  error: string | null
+  initialized: boolean
+}
+
 export default {} 

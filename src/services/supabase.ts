@@ -1175,6 +1175,26 @@ class SupabaseServiceImpl implements SupabaseService {
         console.log('📋 Primeiras categorias:', data.slice(0, 3).map(c => c.nome))
       } else {
         console.warn('⚠️ Nenhuma categoria encontrada para empresa:', empresaId)
+        // Diagnóstico: verificar se há categorias sem empresa_id ou com empresa_id diferente
+        console.log('🔍 Diagnóstico: Verificando categorias no banco...')
+        const { data: todasCategorias, error: diagError } = await supabase
+          .from('categorias')
+          .select('id, nome, empresa_id, ativo')
+          .eq('ativo', true)
+        
+        if (!diagError && todasCategorias) {
+          console.log('📊 Total de categorias ativas no banco:', todasCategorias.length)
+          const categoriasSemEmpresa = todasCategorias.filter(c => !c.empresa_id)
+          const categoriasComEmpresaDiferente = todasCategorias.filter(c => c.empresa_id && c.empresa_id !== empresaId)
+          console.log('⚠️ Categorias sem empresa_id:', categoriasSemEmpresa.length)
+          console.log('⚠️ Categorias com empresa_id diferente:', categoriasComEmpresaDiferente.length)
+          if (categoriasSemEmpresa.length > 0) {
+            console.log('📋 Primeiras categorias sem empresa_id:', categoriasSemEmpresa.slice(0, 3).map(c => ({ id: c.id, nome: c.nome })))
+          }
+          if (categoriasComEmpresaDiferente.length > 0) {
+            console.log('📋 Primeiras categorias com empresa_id diferente:', categoriasComEmpresaDiferente.slice(0, 3).map(c => ({ id: c.id, nome: c.nome, empresa_id: c.empresa_id })))
+          }
+        }
       }
        
        // Converter dados unknown para Categoria[]
@@ -1968,6 +1988,26 @@ class SupabaseServiceImpl implements SupabaseService {
         console.log('📋 Primeiros contatos:', data.slice(0, 3).map(c => c.nome))
       } else {
         console.warn('⚠️ Nenhum contato encontrado para empresa:', empresaId)
+        // Diagnóstico: verificar se há contatos sem empresa_id ou com empresa_id diferente
+        console.log('🔍 Diagnóstico: Verificando contatos no banco...')
+        const { data: todosContatos, error: diagError } = await supabase
+          .from('contatos')
+          .select('id, nome, empresa_id, ativo')
+          .eq('ativo', true)
+        
+        if (!diagError && todosContatos) {
+          console.log('📊 Total de contatos ativos no banco:', todosContatos.length)
+          const contatosSemEmpresa = todosContatos.filter(c => !c.empresa_id)
+          const contatosComEmpresaDiferente = todosContatos.filter(c => c.empresa_id && c.empresa_id !== empresaId)
+          console.log('⚠️ Contatos sem empresa_id:', contatosSemEmpresa.length)
+          console.log('⚠️ Contatos com empresa_id diferente:', contatosComEmpresaDiferente.length)
+          if (contatosSemEmpresa.length > 0) {
+            console.log('📋 Primeiros contatos sem empresa_id:', contatosSemEmpresa.slice(0, 3).map(c => ({ id: c.id, nome: c.nome })))
+          }
+          if (contatosComEmpresaDiferente.length > 0) {
+            console.log('📋 Primeiros contatos com empresa_id diferente:', contatosComEmpresaDiferente.slice(0, 3).map(c => ({ id: c.id, nome: c.nome, empresa_id: c.empresa_id })))
+          }
+        }
       }
       
       // Mapear campos snake_case para camelCase

@@ -30,6 +30,7 @@ import MonitoringDashboard from './components/MonitoringDashboard'
 import { aiFinancialService } from './services/aiFinancialService'
 import AIFinancialDashboard from './components/AIFinancialDashboard'
 import { EmpresaSelector } from './components/EmpresaSelector'
+import './utils/diagnosticoEmpresa' // Carregar utilitário de diagnóstico
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
