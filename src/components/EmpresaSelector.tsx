@@ -4,7 +4,26 @@ import { Building2, ChevronDown, Check } from 'lucide-react'
 import { useEmpresa } from '../hooks/useEmpresa'
 
 export const EmpresaSelector: React.FC = () => {
-  const { empresas, empresaAtual, loading, error, setEmpresaAtual } = useEmpresa()
+  // Hook deve ser chamado sempre (não pode ser condicional)
+  let empresas: any[] = []
+  let empresaAtual: any = null
+  let loading = true
+  let error: string | null = null
+  let setEmpresaAtual: any = null
+
+  try {
+    const context = useEmpresa()
+    empresas = context.empresas || []
+    empresaAtual = context.empresaAtual
+    loading = context.loading
+    error = context.error
+    setEmpresaAtual = context.setEmpresaAtual
+  } catch (err: any) {
+    console.error('❌ Erro ao usar useEmpresa no EmpresaSelector:', err)
+    error = err.message || 'Erro ao carregar contexto de empresas'
+    loading = false
+  }
+
   const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -15,9 +34,10 @@ export const EmpresaSelector: React.FC = () => {
       loading,
       empresasCount: empresas.length,
       empresaAtual: empresaAtual?.nome,
-      error
+      error,
+      hasContext: !!setEmpresaAtual
     })
-  }, [loading, empresas, empresaAtual, error])
+  }, [loading, empresas.length, empresaAtual?.nome, error, setEmpresaAtual])
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -32,6 +52,16 @@ export const EmpresaSelector: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
+
+  // Se há erro no contexto, mostrar mensagem
+  if (error && !loading) {
+    return (
+      <div className="flex items-center px-3 py-2 text-sm text-red-600 bg-red-50 rounded-md border border-red-200">
+        <Building2 className="h-4 w-4 mr-2" />
+        <span>Erro: {error}</span>
+      </div>
+    )
+  }
 
   // Mostrar sempre que houver empresa atual, mesmo que seja apenas uma
   if (loading) {
