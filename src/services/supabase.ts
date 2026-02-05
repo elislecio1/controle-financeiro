@@ -3,6 +3,7 @@ import { SheetData, NewTransaction, Categoria, Subcategoria, Investimento, Conta
 import { formatarMoeda, formatarData, parsearDataBrasileira, parsearValorBrasileiro } from '../utils/formatters'
 import { logService } from './logService'
 import { cacheService } from './cacheService'
+import { getEmpresaIdFromStorage, getEmpresaIdOrThrow } from '../utils/empresaHelper'
 
 // Configurações do Supabase - SEGURANÇA CRÍTICA
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
@@ -173,8 +174,14 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       // Usar cache para melhorar performance
-      // Cache agora inclui transações de todas as empresas do usuário
-      const cacheKey = `transactions:${session.user.id}:empresas`
+      // Obter empresa_id para cache
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
+      }
+      
+      // Cache inclui empresa_id para isolamento
+      const cacheKey = `transactions:${session.user.id}:${empresaId}`
       const cachedData = cacheService.get<SheetData[]>(cacheKey)
       
       if (cachedData) {
@@ -195,13 +202,20 @@ class SupabaseServiceImpl implements SupabaseService {
         throw new Error(`Erro na conexão: ${testError.message}`)
       }
 
-      // RLS (Row Level Security) filtra automaticamente:
+      // Obter empresa_id atual
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
+      }
+
+      // RLS (Row Level Security) filtra automaticamente, mas adicionamos filtro explícito por segurança
       // - Transações próprias do usuário
       // - Transações da mesma empresa (se participa da empresa)
       // - Todas as transações se for admin
       const { data, error } = await supabase
         .from(this.TABLE_NAME)
         .select('*')
+        .eq('empresa_id', empresaId)
         .order('data', { ascending: true })
 
       if (error) {
@@ -265,16 +279,22 @@ class SupabaseServiceImpl implements SupabaseService {
         throw new Error('❌ Usuário não autenticado')
       }
 
-      // Usar cache para contagem total
-      // Cache agora inclui contagem de todas as empresas
-      const countCacheKey = `transactions_count:${session.user.id}:empresas`
+      // Obter empresa_id
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
+      }
+
+      // Usar cache para contagem total (inclui empresa_id)
+      const countCacheKey = `transactions_count:${session.user.id}:${empresaId}`
       let totalCount = cacheService.get<number>(countCacheKey)
 
       if (totalCount === null) {
-        // RLS filtra automaticamente por empresa
+        // RLS filtra automaticamente, mas adicionamos filtro explícito por segurança
         const { count, error: countError } = await supabase
           .from(this.TABLE_NAME)
           .select('*', { count: 'exact', head: true })
+          .eq('empresa_id', empresaId)
 
         if (countError) {
           console.error('❌ Erro ao contar registros:', countError)
@@ -289,8 +309,8 @@ class SupabaseServiceImpl implements SupabaseService {
       const offset = (page - 1) * limit
       const totalPages = Math.ceil(totalCount / limit)
 
-      // Cache agora inclui transações de todas as empresas
-      const cacheKey = `transactions_paginated:${session.user.id}:empresas:${page}:${limit}:${sortBy}:${sortOrder}`
+      // Cache inclui empresa_id para isolamento
+      const cacheKey = `transactions_paginated:${session.user.id}:${empresaId}:${page}:${limit}:${sortBy}:${sortOrder}`
       const cachedData = cacheService.get<SheetData[]>(cacheKey)
 
       if (cachedData) {
@@ -309,10 +329,11 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       // Buscar dados paginados
-      // RLS filtra automaticamente por empresa
+      // RLS filtra automaticamente, mas adicionamos filtro explícito por segurança
       const { data, error } = await supabase
         .from(this.TABLE_NAME)
         .select('*')
+        .eq('empresa_id', empresaId)
         .order(sortBy, { ascending: sortOrder === 'asc' })
         .range(offset, offset + limit - 1)
 
@@ -387,11 +408,18 @@ class SupabaseServiceImpl implements SupabaseService {
         throw new Error('❌ Usuário não autenticado')
       }
 
+      // Obter empresa_id
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
+      }
+
       // Construir query base
-      // RLS filtra automaticamente por empresa
+      // RLS filtra automaticamente, mas adicionamos filtro explícito por segurança
       let query = supabase
         .from(this.TABLE_NAME)
         .select('*', { count: 'exact' })
+        .eq('empresa_id', empresaId)
 
       // Aplicar filtros
       if (filters.search) {
@@ -529,8 +557,14 @@ class SupabaseServiceImpl implements SupabaseService {
         console.log('⚠️ Ignorando verificação de transação similar')
       }
       
-      // Criar transação principal com user_id
-      console.log('👤 Adicionando user_id aos dados...')
+      // Obter empresa_id
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
+      }
+
+      // Criar transação principal com user_id e empresa_id
+      console.log('👤 Adicionando user_id e empresa_id aos dados...')
       const transactionData = await addUserIdToData({
         data: transaction.data, // Manter formato original (DD/MM/AAAA)
         valor: transaction.valor, // Mantém negativo para despesas
@@ -552,6 +586,7 @@ class SupabaseServiceImpl implements SupabaseService {
         vencimento: transaction.vencimento || transaction.data, // Manter formato original (DD/MM/AAAA)
         situacao: '',
         data_pagamento: null,
+        empresa_id: empresaId, // Adicionar empresa_id
         created_at: new Date().toISOString()
       })
       console.log('✅ User_id adicionado, dados preparados:', transactionData)
@@ -1107,11 +1142,22 @@ class SupabaseServiceImpl implements SupabaseService {
         throw new Error('❌ Supabase não configurado. Configure as variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY')
       }
       
+      // Obter empresa_id
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
+      }
+      
       console.log('🔍 Buscando categorias no Supabase...')
       
-      const { data, error } = await supabase
+      // Buscar categorias da empresa (incluindo inativas para debug)
+      let query = supabase
         .from('categorias')
         .select('*')
+        .eq('empresa_id', empresaId)
+      
+      // Se a coluna 'ativo' existir, filtrar por ela, senão trazer todas
+      const { data, error } = await query
         .eq('ativo', true)
         .order('nome')
 
@@ -1140,11 +1186,17 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async saveCategoria(categoria: Omit<Categoria, 'id'>): Promise<{ success: boolean; message: string; data?: Categoria }> {
     try {
+      // Obter empresa_id
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        return { success: false, message: 'Nenhuma empresa selecionada. Selecione uma empresa para continuar.' }
+      }
+
       console.log('💾 Salvando categoria no Supabase...')
       
       const { data, error } = await supabase
         .from('categorias')
-        .insert([categoria])
+        .insert([{ ...categoria, empresa_id: empresaId }])
         .select()
         .single()
 
@@ -1183,10 +1235,28 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async updateCategoria(id: string, data: Partial<Categoria>): Promise<{ success: boolean; message: string }> {
     try {
+      // Obter empresa_id para validação
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        return { success: false, message: 'Nenhuma empresa selecionada. Selecione uma empresa para continuar.' }
+      }
+
+      // Validar que a categoria pertence à empresa
+      const { data: categoria, error: checkError } = await supabase
+        .from('categorias')
+        .select('empresa_id')
+        .eq('id', id)
+        .single()
+
+      if (checkError || !categoria || categoria.empresa_id !== empresaId) {
+        return { success: false, message: 'Categoria não encontrada ou sem acesso.' }
+      }
+
       const { error } = await supabase
         .from('categorias')
         .update(data)
         .eq('id', id)
+        .eq('empresa_id', empresaId)
 
       if (error) {
         return {
@@ -1209,10 +1279,17 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async deleteCategoria(id: string): Promise<{ success: boolean; message: string }> {
     try {
+      // Obter empresa_id para validação
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        return { success: false, message: 'Nenhuma empresa selecionada. Selecione uma empresa para continuar.' }
+      }
+
       const { error } = await supabase
         .from('categorias')
         .delete()
         .eq('id', id)
+        .eq('empresa_id', empresaId)
 
       if (error) {
         return {
@@ -1242,11 +1319,18 @@ class SupabaseServiceImpl implements SupabaseService {
         throw new Error('Supabase não configurado. Configure as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY.')
       }
       
+      // Obter empresa_id
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
+      }
+      
       console.log('🔍 Buscando subcategorias no Supabase...')
       
       const { data, error } = await supabase
         .from('subcategorias')
         .select('*')
+        .eq('empresa_id', empresaId)
         .eq('ativo', true)
         .order('nome')
 
@@ -1274,12 +1358,19 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async saveSubcategoria(subcategoria: Omit<Subcategoria, 'id'>): Promise<{ success: boolean; message: string; data?: Subcategoria }> {
     try {
+      // Obter empresa_id
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        return { success: false, message: 'Nenhuma empresa selecionada. Selecione uma empresa para continuar.' }
+      }
+
       console.log('💾 Salvando subcategoria no Supabase...')
       
       // Mapear categoriaId para categoria_id (schema do banco)
       const subcategoriaData = {
         nome: subcategoria.nome,
         categoria_id: subcategoria.categoriaId,
+        empresa_id: empresaId,
         ativo: subcategoria.ativo
       }
       
@@ -1388,11 +1479,18 @@ class SupabaseServiceImpl implements SupabaseService {
         throw new Error('Supabase não configurado. Configure as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY.')
       }
       
+      // Obter empresa_id
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
+      }
+      
       console.log('🔍 Buscando investimentos no Supabase...')
       
       const { data, error } = await supabase
         .from('investimentos')
         .select('*')
+        .eq('empresa_id', empresaId)
         .eq('ativo', true)
         .order('nome')
 
@@ -1427,11 +1525,17 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async saveInvestimento(investimento: Omit<Investimento, 'id'>): Promise<{ success: boolean; message: string; data?: Investimento }> {
     try {
+      // Obter empresa_id
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        return { success: false, message: 'Nenhuma empresa selecionada. Selecione uma empresa para continuar.' }
+      }
+
       console.log('💾 Salvando investimento no Supabase...')
       
       const { data, error } = await supabase
         .from('investimentos')
-        .insert([investimento])
+        .insert([{ ...investimento, empresa_id: empresaId }])
         .select()
         .single()
 
@@ -1819,11 +1923,18 @@ class SupabaseServiceImpl implements SupabaseService {
         throw new Error('Supabase não configurado. Configure as variáveis de ambiente NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY.')
       }
       
+      // Obter empresa_id
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
+      }
+      
       console.log('🔍 Buscando contatos no Supabase...')
       
       const { data, error } = await supabase
         .from('contatos')
         .select('*')
+        .eq('empresa_id', empresaId)
         .eq('ativo', true)
         .order('nome')
 
@@ -1856,6 +1967,12 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async saveContato(contato: Omit<Contato, 'id'>): Promise<{ success: boolean; message: string; data?: Contato }> {
     try {
+      // Obter empresa_id
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        return { success: false, message: 'Nenhuma empresa selecionada. Selecione uma empresa para continuar.' }
+      }
+
       console.log('💾 Salvando contato no Supabase...')
       
       // Mapear campos camelCase para snake_case
@@ -1867,6 +1984,7 @@ class SupabaseServiceImpl implements SupabaseService {
         cpf_cnpj: contato.cpfCnpj,
         endereco: contato.endereco,
         observacoes: contato.observacoes,
+        empresa_id: empresaId,
         ativo: contato.ativo
       }
       
@@ -1965,11 +2083,18 @@ class SupabaseServiceImpl implements SupabaseService {
   // Métodos para Centros de Custo
   async getCentrosCusto(): Promise<CentroCusto[]> {
     try {
+      // Obter empresa_id
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
+      }
+
       console.log('📊 Buscando centros de custo no Supabase...')
       
       const { data, error } = await supabase
         .from('centros_custo')
         .select('*')
+        .eq('empresa_id', empresaId)
         .eq('ativo', true)
         .order('nome')
 
@@ -1998,6 +2123,12 @@ class SupabaseServiceImpl implements SupabaseService {
 
   async saveCentroCusto(centro: Omit<CentroCusto, 'id'>): Promise<{ success: boolean; message: string; data?: CentroCusto }> {
     try {
+      // Obter empresa_id
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        return { success: false, message: 'Nenhuma empresa selecionada. Selecione uma empresa para continuar.' }
+      }
+
       console.log('💾 Salvando centro de custo no Supabase...')
       
       // Verificar autenticação
@@ -2005,7 +2136,7 @@ class SupabaseServiceImpl implements SupabaseService {
       
       const { data, error } = await supabase
         .from('centros_custo')
-        .insert([centro])
+        .insert([{ ...centro, empresa_id: empresaId }])
         .select()
         .single()
 
