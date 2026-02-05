@@ -1301,36 +1301,32 @@ function App() {
                             setData([])
                             setFilteredData([])
                             
-                            // Fazer logout com timeout para não travar
-                            const logoutPromise = signOut()
-                            const timeoutPromise = new Promise<{ success: boolean }>((resolve) => {
-                              setTimeout(() => {
-                                console.warn('⚠️ Timeout no logout, forçando navegação...')
-                                resolve({ success: true })
-                              }, 3000) // Timeout de 3 segundos
-                            })
-                            
-                            const result = await Promise.race([logoutPromise, timeoutPromise])
-                            console.log('✅ Logout concluído:', result)
-                            
-                            // Limpar storage manualmente
+                            // Limpar storage ANTES de fazer logout (mais rápido)
                             try {
-                              localStorage.clear()
+                              // Limpar dados específicos do app
+                              localStorage.removeItem('empresa_atual_id')
                               sessionStorage.clear()
+                              
+                              // Limpar todos os dados do Supabase
+                              const keysToRemove: string[] = []
+                              for (let i = 0; i < localStorage.length; i++) {
+                                const key = localStorage.key(i)
+                                if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+                                  keysToRemove.push(key)
+                                }
+                              }
+                              keysToRemove.forEach(key => localStorage.removeItem(key))
                             } catch (storageError) {
                               console.warn('⚠️ Erro ao limpar storage:', storageError)
                             }
                             
-                            // Aguardar um pouco para garantir que tudo foi limpo
-                            await new Promise(resolve => setTimeout(resolve, 300))
+                            // Fazer logout em background (não esperar)
+                            signOut().catch(err => {
+                              console.warn('⚠️ Erro no signOut (continuando mesmo assim):', err)
+                            })
                             
-                            // Forçar reload completo da página para garantir limpeza total
-                            // Usar replace para não adicionar ao histórico e garantir que não volte
-                            window.location.href = '/'
-                            // Fallback: se href não funcionar, usar replace
-                            setTimeout(() => {
-                              window.location.replace('/')
-                            }, 100)
+                            // Redirecionar IMEDIATAMENTE (não esperar)
+                            window.location.replace('/')
                           } catch (error) {
                             console.error('❌ Erro ao fazer logout:', error)
                             // Limpar storage mesmo com erro
@@ -1338,11 +1334,8 @@ function App() {
                               localStorage.clear()
                               sessionStorage.clear()
                             } catch {}
-                            // Forçar navegação mesmo se houver erro
-                            window.location.href = '/'
-                            setTimeout(() => {
-                              window.location.replace('/')
-                            }, 100)
+                            // Forçar navegação IMEDIATAMENTE
+                            window.location.replace('/')
                           }
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"

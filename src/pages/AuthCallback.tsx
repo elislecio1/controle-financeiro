@@ -13,20 +13,45 @@ export const AuthCallback: React.FC = () => {
     const handleCallback = async () => {
       try {
         // Aguardar um pouco para o Supabase processar o token
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        // Mas verificar periodicamente em vez de esperar 2 segundos fixos
+        let attempts = 0
+        const maxAttempts = 10
+        
+        const checkAuth = async () => {
+          if (loading) {
+            // Ainda carregando, aguardar um pouco mais
+            attempts++
+            if (attempts < maxAttempts) {
+              setTimeout(checkAuth, 300)
+            } else {
+              setStatus('error')
+              setMessage('Timeout ao processar autenticação. Tente novamente.')
+            }
+            return
+          }
 
-        if (isAuthenticated) {
-          setStatus('success')
-          setMessage('Login realizado com sucesso!')
-          
-          // Redirecionar para o dashboard após 2 segundos
-          setTimeout(() => {
-            navigate('/')
-          }, 2000)
-        } else {
-          setStatus('error')
-          setMessage('Erro ao processar autenticação. Tente novamente.')
+          if (isAuthenticated) {
+            setStatus('success')
+            setMessage('Login realizado com sucesso!')
+            
+            // Redirecionar imediatamente (sem esperar 2 segundos)
+            setTimeout(() => {
+              navigate('/')
+            }, 500)
+          } else {
+            // Aguardar um pouco mais antes de mostrar erro (pode estar processando)
+            if (attempts < 5) {
+              attempts++
+              setTimeout(checkAuth, 300)
+            } else {
+              setStatus('error')
+              setMessage('Erro ao processar autenticação. Tente novamente.')
+            }
+          }
         }
+
+        // Começar verificação após pequeno delay inicial
+        setTimeout(checkAuth, 500)
       } catch (error) {
         console.error('Erro no callback:', error)
         setStatus('error')
@@ -35,7 +60,7 @@ export const AuthCallback: React.FC = () => {
     }
 
     handleCallback()
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, loading, navigate])
 
   const getStatusIcon = () => {
     switch (status) {
