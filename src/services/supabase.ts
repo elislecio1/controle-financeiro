@@ -1148,16 +1148,13 @@ class SupabaseServiceImpl implements SupabaseService {
         throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
       }
       
-      console.log('🔍 Buscando categorias no Supabase...')
+      console.log('🔍 Buscando categorias no Supabase para empresa:', empresaId)
       
-      // Buscar categorias da empresa (incluindo inativas para debug)
-      let query = supabase
+      // Buscar categorias da empresa
+      const { data, error } = await supabase
         .from('categorias')
         .select('*')
         .eq('empresa_id', empresaId)
-      
-      // Se a coluna 'ativo' existir, filtrar por ela, senão trazer todas
-      const { data, error } = await query
         .eq('ativo', true)
         .order('nome')
 
@@ -1166,7 +1163,12 @@ class SupabaseServiceImpl implements SupabaseService {
         throw new Error(`Erro ao buscar categorias: ${error.message}`)
       }
 
-             console.log('✅ Categorias carregadas:', data?.length || 0, 'registros')
+      console.log('✅ Categorias carregadas:', data?.length || 0, 'registros')
+      if (data && data.length > 0) {
+        console.log('📋 Primeiras categorias:', data.slice(0, 3).map(c => c.nome))
+      } else {
+        console.warn('⚠️ Nenhuma categoria encontrada para empresa:', empresaId)
+      }
        
        // Converter dados unknown para Categoria[]
        const categoriasMapeadas: Categoria[] = (data || []).map(item => ({
@@ -1325,7 +1327,7 @@ class SupabaseServiceImpl implements SupabaseService {
         throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
       }
       
-      console.log('🔍 Buscando subcategorias no Supabase...')
+      console.log('🔍 Buscando subcategorias no Supabase para empresa:', empresaId)
       
       const { data, error } = await supabase
         .from('subcategorias')
@@ -1340,6 +1342,11 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       console.log('✅ Subcategorias carregadas:', data?.length || 0, 'registros')
+      if (data && data.length > 0) {
+        console.log('📋 Primeiras subcategorias:', data.slice(0, 3).map(s => s.nome))
+      } else {
+        console.warn('⚠️ Nenhuma subcategoria encontrada para empresa:', empresaId)
+      }
       
              // Mapear categoria_id para categoriaId (formato TypeScript)
        const mappedData: Subcategoria[] = (data || []).map(item => ({
@@ -1929,7 +1936,7 @@ class SupabaseServiceImpl implements SupabaseService {
         throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
       }
       
-      console.log('🔍 Buscando contatos no Supabase...')
+      console.log('🔍 Buscando contatos no Supabase para empresa:', empresaId)
       
       const { data, error } = await supabase
         .from('contatos')
@@ -1944,6 +1951,11 @@ class SupabaseServiceImpl implements SupabaseService {
       }
 
       console.log('✅ Contatos carregados:', data?.length || 0, 'registros')
+      if (data && data.length > 0) {
+        console.log('📋 Primeiros contatos:', data.slice(0, 3).map(c => c.nome))
+      } else {
+        console.warn('⚠️ Nenhum contato encontrado para empresa:', empresaId)
+      }
       
       // Mapear campos snake_case para camelCase
       const contatosMapeados = (data || []).map(item => ({
