@@ -2,6 +2,7 @@
 import { supabase } from './supabase'
 import { SheetData } from '../types'
 import { notificationService } from './notificationService'
+import { getEmpresaIdFromStorage } from '../utils/empresaHelper'
 
 export interface SmartAlert {
   id: string
@@ -350,10 +351,18 @@ class SmartAlertsService {
   // Buscar transações do usuário
   private async getUserTransactions(userId: string): Promise<SheetData[]> {
     try {
+      // Obter empresa_id atual
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        console.warn('⚠️ Nenhuma empresa selecionada, retornando transações vazias')
+        return []
+      }
+
       const { data, error } = await supabase
         .from('transactions')
         .select('*')
         .eq('user_id', userId)
+        .eq('empresa_id', empresaId)
 
       if (error) {
         console.error('❌ Erro ao buscar transações:', error)

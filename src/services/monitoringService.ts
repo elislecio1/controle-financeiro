@@ -1,6 +1,7 @@
 // Serviço de Monitoramento em Tempo Real
 import { supabase } from './supabase'
 import { SheetData } from '../types'
+import { getEmpresaIdFromStorage } from '../utils/empresaHelper'
 
 export interface SystemMetrics {
   id: string
@@ -294,11 +295,26 @@ class MonitoringService {
     try {
       const today = new Date().toISOString().split('T')[0]
       
-      // Buscar transações do usuário
+      // Obter empresa_id atual
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        // Se não há empresa, retornar métricas vazias
+        return {
+          total_count: 0,
+          created_today: 0,
+          updated_today: 0,
+          deleted_today: 0,
+          pending_count: 0,
+          overdue_count: 0
+        }
+      }
+      
+      // Buscar transações do usuário na empresa atual
       const { data: transactions, error } = await supabase
         .from('transactions')
         .select('*')
         .eq('user_id', userId)
+        .eq('empresa_id', empresaId)
 
       if (error) {
         console.error('❌ Erro ao buscar transações:', error)

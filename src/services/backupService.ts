@@ -1,6 +1,7 @@
 // Serviço de Backup Automático e Recuperação
 import { supabase } from './supabase'
 import { SheetData } from '../types'
+import { getEmpresaIdFromStorage } from '../utils/empresaHelper'
 
 export interface BackupData {
   id: string
@@ -302,10 +303,18 @@ class BackupService {
 
   // Métodos auxiliares privados
   private async getUserTransactions(userId: string): Promise<SheetData[]> {
+    // Obter empresa_id atual
+    const empresaId = getEmpresaIdFromStorage()
+    if (!empresaId) {
+      console.warn('⚠️ Nenhuma empresa selecionada, retornando transações vazias')
+      return []
+    }
+
     const { data, error } = await supabase
       .from('transactions')
       .select('*')
       .eq('user_id', userId)
+      .eq('empresa_id', empresaId)
 
     if (error) throw error
     return data || []
@@ -322,10 +331,17 @@ class BackupService {
   }
 
   private async getUserSubcategories(userId: string): Promise<any[]> {
+    // Obter empresa_id atual
+    const empresaId = getEmpresaIdFromStorage()
+    if (!empresaId) {
+      return []
+    }
+
     const { data, error } = await supabase
       .from('subcategorias')
       .select('*')
       .eq('user_id', userId)
+      .eq('empresa_id', empresaId)
 
     if (error) throw error
     return data || []

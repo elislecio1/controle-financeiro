@@ -4,6 +4,7 @@ import { useEmpresa } from '../hooks/useEmpresa'
 
 export const EmpresaSelector: React.FC = () => {
   const { empresas, empresaAtual, loading, setEmpresaAtual } = useEmpresa()
+  const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -34,10 +35,14 @@ export const EmpresaSelector: React.FC = () => {
   // Se não há empresas, mostrar botão para criar
   if (empresas.length === 0) {
     return (
-      <div className="flex items-center px-3 py-2 text-sm text-orange-600 bg-orange-50 rounded-md border border-orange-200">
+      <button
+        onClick={() => navigate('/empresas')}
+        className="flex items-center px-3 py-2 text-sm font-medium text-orange-600 bg-orange-50 rounded-md border border-orange-200 hover:bg-orange-100 transition-colors"
+        title="Criar sua primeira empresa"
+      >
         <Building2 className="h-4 w-4 mr-2" />
-        <span>Nenhuma empresa</span>
-      </div>
+        <span>Criar Empresa</span>
+      </button>
     )
   }
 

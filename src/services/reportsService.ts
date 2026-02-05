@@ -1,6 +1,7 @@
 // Serviço de Relatórios Avançados
 import { supabase } from './supabase'
 import { SheetData } from '../types'
+import { getEmpresaIdFromStorage } from '../utils/empresaHelper'
 
 export interface ReportConfig {
   id: string
@@ -253,10 +254,18 @@ class ReportsService {
   // Buscar transações do período
   private async getTransactionsInPeriod(userId: string, startDate: string, endDate: string): Promise<SheetData[]> {
     try {
+      // Obter empresa_id atual
+      const empresaId = getEmpresaIdFromStorage()
+      if (!empresaId) {
+        console.warn('⚠️ Nenhuma empresa selecionada, retornando transações vazias')
+        return []
+      }
+
       const { data, error } = await supabase
         .from('transactions')
         .select('*')
         .eq('user_id', userId)
+        .eq('empresa_id', empresaId)
         .gte('data', startDate)
         .lte('data', endDate)
         .order('data', { ascending: true })
