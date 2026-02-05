@@ -53,6 +53,7 @@ CREATE POLICY "Users can view their company memberships" ON empresa_usuarios
 
 -- Política 2: Admins podem ver todos os vínculos da empresa (CORRIGIDA)
 -- Usa função SECURITY DEFINER para evitar recursão
+DROP POLICY IF EXISTS "Company admins can view all memberships" ON empresa_usuarios;
 CREATE POLICY "Company admins can view all memberships" ON empresa_usuarios
     FOR SELECT
     USING (
@@ -64,6 +65,7 @@ CREATE POLICY "Company admins can view all memberships" ON empresa_usuarios
     );
 
 -- Política 3: Admins podem criar vínculos (CORRIGIDA)
+DROP POLICY IF EXISTS "Company admins can add users" ON empresa_usuarios;
 CREATE POLICY "Company admins can add users" ON empresa_usuarios
     FOR INSERT
     WITH CHECK (
@@ -71,6 +73,7 @@ CREATE POLICY "Company admins can add users" ON empresa_usuarios
     );
 
 -- Política 4: Admins podem atualizar vínculos (CORRIGIDA)
+DROP POLICY IF EXISTS "Company admins can update memberships" ON empresa_usuarios;
 CREATE POLICY "Company admins can update memberships" ON empresa_usuarios
     FOR UPDATE
     USING (
@@ -89,6 +92,7 @@ CREATE POLICY "Company admins can update memberships" ON empresa_usuarios
     );
 
 -- Política 5: Admins podem remover vínculos (CORRIGIDA)
+DROP POLICY IF EXISTS "Company admins can remove users" ON empresa_usuarios;
 CREATE POLICY "Company admins can remove users" ON empresa_usuarios
     FOR DELETE
     USING (
@@ -104,7 +108,7 @@ CREATE POLICY "Company admins can remove users" ON empresa_usuarios
 -- =====================================================
 -- Permitir que usuários criem seu próprio vínculo quando criam uma empresa
 -- Isso é necessário para o bootstrap inicial
-
+DROP POLICY IF EXISTS "Users can create their own membership" ON empresa_usuarios;
 CREATE POLICY "Users can create their own membership" ON empresa_usuarios
     FOR INSERT
     WITH CHECK (user_id = auth.uid());
