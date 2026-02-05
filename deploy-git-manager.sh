@@ -33,47 +33,48 @@ log_warning() {
     echo -e "${YELLOW}[AVISO]${NC} $1"
 }
 
-# SOLUÇÃO DEFINITIVA: Função git_safe que ignora "dubious ownership"
+# SOLUÇÃO DEFINITIVA: Função git_safe que executa git e filtra "dubious ownership"
 git_safe() {
-    local temp_err=$(mktemp 2>/dev/null || echo "/tmp/git_err_$$")
+    # Capturar stdout e stderr separadamente
     local temp_out=$(mktemp 2>/dev/null || echo "/tmp/git_out_$$")
+    local temp_err=$(mktemp 2>/dev/null || echo "/tmp/git_err_$$")
     
-    # Executar git com safe.directory
+    # Executar comando git com safe.directory
     git -c safe.directory="$PROJECT_DIR" "$@" > "$temp_out" 2> "$temp_err"
     local exit_code=$?
     
-    # Ler erros
+    # Ler conteúdo dos arquivos
+    local out_content=$(cat "$temp_out" 2>/dev/null || echo "")
     local err_content=$(cat "$temp_err" 2>/dev/null || echo "")
     
-    # Verificar se é apenas "dubious ownership"
-    local is_only_dubious=0
+    # Mostrar stdout
+    if [ -n "$out_content" ]; then
+        echo "$out_content"
+    fi
+    
+    # Verificar se o erro é apenas "dubious ownership"
     if echo "$err_content" | grep -q "dubious ownership"; then
         # Verificar se há outros erros além de "dubious ownership"
         local other_errors=$(echo "$err_content" | grep -v "dubious ownership" | grep -v "To add an exception" | grep -v "^$")
+        
         if [ -z "$other_errors" ]; then
-            is_only_dubious=1
+            # Apenas "dubious ownership" - ignorar completamente e considerar sucesso
+            rm -f "$temp_out" "$temp_err" 2>/dev/null || true
+            return 0
+        else
+            # Há outros erros além de "dubious ownership"
+            echo "$other_errors" >&2
+            rm -f "$temp_out" "$temp_err" 2>/dev/null || true
+            return $exit_code
         fi
+    else
+        # Não é erro de "dubious ownership" - mostrar todos os erros
+        if [ -n "$err_content" ]; then
+            echo "$err_content" >&2
+        fi
+        rm -f "$temp_out" "$temp_err" 2>/dev/null || true
+        return $exit_code
     fi
-    
-    # Mostrar output
-    if [ -s "$temp_out" ]; then
-        cat "$temp_out"
-    fi
-    
-    # Se é apenas "dubious ownership", ignorar
-    if [ "$is_only_dubious" -eq 1 ]; then
-        # Ignorar erro de "dubious ownership" - considerar sucesso
-        rm -f "$temp_err" "$temp_out" 2>/dev/null || true
-        return 0
-    fi
-    
-    # Mostrar outros erros
-    if [ -n "$err_content" ] && [ "$is_only_dubious" -eq 0 ]; then
-        cat "$temp_err" >&2
-    fi
-    
-    rm -f "$temp_err" "$temp_out" 2>/dev/null || true
-    return $exit_code
 }
 
 # Iniciar deploy
@@ -100,7 +101,7 @@ fi
 
 log_success "Diretório: $(pwd)"
 
-# 2. Configurar Git safe.directory (tentativa)
+# 2. Configurar Git safe.directory (tentativa, mas não crítico se falhar)
 log "🔧 Configurando Git safe.directory..."
 git config --global --add safe.directory "$PROJECT_DIR" 2>/dev/null || true
 git config --global --add safe.directory "*" 2>/dev/null || true
@@ -109,6 +110,7 @@ log_success "Git configurado"
 
 # 3. Verificar e tratar mudanças locais
 log "🔍 Verificando mudanças locais..."
+# Usar git_safe que filtra o erro de "dubious ownership"
 if ! git_safe diff-index --quiet HEAD -- 2>/dev/null; then
     log_warning "Mudanças locais detectadas. Fazendo reset forçado..."
     git_safe fetch origin main || {
