@@ -23,6 +23,7 @@ interface EmpresaProviderProps {
 }
 
 export const EmpresaProvider: React.FC<EmpresaProviderProps> = ({ children }) => {
+  console.log('🔄 EmpresaProvider: Componente renderizado')
   const [empresas, setEmpresas] = useState<Empresa[]>([])
   const [empresaAtual, setEmpresaAtualState] = useState<Empresa | null>(null)
   const [loading, setLoading] = useState(true)
@@ -164,6 +165,7 @@ export const EmpresaProvider: React.FC<EmpresaProviderProps> = ({ children }) =>
 
   // Carregar empresas na inicialização
   useEffect(() => {
+    console.log('🔄 EmpresaContext: useEffect disparado, carregando empresas...')
     loadEmpresas()
   }, [loadEmpresas])
 
