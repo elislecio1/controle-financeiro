@@ -1144,7 +1144,14 @@ class SupabaseServiceImpl implements SupabaseService {
       
       // Obter empresa_id
       const empresaId = getEmpresaIdFromStorage()
+      console.log('🔍 DEBUG getCategorias - empresaId do storage:', empresaId)
+      console.log('🔍 DEBUG getCategorias - localStorage completo:', {
+        empresa_atual_id: localStorage.getItem('empresa_atual_id'),
+        todas_chaves: Object.keys(localStorage).filter(k => k.includes('empresa'))
+      })
+      
       if (!empresaId) {
+        console.error('❌ DEBUG getCategorias - Nenhuma empresa_id encontrada no storage!')
         throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
       }
       
@@ -1323,7 +1330,10 @@ class SupabaseServiceImpl implements SupabaseService {
       
       // Obter empresa_id
       const empresaId = getEmpresaIdFromStorage()
+      console.log('🔍 DEBUG getSubcategorias - empresaId do storage:', empresaId)
+      
       if (!empresaId) {
+        console.error('❌ DEBUG getSubcategorias - Nenhuma empresa_id encontrada no storage!')
         throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
       }
       
@@ -1932,7 +1942,10 @@ class SupabaseServiceImpl implements SupabaseService {
       
       // Obter empresa_id
       const empresaId = getEmpresaIdFromStorage()
+      console.log('🔍 DEBUG getContatos - empresaId do storage:', empresaId)
+      
       if (!empresaId) {
+        console.error('❌ DEBUG getContatos - Nenhuma empresa_id encontrada no storage!')
         throw new Error('Nenhuma empresa selecionada. Selecione uma empresa para continuar.')
       }
       
