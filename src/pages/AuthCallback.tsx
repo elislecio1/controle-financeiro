@@ -10,56 +10,88 @@ export const AuthCallback: React.FC = () => {
   const [message, setMessage] = useState('Processando autenticação...')
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout
+    let checkIntervalId: NodeJS.Timeout
+    let attempts = 0
+    const maxAttempts = 20 // Aumentar tentativas para dar mais tempo
+    
     const handleCallback = async () => {
       try {
-        // Aguardar um pouco para o Supabase processar o token
-        // Mas verificar periodicamente em vez de esperar 2 segundos fixos
-        let attempts = 0
-        const maxAttempts = 10
+        // Sempre começar com status de loading
+        setStatus('loading')
+        setMessage('Processando autenticação...')
         
-        const checkAuth = async () => {
+        const checkAuth = () => {
+          attempts++
+          
+          // Se ainda está carregando, continuar verificando
           if (loading) {
-            // Ainda carregando, aguardar um pouco mais
-            attempts++
             if (attempts < maxAttempts) {
-              setTimeout(checkAuth, 300)
+              checkIntervalId = setTimeout(checkAuth, 400)
             } else {
-              setStatus('error')
-              setMessage('Timeout ao processar autenticação. Tente novamente.')
+              // Timeout - mas ainda tentar verificar uma última vez
+              console.warn('⚠️ Timeout na verificação, mas continuando...')
+              checkIntervalId = setTimeout(checkAuth, 1000)
             }
             return
           }
 
+          // Se autenticado, mostrar sucesso
           if (isAuthenticated) {
+            clearTimeout(timeoutId)
+            clearTimeout(checkIntervalId)
             setStatus('success')
             setMessage('Login realizado com sucesso!')
             
-            // Redirecionar imediatamente (sem esperar 2 segundos)
+            // Redirecionar após breve delay para mostrar mensagem de sucesso
             setTimeout(() => {
               navigate('/')
-            }, 500)
+            }, 800)
+            return
+          }
+
+          // Se não autenticado, aguardar mais antes de mostrar erro
+          // Dar bastante tempo para processar (até 8 segundos)
+          if (attempts < maxAttempts) {
+            checkIntervalId = setTimeout(checkAuth, 400)
           } else {
-            // Aguardar um pouco mais antes de mostrar erro (pode estar processando)
-            if (attempts < 5) {
-              attempts++
-              setTimeout(checkAuth, 300)
-            } else {
-              setStatus('error')
-              setMessage('Erro ao processar autenticação. Tente novamente.')
-            }
+            // Só mostrar erro após muitas tentativas
+            clearTimeout(timeoutId)
+            clearTimeout(checkIntervalId)
+            setStatus('error')
+            setMessage('Erro ao processar autenticação. Tente novamente.')
           }
         }
 
-        // Começar verificação após pequeno delay inicial
-        setTimeout(checkAuth, 500)
+        // Aguardar um pouco antes de começar a verificar (dar tempo para Supabase processar)
+        timeoutId = setTimeout(() => {
+          checkAuth()
+        }, 1000)
+        
+        // Cleanup
+        return () => {
+          clearTimeout(timeoutId)
+          clearTimeout(checkIntervalId)
+        }
       } catch (error) {
         console.error('Erro no callback:', error)
-        setStatus('error')
-        setMessage('Erro inesperado. Tente novamente.')
+        clearTimeout(timeoutId)
+        clearTimeout(checkIntervalId)
+        // Não mostrar erro imediatamente - aguardar um pouco
+        setTimeout(() => {
+          setStatus('error')
+          setMessage('Erro inesperado. Tente novamente.')
+        }, 2000)
       }
     }
 
     handleCallback()
+    
+    // Cleanup no unmount
+    return () => {
+      clearTimeout(timeoutId)
+      clearTimeout(checkIntervalId)
+    }
   }, [isAuthenticated, loading, navigate])
 
   const getStatusIcon = () => {
