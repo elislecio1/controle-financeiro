@@ -321,10 +321,17 @@ class BackupService {
   }
 
   private async getUserCategories(userId: string): Promise<any[]> {
+    // Obter empresa_id atual
+    const empresaId = getEmpresaIdFromStorage()
+    if (!empresaId) {
+      return []
+    }
+
     const { data, error } = await supabase
       .from('categorias')
       .select('*')
       .eq('user_id', userId)
+      .eq('empresa_id', empresaId)
 
     if (error) throw error
     return data || []
